@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Shadows" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2500 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Sfumatura_senza_nome_7);
+        opacity: .78;
+      }
+    </style>
+    <linearGradient id="Sfumatura_senza_nome_7" data-name="Sfumatura senza nome 7" x1="1806.5" y1="359.91" x2="1806.5" y2="543.25" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dae0a3"/>
+      <stop offset=".08" stop-color="#dfe4b1" stop-opacity=".84"/>
+      <stop offset=".2" stop-color="#e8ebc5" stop-opacity=".62"/>
+      <stop offset=".33" stop-color="#eff1d7" stop-opacity=".43"/>
+      <stop offset=".46" stop-color="#f4f6e5" stop-opacity=".27"/>
+      <stop offset=".59" stop-color="#f9faf0" stop-opacity=".15"/>
+      <stop offset=".72" stop-color="#fcfcf8" stop-opacity=".07"/>
+      <stop offset=".86" stop-color="#fefefd" stop-opacity=".02"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <polygon class="cls-1" points="2254 551 1359 551.5 1567.5 348 2038.5 348 2254 551"/>
+</svg>

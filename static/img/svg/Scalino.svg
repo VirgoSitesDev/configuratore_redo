@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Shadows" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2500 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Sfumatura_senza_nome_7-7);
+      }
+
+      .cls-2 {
+        fill: url(#Sfumatura_senza_nome_7-6);
+      }
+
+      .cls-3 {
+        fill: url(#Sfumatura_senza_nome_7-5);
+      }
+
+      .cls-4 {
+        fill: url(#Sfumatura_senza_nome_7-2);
+      }
+
+      .cls-5 {
+        fill: url(#Sfumatura_senza_nome_7-4);
+      }
+
+      .cls-6 {
+        fill: url(#Sfumatura_senza_nome_7);
+      }
+
+      .cls-7 {
+        fill: url(#Sfumatura_senza_nome_7-3);
+      }
+    </style>
+    <linearGradient id="Sfumatura_senza_nome_7" data-name="Sfumatura senza nome 7" x1="5635.75" y1="-1472.99" x2="5635.75" y2="-1418.93" gradientTransform="translate(5713 -578.5) rotate(-180)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dae0a3"/>
+      <stop offset=".08" stop-color="#dfe4b1" stop-opacity=".84"/>
+      <stop offset=".2" stop-color="#e8ebc5" stop-opacity=".62"/>
+      <stop offset=".33" stop-color="#eff1d7" stop-opacity=".43"/>
+      <stop offset=".46" stop-color="#f4f6e5" stop-opacity=".27"/>
+      <stop offset=".59" stop-color="#f9faf0" stop-opacity=".15"/>
+      <stop offset=".72" stop-color="#fcfcf8" stop-opacity=".07"/>
+      <stop offset=".86" stop-color="#fefefd" stop-opacity=".02"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="Sfumatura_senza_nome_7-2" data-name="Sfumatura senza nome 7" x1="5621.75" y1="-1418.99" x2="5621.75" y2="-1364.93" xlink:href="#Sfumatura_senza_nome_7"/>
+    <linearGradient id="Sfumatura_senza_nome_7-3" data-name="Sfumatura senza nome 7" x1="5606.75" y1="-1367.99" x2="5606.75" y2="-1313.93" xlink:href="#Sfumatura_senza_nome_7"/>
+    <linearGradient id="Sfumatura_senza_nome_7-4" data-name="Sfumatura senza nome 7" x1="5594.75" y1="-1322.99" x2="5594.75" y2="-1268.93" xlink:href="#Sfumatura_senza_nome_7"/>
+    <linearGradient id="Sfumatura_senza_nome_7-5" data-name="Sfumatura senza nome 7" x1="5585.25" y1="-1283.99" x2="5585.25" y2="-1229.93" xlink:href="#Sfumatura_senza_nome_7"/>
+    <linearGradient id="Sfumatura_senza_nome_7-6" data-name="Sfumatura senza nome 7" x1="5567.25" y1="-1248.99" x2="5567.25" y2="-1194.93" xlink:href="#Sfumatura_senza_nome_7"/>
+    <linearGradient id="Sfumatura_senza_nome_7-7" data-name="Sfumatura senza nome 7" x1="5547.25" y1="-1214.99" x2="5547.25" y2="-1160.93" xlink:href="#Sfumatura_senza_nome_7"/>
+  </defs>
+  <polygon class="cls-6" points="0 838.15 154.01 838 154.5 898 .82 898 0 838.15"/>
+  <polygon class="cls-4" points="0 784.15 181.92 784 182.5 844 .96 844 0 784.15"/>
+  <polygon class="cls-7" points="0 733.15 211.83 733 212.5 793 1.12 793 0 733.15"/>
+  <polygon class="cls-5" points="0 688.15 235.75 688 236.5 748 1.25 748 0 688.15"/>
+  <polygon class="cls-3" points="0 649.15 254.69 649 255.5 709 1.35 709 0 649.15"/>
+  <polygon class="cls-2" points="18 614.15 272.69 614 273.5 674 19.35 674 18 614.15"/>
+  <polygon class="cls-1" points="38 580.15 292.69 580 293.5 640 39.35 640 38 580.15"/>
+</svg>

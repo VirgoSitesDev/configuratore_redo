@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuratore LED</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container-fluid">
+    <header class="row bg-light py-3 mb-4 align-items-center">
+      <div class="col-md-3 text-start">
+        <a href="javascript:location.reload(true)" title="Torna alla home">
+          <img src="{{ url_for('static', filename='img/logo-redo-nero.png') }}" alt="Logo Redo" class="site-logo">
+        </a>
+        <span class="beta-tag">beta</span>
+      </div>
+      <div class="col-md-6 text-center">
+        <h1 class="site-header-title mb-2">Configuratore Profili e Strip LED</h1>
+        <p class="site-header-lead mb-0">Configura il tuo sistema di illuminazione lineare</p>
+      </div>
+      <div class="col-md-3 text-end px-5">
+        <a href="/" class="text-decoration-underline d-flex align-items-center justify-content-end" style="color: black !important;">
+          <svg width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+            <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5Z"/>
+            <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
+          </svg>
+          Home
+        </a>
+      </div>
+    </header>
+
+    <div class="step-progress mb-4">
+      <div class="step-item active" id="progress-step1">
+        <div class="step-number">1</div>
+        <div class="step-title">Categoria</div>
+      </div>
+      <div class="step-item" id="progress-step2">
+        <div class="step-number">2</div>
+        <div class="step-title">Personalizzazione</div>
+      </div>
+      <div class="step-item" id="progress-step3">
+        <div class="step-number">3</div>
+        <div class="step-title">Strip LED</div>
+      </div>
+      <div class="step-item" id="progress-step4">
+        <div class="step-number">4</div>
+        <div class="step-title">Alimentazione</div>
+      </div>
+      <div class="step-item" id="progress-step5">
+        <div class="step-number">5</div>
+        <div class="step-title">Riepilogo</div>
+      </div>
+    </div>
+
+  <div class="step-section" id="step0-scelta-modalita">
+    <div class="row">
+      <div class="col-12">
+        <h2 class="text-center mb-3">Scegli la modalità di configurazione</h2>
+        <p class="text-center mb-4 text-muted">
+          <small>Seleziona cosa vuoi configurare</small>
+        </p>
+      </div>
+    </div>
+    
+    <div class="container mb-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6 mb-3">
+          <div class="card option-card modalita-card" data-modalita="profilo_strip">
+            <img src="/static/img/profilo-con-strip.jpg" class="card-img-top" alt="Profilo con Strip" 
+                style="height: 200px; object-fit: cover;" 
+                onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='200px'">
+            <div class="card-body text-center">
+              <h5 class="card-title">Profilo + Strip LED</h5>
+              <p class="card-text">Configura un profilo completo con strip LED integrata</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <div class="card option-card modalita-card" data-modalita="solo_strip">
+            <img src="/static/img/solo-strip.jpg" class="card-img-top" alt="Solo Strip" 
+                style="height: 200px; object-fit: cover;" 
+                onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='200px'">
+            <div class="card-body text-center">
+              <h5 class="card-title">Solo Strip LED</h5>
+              <p class="card-text">Configura solo la strip LED senza profilo</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-4">
+      <div class="col-12 text-center">
+        <button class="btn btn-primary btn-lg" id="btn-continua-scelta-modalita" disabled>Continua</button>
+      </div>
+    </div>
+  </div>
+
+    <div class="step-section" id="step2b-tipologia-strip">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Seleziona la tipologia di strip LED</h2>
+          <p class="text-center mb-4 text-muted">
+            <small>Scegli la tipologia di strip LED da configurare</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Tipologia Strip LED</h3>
+        <div class="row" id="step2b-tipologia-container">
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-tipologia-card" data-tipologia="COB">
+              <img src="/static/img/strip-cob.jpg" class="card-img-top" alt="Strip COB" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">COB</h5>
+                <p class="card-text small text-muted">Strip LED con tecnologia Chip On Board</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-tipologia-card" data-tipologia="SMD">
+              <img src="/static/img/strip-smd.jpg" class="card-img-top" alt="Strip SMD" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">SMD</h5>
+                <p class="card-text small text-muted">Strip LED con tecnologia Surface Mount Device</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-tipologia-card" data-tipologia="SPECIAL">
+              <img src="/static/img/strip-special.jpg" class="card-img-top" alt="Special Strip" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">SPECIAL STRIP</h5>
+                <p class="card-text small text-muted">Strip LED con caratteristiche speciali</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+      <div class="container mb-5" id="step2b-special-container" style="display: none;">
+        <h3 class="mb-3">Tipo di Special Strip</h3>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-special-card" data-special="XFLEX">
+              <div class="card-body text-center">
+                <h5 class="card-title">XFLEX</h5>
+                <p class="card-text small text-muted">Strip LED flessibile</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-special-card" data-special="XSNAKE">
+              <div class="card-body text-center">
+                <h5 class="card-title">XSNAKE</h5>
+                <p class="card-text small text-muted">Strip LED con design a serpente</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card step2b-special-card" data-special="XMAGIS">
+              <div class="card-body text-center">
+                <h5 class="card-title">XMAGIS</h5>
+                <p class="card-text small text-muted">Strip LED premium</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step0-da-tipologia">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-tipologia-step2b" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="step-section" id="step2b-parametri">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Configura i parametri della strip LED</h2>
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona tensione, grado di protezione IP e temperatura colore</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Tensione</h3>
+        <div class="row" id="step2b-tensione-options">
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Grado di protezione IP</h3>
+        <div class="row" id="step2b-ip-options">
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Temperatura colore</h3>
+        <div class="row" id="step2b-temperatura-options">
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-tipologia-step2b">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-parametri-step2b" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="step-section" id="step2b-potenza-lunghezza">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Potenza e lunghezza strip LED</h2>
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona la potenza e specifica la lunghezza</small>
+          </p>
+        </div>
+      </div>
+    
+      <div class="container mb-4">
+        <h3 class="mb-3">Potenza</h3>
+        <div class="row" id="step2b-potenza-options">
+        </div>
+      </div>
+    
+      <div class="container mb-4">
+        <h3 class="mb-3">Lunghezza Strip LED</h3>
+        <div class="form-group">
+          <label for="step2b-lunghezza-strip">Lunghezza richiesta (metri):</label>
+          <input type="number" class="form-control" id="step2b-lunghezza-strip" placeholder="Inserisci la lunghezza in metri" min="1" step="0.1">
+          <small class="form-text text-muted">Inserisci la lunghezza totale della strip LED richiesta</small>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-parametri-step2b">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-potenza-step2b" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step1-tipologia">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-2">Seleziona la tipologia del profilo</h2>
+        </div>
+      </div>
+
+      <div class="text-center mt-2">
+        <p class="small text-muted">Passa con il mouse sulle aree per visualizzare il tipo di illuminazione</p>
+      </div>
+      
+      <div class="justify-content-center mb-0 mt-4">
+        <p class="text-center mb-4">Indoor</p>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+          <div class="hotspot-container">
+            <img src="/static/img/mappa.jpg" alt="Mappa dei LED" class="mappa-bg img-fluid">
+
+            <div class="hotspots">
+              <div class="hotspot" data-categoria="nanoprofili" style="top:50%; left:30%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="incasso" style="top:10%; left:40%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="sospensione" style="top:40%; left:70%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="plafone" style="top:10%; left:20%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="parete" style="top:70%; left:70%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="battiscopa" style="top:85%; left:73%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="scalino" style="top:65%; left:0%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="wall_washer" style="top:25%; left:93%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="particolari" style="top:55%; left:50%;">
+                <div class="hotspot-area"></div>
+              </div>
+            </div>
+            
+            <div class="svg-lights-container">
+              <img src="/static/img/svg/Parete.svg" alt="Luce parete" class="svg-light parete">
+              <img src="/static/img/svg/Incasso.svg" alt="Luce incasso" class="svg-light incasso">
+              <img src="/static/img/svg/Plafone.svg" alt="Luce plafone" class="svg-light plafone">
+              <img src="/static/img/svg/Scalino.svg" alt="Luce scalino" class="svg-light scalino">
+              <img src="/static/img/svg/Sospeso.svg" alt="Luce sospeso" class="svg-light sospeso">
+              <img src="/static/img/svg/Battiscopa.svg" alt="Luce battiscopa" class="svg-light battiscopa">
+              <img src="/static/img/svg/Nanoprofili.svg" alt="Luce nanoprofili" class="svg-light nanoprofili">
+              <img src="/static/img/svg/Particolari.svg" alt="Luce particolari" class="svg-light particolari">
+              <img src="/static/img/svg/Wall_Washer.svg" alt="Luce wall washer" class="svg-light wall_washer">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="justify-content-center mb-0 mt-5">
+        <p class="text-center mb-4">Outdoor</p>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+          <div class="hotspot-container">
+            <img src="/static/img/mappa_2.jpg" alt="Mappa dei LED 2" class="mappa-bg img-fluid">
+            
+            <div class="hotspots">
+              <div class="hotspot" data-categoria="esterni" style="top:70%; left:27%;">
+                <div class="hotspot-area"></div>
+              </div>
+              
+              <div class="hotspot" data-categoria="wall_washer_ext" style="top:13%; left:81%;">
+                <div class="hotspot-area"></div>
+              </div>
+            </div>
+            
+            <div class="svg-lights-container">
+              <img src="/static/img/svg_2/esterni.svg" alt="Led Strip" class="svg-light esterni">
+              <img src="/static/img/svg_2/wall_washer_ext.svg" alt="Wall Washer 2" class="svg-light wall_washer_ext">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step2-modello">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-4">Seleziona il modello del profilo</h2>
+          <p class="text-center categoria-selezionata mb-4 fw-bold"></p>
+        </div>
+      </div>
+      
+      <div id="profili-container" class="container">
+      </div>
+      
+      <div id="tipologia-container" class="container mt-4" style="display: none;">
+        <h3 class="text-center mb-3">Seleziona la tipologia</h3>
+        <div class="row justify-content-center" id="tipologie-options">
+        </div>
+      </div>
+
+      <div id="lunghezza-profilo-container" class="container mt-4" style="display: none;">
+        <h3 class="text-center mb-3">Seleziona la lunghezza del profilo intero</h3>
+        <div class="row justify-content-center" id="lunghezze-profilo-options">
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary btn-torna-indietro me-2">Torna alla selezione tipologia</button>
+          <button class="btn btn-primary" id="btn-continua-step2" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step2-modello-esterni">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-4">Seleziona il profilo compatibile</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-info selection-badge">Categoria: <span id="categoria-nome-step2-modello-esterni"></span></span>
+            <span class="badge bg-success selection-badge">Strip LED: <span id="strip-configurata-esterni"></span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Questi sono i profili compatibili con la strip LED che hai configurato</small>
+          </p>
+        </div>
+      </div>
+      
+      <div id="profili-esterni-container" class="container">
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2-esterni">Torna alla configurazione strip</button>
+          <button class="btn btn-primary" id="btn-continua-step2-esterni" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step2-personalizzazione">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Personalizzazione del profilo</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step2-personalizzazione">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step2-personalizzazione">Tipologia</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Personalizza la forma, la finitura e la lunghezza del tuo profilo</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-1">Forma di taglio</h3>
+        <p class="mb-3 text-muted">Vista dall'alto</p>
+        <div class="row" id="forma-taglio-container">
+          <div class="col-md-4 mb-3">
+            <div class="card option-card forma-taglio-card" data-forma="DRITTO_SEMPLICE">
+              <div class="card-body text-center">
+                <h5 class="card-title">Dritto semplice</h5>
+                <img src="/static/img/dritto_semplice.png" alt="Dritto semplice" class="img-fluid mb-2" style="height: 60px;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card forma-taglio-card" data-forma="FORMA_L_DX">
+              <div class="card-body text-center">
+                <h5 class="card-title">Forma a L DX</h5>
+                <img src="/static/img/forma_a_l_dx.png" alt="Forma a L DX" class="img-fluid mb-2" style="height: 60px;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card forma-taglio-card" data-forma="FORMA_L_SX">
+              <div class="card-body text-center">
+                <h5 class="card-title">Forma a L SX</h5>
+                <img src="/static/img/forma_a_l_sx.png" alt="Forma a L SX" class="img-fluid mb-2" style="height: 60px;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card forma-taglio-card" data-forma="FORMA_C">
+              <div class="card-body text-center">
+                <h5 class="card-title">Forma a C</h5>
+                <img src="/static/img/forma_a_c.png" alt="Forma a C" class="img-fluid mb-2" style="height: 60px;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card forma-taglio-card" data-forma="RETTANGOLO_QUADRATO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Rettangolo/Quadrato</h5>
+                <img src="/static/img/forma_a_rettangolo.png" alt="Rettangolo/Quadrato" class="img-fluid mb-2" style="height: 60px;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Finitura</h3>
+        <div class="row" id="finitura-container">
+          <div class="col-md-3 mb-3">
+            <div class="card option-card finitura-card" data-finitura="ALLUMINIO_ANODIZZATO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Alluminio anodizzato</h5>
+                <div class="finitura-preview alluminio-anodizzato mb-2"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card finitura-card" data-finitura="BIANCO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Bianco</h5>
+                <div class="finitura-preview bianco mb-2"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card finitura-card" data-finitura="NERO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Nero</h5>
+                <div class="finitura-preview nero mb-2"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card finitura-card" data-finitura="ALLUMINIO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Alluminio</h5>
+                <div class="finitura-preview alluminio mb-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <style>
+          .finitura-preview {
+            width: 100%;
+            height: 40px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+          }
+          .alluminio-anodizzato {
+            background: linear-gradient(135deg, #e1e1e1 0%, #b3b3b3 50%, #e1e1e1 100%);
+          }
+          .bianco {
+            background-color: #ffffff;
+          }
+          .nero {
+            background-color: #000000;
+          }
+          .alluminio {
+            background: linear-gradient(135deg, #f5f5f5 0%, #c4c4c4 50%, #f5f5f5 100%);
+          }
+        </style>
+      </div>
+
+      <div class="container mb-5">
+        <h3 class="mb-3">Personalizzazione lunghezza</h3>
+        
+        <div id="istruzioni-misurazione" class="mb-4">
+        </div>
+        
+        <div id="misurazione-container">
+          <div class="form-group mb-4 lunghezza-personalizzata-container">
+            <label for="lunghezza-personalizzata">Lunghezza richiesta (mm):</label>
+            <input type="number" class="form-control" id="lunghezza-personalizzata" placeholder="Inserisci la lunghezza in millimetri" min="100">
+            <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
+          </div>
+        </div>
+        
+        <div id="proposte-container" class="alert alert-info" style="display: none;">
+          <h5>Proposte di lunghezza standard</h5>
+          <p>Il sistema ha calcolato delle proposte di lunghezza standard più adatte per la tua installazione.</p>
+          <p><strong style="color:#ff0000;">ATTENZIONE:</strong> se viene utilizzata la lunghezza personalizzata si verificherà uno spazio buio di <span id="spazio-produzione">5</span>mm.</p>
+          
+          <div class="row mt-3">
+            <div class="col-md-6 mb-2">
+              <div class="card">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Proposta 1</h5>
+                  <p class="card-text"><span id="proposta1-valore">1771mm</span></p>
+                  <button class="btn btn-sm btn-outline-primary btn-seleziona-proposta" data-proposta="1" data-valore="1771">Seleziona</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6 mb-2">
+              <div class="card">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Proposta 2</h5>
+                  <p class="card-text"><span id="proposta2-valore">1804mm</span></p>
+                  <button class="btn btn-sm btn-outline-primary btn-seleziona-proposta" data-proposta="2" data-valore="1804">Seleziona</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2-modello">Indietro</button>
+          <button class="btn btn-success ms-2" id="btn-continua-personalizzazione" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step2-option-strip">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-4">Vuoi includere una strip LED?</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step2-option">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step2-option">Tipologia</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Scegli se configurare il profilo con o senza illuminazione LED</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <div class="row" id="strip-option-container">
+          <div class="col-md-6 mb-3">
+            <div class="card option-card strip-option-card" data-option="si">
+              <div class="card-body text-center">
+                <h5 class="card-title">Sì, con strip LED</h5>
+                <p class="card-text small text-muted">Configura il profilo con illuminazione LED</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <div class="card option-card strip-option-card" data-option="no">
+              <div class="card-body text-center">
+                <h5 class="card-title">No, senza strip LED</h5>
+                <p class="card-text small text-muted">Configura solo il profilo senza illuminazione</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2-personalizzazione">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-step2-option" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="step-section" id="step2-tipologia-strip">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Seleziona la tipologia di strip LED</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-info selection-badge" id="categoria-badge-strip">Categoria: <span id="categoria-nome-step2-tipologia-strip"></span></span>
+            <span class="badge bg-primary selection-badge" id="profilo-badge-strip" style="display: none;">Modello: <span id="profilo-nome-step2-tipologia-strip">Profilo</span></span>
+            <span class="badge bg-success selection-badge" id="tipologia-badge-strip" style="display: none;">Tipologia: <span id="tipologia-nome-step2-tipologia-strip">Tipologia</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small id="sottotitolo-tipologia-strip">Seleziona prima la tipologia di strip LED da utilizzare</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Tipologia Strip LED</h3>
+        <div class="row" id="tipologia-strip-container">
+          <div class="col-md-4 mb-3">
+            <div class="card option-card tipologia-strip-card" data-tipologia-strip="COB">
+              <img src="/static/img/strip-cob.jpg" class="card-img-top" alt="Strip COB" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">COB</h5>
+                <p class="card-text small text-muted">Strip LED con tecnologia Chip On Board</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card tipologia-strip-card" data-tipologia-strip="SMD">
+              <img src="/static/img/strip-smd.jpg" class="card-img-top" alt="Strip SMD" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">SMD</h5>
+                <p class="card-text small text-muted">Strip LED con tecnologia Surface Mount Device</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card tipologia-strip-card" data-tipologia-strip="SPECIAL">
+              <img src="/static/img/strip-special.jpg" class="card-img-top" alt="Special Strip" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+              <div class="card-body text-center">
+                <h5 class="card-title">SPECIAL STRIP</h5>
+                <p class="card-text small text-muted">Strip LED con caratteristiche speciali</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container mb-5" id="special-strip-container" style="display: none;">
+        <h3 class="mb-3">Tipo di Special Strip</h3>
+        <div class="row" id="special-strip-options">
+          <div class="col-md-4 mb-3">
+            <div class="card option-card special-strip-card" data-special-strip="XFLEX">
+              <div class="card-body text-center">
+                <h5 class="card-title">XFLEX</h5>
+                <p class="card-text small text-muted">Strip LED flessibile</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card special-strip-card" data-special-strip="RUNNING">
+              <div class="card-body text-center">
+                <h5 class="card-title">RUNNING</h5>
+                <p class="card-text small text-muted">Strip LED con effetto di movimento</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card special-strip-card" data-special-strip="ZIG_ZAG">
+              <div class="card-body text-center">
+                <h5 class="card-title">ZIG ZAG</h5>
+                <p class="card-text small text-muted">Strip LED con configurazione a zig zag</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card special-strip-card" data-special-strip="XSNAKE">
+              <div class="card-body text-center">
+                <h5 class="card-title">XSNAKE</h5>
+                <p class="card-text small text-muted">Strip LED con design a serpente</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <div class="card option-card special-strip-card" data-special-strip="XMAGIS">
+              <div class="card-body text-center">
+                <h5 class="card-title">XMAGIS</h5>
+                <p class="card-text small text-muted">Strip LED premium</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2-option-strip">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-tipologia-strip" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step2-parametri">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Scegli i parametri della strip LED</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step2-parametri">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step2-parametri">Tipologia</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona tensione, grado di protezione IP e temperatura colore per la tua strip LED</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Tensione</h3>
+        <div class="row" id="tensione-options">
+          <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <p>Caricamento opzioni tensione...</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Grado di protezione IP</h3>
+        <div class="row" id="ip-options">
+        </div>
+      </div>
+      
+      <div class="container mb-4">
+        <h3 class="mb-3">Temperatura colore</h3>
+        <div class="row" id="temperatura-iniziale-options">
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2-parametri">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-parametri" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="step-section" id="step2-strip">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Seleziona la strip LED</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step2-strip">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step2-strip">Tipologia</span></span>
+            <span class="badge bg-info selection-badge">Tensione: <span id="tensione-nome-step2-strip">Tensione</span></span>
+            <span class="badge bg-warning selection-badge">IP: <span id="ip-nome-step2-strip">IP</span></span>
+            <span class="badge bg-secondary selection-badge">Temperatura: <span id="temperatura-nome-step2-strip">Temperatura</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona la strip LED in base ai parametri scelti</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <div class="row" id="strip-led-filtrate-options">
+          <div class="col-12 text-center">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3">Caricamento opzioni strip LED...</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-parametri-strip">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-strip" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step3-temperatura-potenza">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Configura l'illuminazione</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step3">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step3">Tipologia</span></span>
+            <span class="badge bg-info selection-badge">Strip LED: <span id="strip-nome-step3">Strip LED</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona la potenza e il modello della strip LED</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Potenza strip LED</h3>
+        <div class="row" id="potenza-container">
+        </div>
+      </div>
+
+      <div class="container mb-5" id="strip-led-model-section" style="display: none;">
+        <h3 class="mb-3">Modello strip LED</h3>
+        <div class="alert alert-info mb-3">
+          <p>Seleziona il modello specifico di strip LED compatibile con i parametri selezionati.</p>
+        </div>
+        <div class="row" id="strip-led-compatibili-container">
+        </div>
+      </div>
+      
+      <div class="row mt-5">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step2">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-step3" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step4-alimentazione">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Configura l'alimentazione</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step4">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step4">Tipologia</span></span>
+            <span class="badge bg-info selection-badge">Strip LED: <span id="strip-nome-step4">Strip LED</span></span>
+            <span class="badge bg-secondary selection-badge" id="badge-potenza-step4">Potenza: <span id="potenza-nome-step4">Potenza</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Seleziona l'alimentazione per il tuo sistema</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Alimentazione</h3>
+        <div class="row" id="alimentazione-container">
+          <div class="col-md-3 mb-3">
+            <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
+              <div class="card-body text-center">
+                <h5 class="card-title">ON/OFF</h5>
+                <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card alimentazione-card" data-alimentazione="DIMMERABILE_TRIAC">
+              <div class="card-body text-center">
+                <h5 class="card-title">Dimmerabile TRIAC</h5>
+                <p class="card-text small text-muted">Alimentazione con controllo dell'intensità luminosa TRIAC</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
+              <div class="card-body text-center">
+                <h5 class="card-title">Senza alimentatore</h5>
+                <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="container" id="alimentatore-section" style="display: none;">
+        <h3 class="mb-3">Tipologia Alimentatore</h3>
+        <div class="row" id="alimentatore-container">
+        </div>
+      </div>
+
+      <div class="container mb-5" id="potenza-alimentatore-section" style="display: none;">
+        <h3 class="mb-3">Potenza Alimentatore</h3>
+        <div class="alert alert-info mb-3" id="potenza-alimentatore-info" style="display: none;">
+          <p>In base alla tua configurazione, la potenza consigliata è di <strong><span id="potenza-consigliata-text">100</span>W</strong>, ma puoi selezionare la potenza che preferisci tra quelle disponibili.</p>
+        </div>
+        <div class="row" id="potenza-alimentatore-container">
+        </div>
+      </div>
+
+      <div class="row mt-5">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step3">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-step4" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step5-controllo">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Configura controllo e cablaggio</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step5">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step5">Tipologia</span></span>
+            <span class="badge bg-info selection-badge">Strip LED: <span id="strip-nome-step5">Strip LED</span></span>
+            <span class="badge bg-dark selection-badge">Alimentazione: <span id="alimentazione-nome-step5">Alimentazione</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Configura le opzioni di controllo e cablaggio del tuo sistema</small>
+          </p>
+        </div>
+      </div>
+
+      <div class="container mb-5">
+        <div id="dimmer-container">
+          <div class="text-center" id="dimmer-loading">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3">Caricamento opzioni dimmer compatibili...</p>
+          </div>
+        </div>
+        <p class="alert-dialog">ATTENZIONE: tutti i nostri dimmer sono in IP20.</p>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Alimentazione Cavo</h3>
+        <div class="row" id="alimentazione-cavo-container">
+          <div class="col-md-6 mb-3">
+            <div class="card option-card alimentazione-cavo-card" data-alimentazione-cavo="ALIMENTAZIONE_UNICA">
+              <div class="card-body text-center">
+                <h5 class="card-title">Alimentazione unica</h5>
+                <p class="card-text small text-muted">Singolo punto di alimentazione</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <div class="card option-card alimentazione-cavo-card" data-alimentazione-cavo="ALIMENTAZIONE_DOPPIA">
+              <div class="card-body text-center">
+                <h5 class="card-title">Alimentazione doppia</h5>
+                <p class="card-text small text-muted">Due punti di alimentazione</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Lunghezza Cavo</h3>
+        <div class="form-group mb-3">
+          <label for="lunghezza-cavo-ingresso">Lunghezza cavo in ingresso (mm):</label>
+          <input type="number" class="form-control" id="lunghezza-cavo-ingresso" value="0" min="0">
+        </div>
+        
+        <div id="lunghezza-cavo-uscita-container" class="form-group mb-3" style="display: none;">
+          <label for="lunghezza-cavo-uscita">Lunghezza cavo in uscita (mm):</label>
+          <input type="number" class="form-control" id="lunghezza-cavo-uscita" value="0" min="0">
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <h3 class="mb-3">Uscita Cavo</h3>
+        <div class="row" id="uscita-cavo-container">
+          <div class="col-md-3 mb-3">
+            <div class="card option-card uscita-cavo-card" data-uscita-cavo="DRITTA">
+              <div class="card-body text-center">
+                <h5 class="card-title">Dritta</h5>
+                <img src="/static/img/uscita_dritta.png" alt="Uscita dritta" class="img-fluid mb-2" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card uscita-cavo-card" data-uscita-cavo="LATERALE_DX">
+              <div class="card-body text-center">
+                <h5 class="card-title">Laterale DX</h5>
+                <img src="/static/img/uscita_laterale_dx.png" alt="Uscita laterale destra" class="img-fluid mb-2" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card uscita-cavo-card" data-uscita-cavo="RETRO">
+              <div class="card-body text-center">
+                <h5 class="card-title">Retro</h5>
+                <img src="/static/img/uscita_retro.png" alt="Uscita retro" class="img-fluid mb-2" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <div class="card option-card uscita-cavo-card" data-uscita-cavo="LATERALE_SX">
+              <div class="card-body text-center">
+                <h5 class="card-title">Laterale SX</h5>
+                <img src="/static/img/uscita_laterale_sx.png" alt="Uscita laterale sinistra" class="img-fluid mb-2" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='60px'">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step4">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-step5" disabled>Continua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step6-proposte">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Proposte di lunghezza standard</h2>
+          
+          <div class="selection-badges">
+            <span class="badge bg-primary selection-badge">Modello: <span id="profilo-nome-step6">Profilo</span></span>
+            <span class="badge bg-success selection-badge">Tipologia: <span id="tipologia-nome-step6">Tipologia</span></span>
+            <span class="badge bg-info selection-badge">Strip LED: <span id="strip-nome-step6">Strip LED</span></span>
+          </div>
+          
+          <p class="text-center mb-4 text-muted">
+            <small>Scegli tra le proposte di lunghezza standard o conferma la lunghezza personalizzata</small>
+          </p>
+        </div>
+      </div>
+      
+      <div class="container mb-5">
+        <div class="alert alert-info mb-4">
+          <h5>Riepilogo misure</h5>
+          <p>Lunghezza personalizzata attuale: <strong><span id="lunghezza-attuale">0</span> mm</strong></p>
+        </div>
+        
+        <div id="step6-proposte-container" class="alert alert-warning">
+          <h5>Proposte di lunghezza standard</h5>
+          <p>Il sistema ha calcolato delle proposte di lunghezza standard più adatte per la tua installazione.</p>
+          <p><strong style="color:#ff0000;">ATTENZIONE:</strong> se viene utilizzata la lunghezza personalizzata si verificherà uno spazio buio di <span id="step6-spazio-produzione">5</span>mm.</p>
+          
+          <div class="row mt-3">
+            <div class="col-md-6 mb-2">
+              <div class="card">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Proposta 1</h5>
+                  <p class="card-text"><span id="step6-proposta1-valore">1771mm</span></p>
+                  <button class="btn btn-outline-primary btn-seleziona-proposta" data-proposta="1" data-valore="1771">Seleziona</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6 mb-2">
+              <div class="card">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Proposta 2</h5>
+                  <p class="card-text"><span id="step6-proposta2-valore">1804mm</span></p>
+                  <button class="btn btn-outline-primary btn-seleziona-proposta" data-proposta="2" data-valore="1804">Seleziona</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="alert alert-success mt-4">
+          <strong>Lunghezza selezionata:</strong> <span id="step6-lunghezza-finale">0</span> mm
+          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step5-from-proposte">Indietro</button>
+          <button class="btn btn-primary ms-2" id="btn-continua-step6" disabled>Continua al riepilogo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="step7-riepilogo">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-3">Riepilogo configurazione</h2>
+          <p class="text-center mb-4 text-muted">
+            <small>Di seguito il riepilogo delle opzioni selezionate per il tuo sistema di illuminazione</small>
+          </p>
+        </div>
+      </div>
+      
+      <div id="riepilogo-container">
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary" id="btn-torna-step6">Modifica configurazione</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    function scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    const allButtons = document.querySelectorAll('button[id^="btn-"]');
+    allButtons.forEach(function(button) {
+      button.addEventListener('click', function() {
+        setTimeout(scrollToTop, 50);
+      });
+    });
+
+    setInterval(function() {
+      const visibleSection = document.querySelector('.step-section[style*="display: block"]');
+      if (visibleSection && !visibleSection.hasAttribute('data-scrolled')) {
+        scrollToTop();
+        visibleSection.setAttribute('data-scrolled', 'true');
+
+        document.querySelectorAll('.step-section:not([style*="display: block"])').forEach(function(section) {
+          section.removeAttribute('data-scrolled');
+        });
+      }
+    }, 300);
+
+    if (typeof jQuery !== 'undefined') {
+      const $ = jQuery;
+      const originalFadeOut = $.fn.fadeOut;
+
+      $.fn.fadeOut = function(speed, callback) {
+        if (typeof speed === 'function') {
+          callback = speed;
+          speed = null;
+        }
+        scrollToTop();
+        return originalFadeOut.apply(this, arguments);
+      };
+    }
+
+    function fixDuplicateButtons() {
+      const visibleSections = document.querySelectorAll('.step-section[style*="display: block"]');
+      visibleSections.forEach(function(section) {
+        const navigationButtons = section.querySelectorAll('.row .btn-secondary, .row .btn-primary');
+        const buttonRows = section.querySelectorAll('.row:has(.btn-secondary), .row:has(.btn-primary)');
+        
+        if (buttonRows.length > 1) {
+          for (let i = 1; i < buttonRows.length; i++) {
+            buttonRows[i].style.display = 'none';
+          }
+        }
+      });
+    }
+    setInterval(fixDuplicateButtons, 500);
+  });
+</script>
+
+</body>
+</html>

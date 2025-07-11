@@ -1,0 +1,1935 @@
+{
+  "categoriePrincipali": [
+    {
+      "id": "nanoprofili",
+      "nome": "Nanoprofili",
+      "immagine": "/static/img/categorie/nanoprofili.jpg",
+      "sottofamiglie": ["nanoprofili"]
+    },
+    {
+      "id": "incasso",
+      "nome": "Incasso",
+      "immagine": "/static/img/categorie/incasso.jpg",
+      "sottofamiglie": ["incasso", "wall_washer", "battiscopa"]
+    },
+    {
+      "id": "sospensione",
+      "nome": "Sospensione",
+      "immagine": "/static/img/categorie/sospensione.jpg",
+      "sottofamiglie": ["kit_sospensione"]
+    },
+    {
+      "id": "plafone",
+      "nome": "Plafone",
+      "immagine": "/static/img/categorie/plafone.jpg",
+      "sottofamiglie": ["superficie", "gancio_fissaggio_soffitto_parete"]
+    },
+    {
+      "id": "parete",
+      "nome": "Parete",
+      "immagine": "/static/img/categorie/parete.jpg",
+      "sottofamiglie": ["gancio_fissaggio_parete_soffitto"]
+    },
+    {
+      "id": "particolari",
+      "nome": "Particolari",
+      "immagine": "/static/img/categorie/particolari.jpg",
+      "sottofamiglie": ["nanoprofili"]
+    },
+    {
+      "id": "scalino",
+      "nome": "Scalino",
+      "immagine": "/static/img/categorie/scalino.jpg",
+      "sottofamiglie": ["scalino"]
+    },
+    {
+      "id": "wall_washer",
+      "nome": "Wallwasher",
+      "immagine": "/static/img/categorie/wall_washer.jpg",
+      "sottofamiglie": ["wall_washer"]
+    },
+    {
+      "id": "wall_washer_ext",
+      "nome": "Wallwasher da Esterni",
+      "immagine": "/static/img/categorie/wall_washer.jpg",
+      "sottofamiglie": ["wall_washer_ext"]
+    },
+    {
+      "id": "esterni",
+      "nome": "Strip LED da Esterni",
+      "immagine": "/static/img/categorie/esterni.jpg",
+      "sottofamiglie": ["esterni"]
+    }
+  ],
+  "profili": [
+    {
+      "id": "PRF014_200SET",
+      "nome": "PRF014",
+      "categoria": "nanoprofili",
+      "note": "NANO PROFILI",
+      "immagine": "/static/img/prf014_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF017_200SET",
+      "nome": "PRF017",
+      "categoria": "nanoprofili",
+      "note": "ANGOLARE",
+      "immagine": "/static/img/prf017_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF005_200SET",
+      "nome": "PRF005",
+      "categoria": "incasso",
+      "note": "PLAFONE+INCASSO",
+      "immagine": "/static/img/prf005_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO", "BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000, 3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF051_300",
+      "nome": "PRF051",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf051_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF011_300",
+      "nome": "PRF011",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf011_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF040_300",
+      "nome": "PRF040",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf040_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF004_200SET",
+      "nome": "PRF004",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf004_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO", "BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000, 3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF007_200SET",
+      "nome": "PRF007",
+      "categoria": "plafone",
+      "note": "ANGOLARE",
+      "immagine": "/static/img/prf007_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO", "BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000, 3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_LOW",
+      "STRIP_24V_SMD_IP66_LOW", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF008_200",
+      "nome": "PRF008",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf008_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF009_200",
+      "nome": "PRF009",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf009_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF010_200",
+      "nome": "PRF010",
+      "categoria": "plafone",
+      "note": "",
+      "immagine": "/static/img/prf010_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_SMD_IP66_LOW",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20_LOW", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF080_200",
+      "nome": "PRF080",
+      "categoria": "sospensione",
+      "note": "",
+      "immagine": "/static/img/prf080_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [570, 1140, 1710, 2280],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF020",
+      "nome": "PRF020",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prf020.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF018",
+      "nome": "PRF018",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prf018.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF019",
+      "nome": "PRF019",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prf019.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF016_200SET",
+      "nome": "PRF016",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prf016_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF015_200SET",
+      "nome": "PRF015",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prf015_200set.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRF041_300",
+      "nome": "PRF041",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf041_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF042_300",
+      "nome": "PRF042",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf042_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF043",
+      "nome": "PRF043",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf043.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF044",
+      "nome": "PRF044",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prf044.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_LOW",
+      "STRIP_24V_SMD_IP66_LOW", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF170",
+      "nome": "PRF170",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prf170.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF171",
+      "nome": "PRF171",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prf171.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF172",
+      "nome": "PRF172",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prf172.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF060_300",
+      "nome": "PRF060",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf060_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF061_300",
+      "nome": "PRF061",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf061_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF062_300",
+      "nome": "PRF062",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf062_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF063",
+      "nome": "PRF063",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf063_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [570, 1140, 1710, 2280],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF050_300",
+      "nome": "PRF050",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf050_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF052_200",
+      "nome": "PRF052",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prf052_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF121",
+      "nome": "PRF121",
+      "categoria": "battiscopa",
+      "note": "SEMI INCASSO",
+      "immagine": "/static/img/prf121.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_LOW",
+      "STRIP_24V_SMD_IP66_LOW", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF130_200",
+      "nome": "PRF130",
+      "categoria": "battiscopa",
+      "note": "",
+      "immagine": "/static/img/prf130_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000, 3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF120_300",
+      "nome": "PRF120",
+      "categoria": "battiscopa",
+      "note": "",
+      "immagine": "/static/img/prf120_300.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO", "BIANCO", "NERO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_LOW",
+      "STRIP_24V_SMD_IP66_LOW", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF174",
+      "nome": "PRF174",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prf174.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66"
+      ]
+    },
+    {
+      "id": "PRF100_200",
+      "nome": "PRF100",
+      "categoria": "parete",
+      "note": "",
+      "immagine": "/static/img/prf100_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF101_200",
+      "nome": "PRF101",
+      "categoria": "parete",
+      "note": "",
+      "immagine": "/static/img/prf101_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF150_200",
+      "nome": "PRF150",
+      "categoria": "scalino",
+      "note": "",
+      "immagine": "/static/img/prf150_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF151_250",
+      "nome": "PRF151",
+      "categoria": "scalino",
+      "note": "",
+      "immagine": "/static/img/prf151_250.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2500],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF002_200",
+      "nome": "PRF002",
+      "categoria": "particolari",
+      "note": "",
+      "immagine": "/static/img/prf002_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF161_200",
+      "nome": "PRF161",
+      "categoria": "parete",
+      "note": "",
+      "immagine": "/static/img/prf161_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT", "STRIP_24V_IP66_XSNAKE_12X4"
+      ]
+    },
+    {
+      "id": "PRF110_200",
+      "nome": "PRF110",
+      "categoria": "particolari",
+      "note": "",
+      "immagine": "/static/img/prf110_200.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "FWPF",
+      "nome": "FWPF",
+      "categoria": "wall_washer_ext",
+      "note": "",
+      "immagine": "/static/img/fwpf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XFLEX"]
+    },
+    {
+      "id": "MG13X12PF",
+      "nome": "MG13X12PF",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/mg13x12pf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGBW", "STRIP_24V_IP66_XMAGIS_13X12_CCT"
+      ]
+    },
+    {
+      "id": "MG13X12SK",
+      "nome": "MG13X12SK",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/mg13x12sk.jpg",
+      "tipologie": ["taglio_misura"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 1000,
+      "lunghezzeDisponibili": [1000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGBW", "STRIP_24V_IP66_XMAGIS_13X12_CCT"
+      ]
+    },
+    {
+      "id": "MG12X17PF",
+      "nome": "MG12X17PF",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/mg12x17pf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XMAGIS_12X17",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGBW", "STRIP_24V_IP66_XMAGIS_12X17_CCT"
+      ]
+    },
+    {
+      "id": "MG12X17SK",
+      "nome": "MG12X17SK",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/mg12x17sk.jpg",
+      "tipologie": ["taglio_misura"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 1000,
+      "lunghezzeDisponibili": [1000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XMAGIS_12X17",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGBW", "STRIP_24V_IP66_XMAGIS_12X17_CCT"
+      ]
+    },
+    {
+      "id": "SNK6X12PF",
+      "nome": "SNK6X12PF",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk6x12pf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_6X12"]
+    },
+    {
+      "id": "SNK6X12SK",
+      "nome": "SNK6X12SK",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk6x12sk.jpg",
+      "tipologie": ["taglio_misura"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 1000,
+      "lunghezzeDisponibili": [1000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_6X12"]
+    },
+    {
+      "id": "SNK10X10PF",
+      "nome": "SNK10X10PF",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk10x10pf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_10X10"]
+    },
+    {
+      "id": "SNK10X10SK",
+      "nome": "SNK10X10SK",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk10x10sk.jpg",
+      "tipologie": ["taglio_misura"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 1000,
+      "lunghezzeDisponibili": [1000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_10X10"]
+    },
+    {
+      "id": "SNK12X20PF",
+      "nome": "SNK12X20PF",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk12x20pf.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_12X20", "STRIP_24V_IP66_XSNAKE_12X20_RGB"]
+    },
+    {
+      "id": "SNK12X20SK",
+      "nome": "SNK12X20SK",
+      "categoria": "esterni",
+      "note": "",
+      "immagine": "/static/img/snk12x20sk.jpg",
+      "tipologie": ["taglio_misura"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 1000,
+      "lunghezzeDisponibili": [1000],
+      "stripLedCompatibili": ["STRIP_24V_IP66_XSNAKE_12X20", "STRIP_24V_IP66_XSNAKE_12X20_RGB"]
+    },
+    {
+      "id": "PRFIT041",
+      "nome": "PRFIT041",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prfit041.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT320",
+      "nome": "PRFIT320",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prfit320.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT017",
+      "nome": "PRFIT017",
+      "categoria": "nanoprofili",
+      "note": "",
+      "immagine": "/static/img/prfit017.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [0],
+      "stripLedCompatibili": ["STRIP_24V_COB_IP20_MINI"]
+    },
+    {
+      "id": "PRFIT042",
+      "nome": "PRFIT042",
+      "categoria": "incasso",
+      "note": "",
+      "immagine": "/static/img/prfit042.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["ALLUMINIO"],
+      "lunghezzaMassima": 3000,
+      "lunghezzeDisponibili": [3000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF326",
+      "nome": "PRF326",
+      "categoria": "parete",
+      "note": "",
+      "immagine": "/static/img/prfit326.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRF327",
+      "nome": "PRF327",
+      "categoria": "parete",
+      "note": "",
+      "immagine": "/static/img/prfit327.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT323",
+      "nome": "PRFIT323",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prfit323.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT324",
+      "nome": "PRFIT324",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prfit324.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT325",
+      "nome": "PRFIT325",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prfit325.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    },
+    {
+      "id": "PRFIT322",
+      "nome": "PRFIT322",
+      "categoria": "wall_washer",
+      "note": "",
+      "immagine": "/static/img/prfit322.jpg",
+      "tipologie": ["taglio_misura", "profilo_intero"],
+      "finitureDisponibili": ["BIANCO"],
+      "lunghezzaMassima": 2000,
+      "lunghezzeDisponibili": [2000],
+      "stripLedCompatibili": [
+        "STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_SMD_IP66",  "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_24V_RGB_COB_IP20",
+        "STRIP_220V_COB_IP66", "STRIP_24V_SMD_IP20", "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"
+      ]
+    }
+  ],
+  "stripLed": {
+    "STRIP_24V_COB_IP20_MINI": {
+      "nome": "STRIP 24V COB IP20",
+      "nomeCommerciale": "XSOLIS 24V IP20 MINI",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["10W/m"],
+      "codiciProdotto": ["SLSIP20"],
+      "taglioMinimo" : ["16,67mm"]
+    },
+    "STRIP_24V_SMD_IP20": {
+      "nome": "STRIP 24V SMD IP20",
+      "nomeCommerciale": "XRIBO 24V IP20",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["6W/m", "12W/m", "12W/m CRI90", "18W/m", "18W/m CRI90", "22W/m"],
+      "codiciProdotto": ["RB26420", "RB212820", "RB212820", "RB219220", "RB219220", "RB224020"],
+      "taglioMinimo" : ["125mm", "62,5mm", "62,5mm", "41,7mm", "41,7mm", "33,3mm"]
+    },
+    "STRIP_24V_SMD_IP66": {
+      "nome": "STRIP 24V SMD IP66",
+      "nomeCommerciale": "XRIBO 24V IP66",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP66",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["6W/m", "12W/m", "18W/m", "22W/m"],
+      "codiciProdotto": ["RB26466", "RB212866", "RB219266", "RB224066"],
+      "taglioMinimo" : ["125mm", "62,5mm", "41,7mm", "33,3mm"]
+    },
+    "STRIP_24V_ZIGZAG_IP66": {
+      "nome": "STRIP 24V SMD IP66",
+      "nomeCommerciale": "XRIBO ZIGZAG 24V IP65",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP65",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["RB27265Z"],
+      "taglioMinimo" : ["83,33mm"]
+    },
+    "STRIP_48V_ZIGZAG_IP66": {
+      "nome": "STRIP 48V SMD IP66",
+      "nomeCommerciale": "XRIBO ZIGZAG 48V IP65",
+      "tipo": "SPECIAL",
+      "tensione": "48V",
+      "ip": "IP65",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K"],
+      "potenzeDisponibili": ["5,5W/m"],
+      "codiciProdotto": ["RB27865Z"],
+      "taglioMinimo" : ["167,67mm"]
+    },
+    "STRIP_24V_COB_IP20": {
+      "nome": "STRIP 24V COB IP20",
+      "nomeCommerciale": "XSOLIS IP20",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["8W/m", "10W/m", "12W/m"],
+      "codiciProdotto": ["SLS01", "SLS02", "SLS03"],
+      "taglioMinimo": ["50mm", "41,66mm", "45,45mm"]
+    },
+    "STRIP_24V_COB_IP20_HIGH": {
+      "nome": "STRIP 24V COB IP20 HIGH POWER",
+      "nomeCommerciale": "XSOLIS IP20",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["14W/m"],
+      "codiciProdotto": ["SLS04"],
+      "taglioMinimo": ["45,45mm"]
+    },
+    "STRIP_24V_COB_IP66_CL": {
+      "nome": "STRIP 24V COB IP66",
+      "nomeCommerciale": "XSOLIS IP67 CLEAR",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["8W/m", "10W/m", "12W/m", "14W/m"],
+      "codiciProdotto": ["SLS01", "SLS02", "SLS03", "SLS04"],
+      "taglioMinimo" : ["50mm", "41,7mm", "45,5mm", "45,5mm"]
+    },
+    "STRIP_24V_COB_IP66_FR": {
+      "nome": "STRIP 24V COB IP66",
+      "nomeCommerciale": "XSOLIS IP67 FROST",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["8W/m", "10W/m", "12W/m", "14W/m"],
+      "codiciProdotto": ["SLS01", "SLS02", "SLS03", "SLS04"],
+      "taglioMinimo" : ["50mm", "41,7mm", "45,5mm", "45,5mm"]
+    },
+    "STRIP_48V_SMD_IP20": {
+      "nome": "STRIP 48V SMD IP20",
+      "nomeCommerciale": "XRIBO 48V IP20",
+      "tipo": "SMD",
+      "tensione": "48V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["5W/m", "9,6W/m", "12W/m", "20W/m"],
+      "codiciProdotto": ["RB26520", "RB213020", "RB218220", "RB224020"],
+      "taglioMinimo" : ["200mm", "100mm", "71,7mm", "50mm"]
+    },
+    "STRIP_48V_SMD_IP66": {
+      "nome": "STRIP 48V SMD IP66",
+      "nomeCommerciale": "XRIBO 48V IP66",
+      "tipo": "SMD",
+      "tensione": "48V",
+      "ip": "IP66",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["5W/m", "9,6W/m", "12W/m", "20W/m"],
+      "codiciProdotto": ["RB26566", "RB213066", "RB218266", "RB224066"],
+      "taglioMinimo" : ["200mm", "100mm", "71,4mm", "50mm"]
+    },
+    "STRIP_24V_RGB_SMD_IP20": {
+      "nome": "STRIP 24V RGB SMD IP20",
+      "nomeCommerciale": "XSTRIP RGB IP20",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["RGB", "RGBW"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["ST56020"],
+      "taglioMinimo" : ["100mm"]
+    },
+    "STRIP_24V_RGB_SMD_IP66": {
+      "nome": "STRIP 24V RGB SMD IP66",
+      "nomeCommerciale": "XSTRIP RGB IP65",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP65",
+      "temperaturaColoreDisponibili": ["RGB", "RGBW"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["ST56065"],
+      "taglioMinimo" : ["100mm"]
+    },
+    "STRIP_24V_RGB_COB_IP20": {
+      "nome": "STRIP 24V RGB COB IP20",
+      "nomeCommerciale": "XSOLIS RGB IP20",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["RGB"],
+      "potenzeDisponibili": ["13W/m"],
+      "codiciProdotto": ["SLS01"],
+      "taglioMinimo" : ["62,5mm"]
+    },
+    "STRIP_24V_RGB_COB_IP66": {
+      "nome": "STRIP 24V RGB COB IP66",
+      "nomeCommerciale": "XSOLIS RGB IP67",
+      "tipo": "COB",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGB"],
+      "potenzeDisponibili": ["13W/m"],
+      "codiciProdotto": ["SLS01"],
+      "taglioMinimo" : ["62,5mm"]
+    },
+    "STRIP_220V_COB_IP66": {
+      "nome": "STRIP 220V COB IP66",
+      "nomeCommerciale": "XTAP 220V IP65",
+      "tipo": "COB",
+      "tensione": "220V",
+      "ip": "IP65",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["12W/m"],
+      "codiciProdotto": ["XTP01"],
+      "taglioMinimo" : ["45,5mm"]
+    },
+    "STRIP_24V_SMD_IP20_CCT": {
+      "nome": "STRIP 24V SMD IP20",
+      "nomeCommerciale": "XSTRIP TUNING WHITE IP20",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["CCT"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["ST56020"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_SMD_IP66_CCT": {
+      "nome": "STRIP 24V SMD IP66",
+      "nomeCommerciale": "XSTRIP TUNING WHITE IP65",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP65",
+      "temperaturaColoreDisponibili": ["CCT"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["ST56065"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_IP66_XFLEX": {
+      "nome": "STRIP 24V SMD IP66 XFLEX",
+      "nomeCommerciale": "XFLEX",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K", "RGB"],
+      "potenzeDisponibili": ["20W/m"],
+      "codiciProdotto": ["FW24267"],
+      "taglioMinimo" : ["166,67mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_13X12": {
+      "nome": "STRIP 24V SMD IP66 XMAGIS 13X12",
+      "nomeCommerciale": "XMAGIS 13X12",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6700K"],
+      "potenzeDisponibili": ["9,6W/m"],
+      "codiciProdotto": ["MG13X12"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_13X12_RGB": {
+      "nome": "STRIP 24V RGB SMD IP66 XMAGIS 13X12",
+      "nomeCommerciale": "XMAGIS 13X12 RGB",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGB"],
+      "potenzeDisponibili": ["18W/m"],
+      "codiciProdotto": ["MG13X12"],
+      "taglioMinimo" : ["71,43mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_13X12_RGBW": {
+      "nome": "STRIP 24V RGBW SMD IP66 XMAGIS 13X12",
+      "nomeCommerciale": "XMAGIS 13X12 RGBW",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGBW"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["MG13X12"],
+      "taglioMinimo" : ["62,5mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_13X12_CCT": {
+      "nome": "STRIP 24V CCT SMD IP66 XMAGIS 13X12",
+      "nomeCommerciale": "XMAGIS 13X12 CCT",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["CCT"],
+      "potenzeDisponibili": ["12W/m"],
+      "codiciProdotto": ["MG13X12"],
+      "taglioMinimo" : ["31,25mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_12X17": {
+      "nome": "STRIP 24V SMD IP66",
+      "nomeCommerciale": "XMAGIS 12X17",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["9,6W/m"],
+      "codiciProdotto": ["MG12X17"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_12X17_RGB": {
+      "nome": "STRIP 24V RGB SMD IP66 XMAGIS 12X17",
+      "nomeCommerciale": "XMAGIS 12X17 RGB",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGB"],
+      "potenzeDisponibili": ["18W/m"],
+      "codiciProdotto": ["MG12X17"],
+      "taglioMinimo" : ["71,5mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_12X17_RGBW": {
+      "nome": "STRIP 24V RGBW SMD IP66 XMAGIS 12X17",
+      "nomeCommerciale": "XMAGIS 12X17 RGBW",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGBW"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["MG12X17"],
+      "taglioMinimo" : ["62,5mm"]
+    },
+    "STRIP_24V_IP66_XMAGIS_12X17_CCT": {
+      "nome": "STRIP 24V CCT SMD IP66 XMAGIS 12X17",
+      "nomeCommerciale": "XMAGIS 12X17 CCT",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["CCT"],
+      "potenzeDisponibili": ["12W/m"],
+      "codiciProdotto": ["MG12X17"],
+      "taglioMinimo" : ["100mm"]
+    },
+    "STRIP_24V_IP66_XSNAKE_6X12": {
+      "nome": "STRIP 24V SMD IP66 XSNAKE 6X12",
+      "nomeCommerciale": "XSNAKE 6X12",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K", "ROSSO", "VERDE", "BLU", "AMBRA", "PINK"],
+      "potenzeDisponibili": ["8W/m"],
+      "codiciProdotto": ["SNK6X12"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_IP66_XSNAKE_10X10": {
+      "nome": "STRIP 24V SMD IP66 XSNAKE 10X10",
+      "nomeCommerciale": "XSNAKE 10X10",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["10W/m"],
+      "codiciProdotto": ["SNK10X10"],
+      "taglioMinimo" : ["55mm"]
+    },
+    "STRIP_24V_IP66_XSNAKE_12X20": {
+      "nome": "STRIP 24V SMD IP66 XSNAKE 12X20",
+      "nomeCommerciale": "XSNAKE 12X20",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["12W/m"],
+      "codiciProdotto": ["SNK12X20"],
+      "taglioMinimo" : ["50mm"]
+    },
+    "STRIP_24V_IP66_XSNAKE_12X20_RGB": {
+      "nome": "STRIP 24V SMD IP66 XSNAKE 12X20 RGB",
+      "nomeCommerciale": "XSNAKE 12X20 RGB",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["RGB"],
+      "potenzeDisponibili": ["8W/m"],
+      "codiciProdotto": ["SNK12X20"],
+      "taglioMinimo" : ["100mm"]
+    },
+    "STRIP_24V_IP66_XSNAKE_12X4": {
+      "nome": "STRIP 24V SMD IP66 XSNAKE 12X4",
+      "nomeCommerciale": "XSNAKE 12X4",
+      "tipo": "SPECIAL",
+      "tensione": "24V",
+      "ip": "IP67",
+      "temperaturaColoreDisponibili": ["4000K", "6500K"],
+      "potenzeDisponibili": ["14,4W/m"],
+      "codiciProdotto": ["SNK12X4"],
+      "taglioMinimo" : ["25mm"]
+    },
+    "STRIP_24V_SMD_IP20_LOW": {
+      "nome": "STRIP 24V SMD IP20 LOW",
+      "nomeCommerciale": "XRIBO 24V IP20",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP20",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["6W/m", "12W/m", "12W/m CRI90"],
+      "codiciProdotto": ["RB26420", "RB212820", "RB212820"],
+      "taglioMinimo" : ["125mm", "62,5mm", "62,5mm"]
+    },
+    "STRIP_24V_SMD_IP66_LOW": {
+      "nome": "STRIP 24V SMD IP66 LOW",
+      "nomeCommerciale": "XRIBO 24V IP66",
+      "tipo": "SMD",
+      "tensione": "24V",
+      "ip": "IP66",
+      "temperaturaColoreDisponibili": ["2700K", "3000K", "4000K", "6000K"],
+      "potenzeDisponibili": ["6W/m", "12W/m"],
+      "codiciProdotto": ["RB26466", "RB212866"],
+      "taglioMinimo" : ["125mm", "62,5mm"]
+    }
+  },
+  "opzioniStripLed": {
+    "tipi": ["NO_STRIP", "STRIP_24V_IP66_XFLEX", "STRIP_24V_IP66_XMAGIS_13X12", "STRIP_24V_IP66_XMAGIS_13X12_RGB", "STRIP_24V_IP66_XMAGIS_13X12_RGBW", "STRIP_24V_IP66_XMAGIS_13X12_CCT", "STRIP_24V_IP66_XMAGIS_12X17", "STRIP_24V_IP66_XMAGIS_12X17_RGB", "STRIP_24V_IP66_XMAGIS_12X17_RGBW", "STRIP_24V_IP66_XMAGIS_12X17_CCT", "STRIP_24V_IP66_XSNAKE_6X12", "STRIP_24V_IP66_XSNAKE_10X10", "STRIP_24V_IP66_XSNAKE_12X20", "STRIP_24V_IP66_XSNAKE_12X20_RGB", "STRIP_24V_IP66_XSNAKE_12X4", "STRIP_24V_SMD_IP20", "STRIP_24V_SMD_IP66", "STRIP_24V_ZIGZAG_IP66", "STRIP_48V_ZIGZAG_IP66","STRIP_24V_COB_IP20", "STRIP_24V_COB_IP20_HIGH", "STRIP_24V_COB_IP66_CL", "STRIP_24V_COB_IP66_FR", "STRIP_48V_SMD_IP20", "STRIP_48V_SMD_IP66", "STRIP_24V_RGB_SMD_IP20", "STRIP_24V_RGB_SMD_IP66", "STRIP_24V_RGB_COB_IP20", "STRIP_24V_RGB_COB_IP66", "STRIP_220V_COB_IP20", "STRIP_220V_COB_IP66", "STRIP_24V_COB_IP20_MINI", "STRIP_24V_SMD_IP20_CCT", "STRIP_24V_SMD_IP66_CCT"]
+  },
+  "mappaturaCommerciale": {
+    "XSOLIS IP20": "STRIP_24V_COB_IP20",
+    "XSOLIS IP20 HIGH POWER": "STRIP_24V_COB_IP20_HIGH",
+    "XSOLIS IP67 CLEAR": "STRIP_24V_COB_IP66_CL",
+    "XSOLIS IP67 FROST": "STRIP_24V_COB_IP66_FR",
+    "XSOLIS MINI 24V": "STRIP_24V_COB_IP20_MINI",
+    "XSOLIS RGB": "STRIP_24V_RGB_COB_IP20",
+    "XTAP": "STRIP_220V_COB_IP66",
+    "XRIBO 24V": "STRIP_24V_SMD_IP20",
+    "XRIBO 24V IP66": "STRIP_24V_SMD_IP66",
+    "XRIBO 48V": "STRIP_48V_SMD_IP20",
+    "XRIBO 48V IP66": "STRIP_48V_SMD_IP66",
+    "ZIG ZAG 24V": "STRIP_24V_ZIGZAG_IP66",
+    "ZIG ZAG 48V": "STRIP_48V_ZIGZAG_IP66",
+    "CCT": "STRIP_24V_SMD_IP20_CCT",
+    "CCT IP65": "STRIP_24V_SMD_IP66_CCT",
+    "GRB": "STRIP_24V_RGB_SMD_IP20",
+    "GRB IP65": "STRIP_24V_RGB_SMD_IP66",
+    "XFLEX": "STRIP_24V_IP66_XFLEX",
+    "XMAGIS 13X12": "STRIP_24V_IP66_XMAGIS_13X12",
+    "XMAGIS 13X12 RGB": "STRIP_24V_IP66_XMAGIS_13X12_RGB",
+    "XMAGIS 13X12 RGBW": "STRIP_24V_IP66_XMAGIS_13X12_RGBW",
+    "XMAGIS 13X12 CCT": "STRIP_24V_IP66_XMAGIS_13X12_CCT",
+    "XMAGIS 12X17" : "STRIP_24V_IP66_XMAGIS_12X17",
+    "XMAGIS 12X17 RGB" : "STRIP_24V_IP66_XMAGIS_12X17_RGB",
+    "XMAGIS 12X17 RGBW" : "STRIP_24V_IP66_XMAGIS_12X17_RGBW",
+    "XMAGIS 12X17 CCT" : "STRIP_24V_IP66_XMAGIS_12X17_CCT",
+    "XSNAKE 6X12": "STRIP_24V_IP66_XSNAKE_6X12",
+    "XSNAKE 10X10": "STRIP_24V_IP66_XSNAKE_10X10",
+    "XSNAKE 12X20": "STRIP_24V_IP66_XSNAKE_12X20",
+    "XSNAKE 12X20_RGB": "STRIP_24V_IP66_XSNAKE_12X20_RGB",
+    "XSNAKE 12X4": "STRIP_24V_IP66_XSNAKE_12X4"
+  },
+  "temperaturaColore": {
+    "opzioni": ["2700K", "3000K", "4000K", "6000K", "6500K", "6700K", "CCT", "RGB", "RGBW", "ROSSO", "VERDE", "BLU", "AMBRA", "PINK"]
+  },
+  "dettagliPotenze": {
+    "6W/m": {
+      "codice": "RB26420WW",
+      "specifiche": "64 LED/m · CRI80"
+    },
+    "12W/m CRI90": {
+      "codice": "RB12820WWCRI90",
+      "specifiche": "128 LED/m · CRI90"
+    },
+    "18W/m": {
+      "codice": "RB219220WW",
+      "specifiche": "192 LED/m · CRI80"
+    },
+    "18W/m XMAGIS": {
+      "codice": "RB219220WW",
+      "specifiche": "84 LED/m · CRI80"
+    },
+    "18W/m CRI90": {
+      "codice": "RB219220WWCRI90",
+      "specifiche": "192 LED/m · CRI90"
+    },
+    "22W/m": {
+      "codice": "RB224020WW",
+      "specifiche": "240 LED/m · CRI80"
+    },
+    "14W/m SMD": {
+      "codice": "RB27265ZWW",
+      "specifiche": "72 LED/m · CRI80"
+    },
+    "8W/m": {
+      "codice": "SLS01WW",
+      "specifiche": "256 LED/m · CRI90"
+    },
+    "10W/m": {
+      "codice": "SLS02WW",
+      "specifiche": "352 LED/m · CRI90"
+    },
+    "12W/m": {
+      "codice": "SLS03WW",
+      "specifiche": "512 LED/m · CRI90"
+    },
+    "14W/m": {
+      "codice": "SLS04WW",
+      "specifiche": "512 LED/m · CRI90"
+    },
+    "10W/m MINI": {
+      "codice": "SLSIP20WW4CRI90",
+      "specifiche": "420 LED/m · CRI90"
+    },
+    "15W/m": {
+      "codice": "SLS01RGB",
+      "specifiche": "CRI90"
+    },
+    "20W/m": {
+      "codice": "FW24267WW20S",
+      "specifiche": "42 LED/m · CRI90"
+    },
+    "25W/m": {
+      "codice": "XTP01WW65",
+      "specifiche": "CRI90"
+    },
+    "13W/m": {
+      "codice": "ST56020RGB",
+      "specifiche": "60 LED/m"
+    },
+    "5W/m": {
+      "codice": "STXXXXXXXX",
+      "specifiche": "60 LED/m"
+    },
+    "9,6W/m": {
+      "codice": "JJXXXXXXXX",
+      "specifiche": "60 LED/m"
+    },
+    "14,4W/m": {
+      "codice": "EEXXXXXXXX",
+      "specifiche": "60 LED/m"
+    }
+  },
+  "alimentazione": {
+    "tipi": ["ON-OFF", "DIMMERABILE_TRIAC", "SENZA_ALIMENTATORE"],
+    "alimentatori": {
+      "ON-OFF": {
+        "24V": ["SERIE_AT24", "SERIE_ATUS", "SERIE_ATSIP44", "SERIE_AT24IP67", "SERIE_ATN24IP67"],
+        "48V": ["SERIE_ATS48IP44"]
+      },
+      "DIMMERABILE_TRIAC": {
+        "24V": ["SERIE_ATD24", "SERIE_ATD24IP67"]
+      },
+      "SENZA_ALIMENTATORE": []
+    }
+  },
+  "dettagliAlimentatori": {
+    "SERIE_AT24": {
+      "nome": "SERIE AT24",
+      "descrizione": "Carcassa in lamiera forata di acciaio zincato, per assicurare una corretta ventilazione.",
+      "tensione": "24V",
+      "potenze": [36, 60, 120, 150, 200, 240],
+      "codici": {
+        "36": "AT24.40",
+        "60": "AT24.60",
+        "120": "AT24.120",
+        "150": "AT24.150",
+        "200": "AT24.200",
+        "240": "AT24.240"
+      },
+      "ip": "IP20"
+    },
+    "SERIE_ATUS": {
+      "nome": "SERIE ATUS",
+      "descrizione": "Alimentatore in tensione costante 24V, forma ultra slim, per interni (IP20). Carcassa in policarbonato bianco.",
+      "tensione": "24V",
+      "potenze": [20, 30, 50],
+      "codici": {
+        "20": "ATUS24.20",
+        "30": "ATUS24.30",
+        "50": "ATUS24.50"
+      },
+      "ip": "IP20"
+    },
+    "SERIE_ATSIP44": {
+      "nome": "SERIE ATSIP44",
+      "descrizione": "Alimentatore in tensione costante 24V, forma stretta, per installazione in interno (IP44). Scatola e coperchi per i contatti elettrici in policarbonato.",
+      "tensione": "24V",
+      "potenze": [60, 100, 150, 200, 300],
+      "codici": {
+        "60": "ATS24.60IP44",
+        "100": "ATS24.100IP44",
+        "150": "ATS24.150IP44",
+        "200": "ATS24.200IP44",
+        "300": "ATS24.300IP44"
+      },
+      "ip": "IP44"
+    },
+    "SERIE_ATS48IP44": {
+      "nome": "SERIE ATS48IP44",
+      "descrizione": "Alimentatore in tensione costante 48V per installazione in interno (IP44).",
+      "tensione": "48V",
+      "potenze": [100, 200, 300],
+      "codici": {
+        "100": "ATS48.100IP44",
+        "200": "ATS48.200IP44",
+        "300": "ATS48.300IP44"
+      },
+      "ip": "IP44"
+    },
+    "SERIE_AT24IP67": {
+      "nome": "SERIE AT24IP67",
+      "descrizione": "Alimentatore in tensione costante 24V per installazione in esterno (IP67). Con cavi flessibili in ingresso e uscita.",
+      "tensione": "24V",
+      "potenze": [30, 60, 100, 150, 250],
+      "codici": {
+        "30": "AT24.30IP67",
+        "60": "AT24.60IP67",
+        "100": "AT24.100IP67",
+        "150": "AT24.150IP67",
+        "250": "AT24.250IP67"
+      },
+      "ip": "IP67"
+    },
+    "SERIE_ATN24IP67": {
+      "nome": "SERIE ATN24IP67",
+      "descrizione": "Alimentatore in tensione costante 24V per installazione in esterno. Scatola in alluminio con cavi flessibili in ingresso e uscita.",
+      "tensione": "24V",
+      "potenze": [100, 200, 300],
+      "codici": {
+        "100": "ATN24.100IP67",
+        "200": "ATN24.200IP67",
+        "300": "ATN24.300IP67"
+      },
+      "ip": "IP67"
+    },
+    "SERIE_ATD24": {
+      "nome": "SERIE ATD24",
+      "descrizione": "Alimentatore dimmerabile TRIAC, in tensione costante 24V DC, per installazione in interno (IP20).",
+      "tensione": "24V",
+      "potenze": [50, 100],
+      "codici": {
+        "50": "ATD24.50",
+        "100": "ATD24.100"
+      },
+      "ip": "IP20"
+    },
+    "SERIE_ATD24IP67": {
+      "nome": "SERIE ATD24IP67",
+      "descrizione": "Alimentatore dimmerabile TRIAC, in tensione costante 24V per installazione in esterno (IP67). Con cavi flessibili in ingresso e uscita.",
+      "tensione": "24V",
+      "potenze": [100, 200],
+      "codici": {
+        "100": "ATD24.100IP67",
+        "200": "ATD24.200IP67"
+      },
+      "ip": "IP67"
+    }
+  },
+  "dimmerazione": {
+    "opzioni": [
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01",
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW",
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE",
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE",
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE",
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW",
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V",
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA",
+      "NESSUN_DIMMER"
+    ],
+    "spaziNonIlluminati": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": 50,
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": 50,
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": 50,
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": 50
+    },
+    "codiciDimmer": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "PRFTSW01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "PRFTDIMM01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "PRFIRSW01",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "PRFIRDIMM01",
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "CTR104",
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "CTR114",
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "CTR124",
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "CTR125",
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "CTR129",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "CTR002SCTY",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "CTR003CCTTY",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "CTR004RGB2TY",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "CTR005RGBWTY",
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "CTR130",
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "CTR050IT"
+    },
+    "nomeDimmer": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "Dimmer touch su profilo - On/Off",
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "Dimmer touch su profilo - Dimmerabile",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "Dimmer IR su profilo - On/Off",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "Dimmer IR su profilo - Dimmerabile",
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "Dimmer PWM con telecomando RGB + RGBW",
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "Dimmer PWM con telecomando monocolore",
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "Dimmer PWM con telecomando tunable white",
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "Dimmer PWM con pulsante 24V monocolore",
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "Dimmer PWM con pulsante 48V monocolore",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "Dimmerabile PWM con sistema TUYA monocolore",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "Dimmerabile PWM con sistema TUYA tunable white",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "Dimmerabile PWM con sistema TUYA RGB",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "Dimmerabile PWM con sistema TUYA RGBW",
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "Dimmerabile TRIAC pulsante + TUYA 220V",
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "Dimmer PWM da scatola con pulsante N.A.",
+      "NESSUN_DIMMER": "Nessun dimmer"
+    },
+    "potenzaMassima": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": 120,
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": 120,
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": 192,
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": 192,
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": 576,
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": 144,
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": 288,
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": 288,
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": 336,
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": 144,
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": 144,
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": 144,
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": 144,
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": 200,
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": 192
+    },
+    "tensione": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "24V",
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "24V",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "24V",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "24V",
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "24V",
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "24V",
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "24V",
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "24V",
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "48V",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "24V",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "24V",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "24V",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "24V",
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "220V AC",
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "24V"
+    },
+    "gradoProtezione": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "IP20",
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "IP20",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "IP20",
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "IP20",
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "IP20",
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "IP20",
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "IP20",
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "IP20",
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "IP20",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "IP20",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "IP20",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "IP20",
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "IP20",
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "IP20",
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "IP20"
+    },
+    "compatibilitaDimmer": {
+      "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX"
+      ],
+      "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX"
+      ],
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX"
+      ],
+      "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX"
+      ],
+      "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": [
+        "STRIP_24V_RGB_COB_IP20",
+        "STRIP_24V_RGB_COB_IP66",
+        "STRIP_24V_RGB_SMD_IP20",
+        "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_IP66_XSNAKE_12X20_RGB",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGB",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGBW",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGB",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGBW"
+      ],
+      "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_48V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX",
+        "STRIP_24V_IP66_XSNAKE_6X12",
+        "STRIP_24V_IP66_XSNAKE_10X10",
+        "STRIP_24V_IP66_XSNAKE_12X20",
+        "STRIP_24V_IP66_XSNAKE_12X4",
+        "STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_12X17"
+      ],
+      "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": [
+        "STRIP_24V_SMD_IP20_CCT",
+        "STRIP_24V_SMD_IP66_CCT",
+        "STRIP_24V_IP66_XMAGIS_13X12_CCT",
+        "STRIP_24V_IP66_XMAGIS_12X17_CCT"
+      ],
+      "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX",
+        "STRIP_24V_IP66_XSNAKE_6X12",
+        "STRIP_24V_IP66_XSNAKE_10X10",
+        "STRIP_24V_IP66_XSNAKE_12X20",
+        "STRIP_24V_IP66_XSNAKE_12X4",
+        "STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_12X17"
+      ],
+      "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": [
+        "STRIP_48V_SMD_IP20",
+        "STRIP_48V_SMD_IP66",
+        "STRIP_48V_ZIGZAG_IP66"
+      ],
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX",
+        "STRIP_24V_IP66_XSNAKE_6X12",
+        "STRIP_24V_IP66_XSNAKE_10X10",
+        "STRIP_24V_IP66_XSNAKE_12X20",
+        "STRIP_24V_IP66_XSNAKE_12X4",
+        "STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_12X17"
+      ],
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": [
+        "STRIP_24V_SMD_IP20_CCT",
+        "STRIP_24V_SMD_IP66_CCT",
+        "STRIP_24V_IP66_XMAGIS_13X12_CCT",
+        "STRIP_24V_IP66_XMAGIS_12X17_CCT"
+      ],
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": [
+        "STRIP_24V_RGB_COB_IP20",
+        "STRIP_24V_RGB_COB_IP66",
+        "STRIP_24V_RGB_SMD_IP20",
+        "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_IP66_XSNAKE_12X20_RGB",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGB",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGB"
+      ],
+      "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": [
+        "STRIP_24V_RGB_COB_IP20",
+        "STRIP_24V_RGB_COB_IP66",
+        "STRIP_24V_RGB_SMD_IP20",
+        "STRIP_24V_RGB_SMD_IP66",
+        "STRIP_24V_IP66_XMAGIS_13X12_RGBW",
+        "STRIP_24V_IP66_XMAGIS_12X17_RGBW"
+      ],
+      "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX",
+        "STRIP_24V_IP66_XSNAKE_6X12",
+        "STRIP_24V_IP66_XSNAKE_10X10",
+        "STRIP_24V_IP66_XSNAKE_12X20",
+        "STRIP_24V_IP66_XSNAKE_12X4",
+        "STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_12X17",
+        "STRIP_220V_COB_IP66"
+      ],
+      "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": [
+        "STRIP_24V_COB_IP20",
+        "STRIP_24V_COB_IP66_CL",
+        "STRIP_24V_COB_IP66_FR",
+        "STRIP_24V_COB_IP20_MINI",
+        "STRIP_24V_SMD_IP20",
+        "STRIP_24V_SMD_IP20_LOW",
+        "STRIP_24V_SMD_IP66",
+        "STRIP_24V_SMD_IP66_LOW",
+        "STRIP_24V_ZIGZAG_IP66",
+        "STRIP_24V_IP66_XFLEX",
+        "STRIP_24V_IP66_XSNAKE_6X12",
+        "STRIP_24V_IP66_XSNAKE_10X10",
+        "STRIP_24V_IP66_XSNAKE_12X20",
+        "STRIP_24V_IP66_XSNAKE_12X4",
+        "STRIP_24V_IP66_XMAGIS_13X12",
+        "STRIP_24V_IP66_XMAGIS_12X17"
+      ]
+    }
+  },
+  "opzioniCavo": {
+    "alimentazione": ["ALIMENTAZIONE_UNICA", "ALIMENTAZIONE_DOPPIA"],
+    "lunghezzaIngresso": 1800,
+    "lunghezzaUscita": 1800,
+    "usciteCavo": ["DRITTA", "LATERALE_DX", "RETRO", "LATERALE_SX"]
+  },
+  "formeDiTaglio": [
+    "DRITTO_SEMPLICE",
+    "FORMA_A_L_DX",
+    "FORMA_A_L_SX",
+    "FORMA_A_C",
+    "RETTANGOLO_QUADRATO"
+  ],
+  "spazioProduzione": 5
+}

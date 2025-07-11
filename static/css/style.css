@@ -1,0 +1,684 @@
+/* Stili generali */
+body {
+  font-family: 'Helvetica Neue', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+  padding-bottom: 50px;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+}
+
+.py-3, .mb-4 {
+  padding-bottom: 0px !important;
+}
+
+.container.mb-5:has(> h3:contains("Uscita Cavo")) {
+  display: none !important;
+}
+
+#uscita-cavo-container {
+  display: none !important;
+}
+
+/* Header e logo */
+.col-md-3.text-start a {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.col-md-3.text-start a:hover {
+  opacity: 0.9;
+}
+
+.site-logo {
+  width: 170px;
+  height: auto;
+  padding-left: 20px;
+}
+
+.beta-tag {
+  font-size: 0.8rem;
+  color: #ff0000;
+  font-weight: bold;
+  margin-left: 5px;
+  padding: 2px 6px;
+  background-color: rgba(255, 119, 0, 0.1);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.site-header-title {
+  font-size: 28px;
+}
+
+.site-header-lead {
+  font-size: 16px;
+}
+
+/* Stili pagine/sezioni */
+.step-section {
+  display: none;
+  transition: opacity 0.5s ease;
+  animation: fadeIn 0.5s ease;
+}
+
+#step1-tipologia {
+  display: block;
+}
+
+/* Progress bar */
+.step-progress {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.step-progress::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #e9ecef;
+  z-index: 1;
+}
+
+.step-item {
+  position: relative;
+  margin: 0 30px;
+  text-align: center;
+  z-index: 2;
+}
+
+.step-number {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  font-weight: bold;
+  font-size: 18px !important;
+  transition: all 0.3s ease;
+}
+
+.step-title {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.step-item.active .step-number {
+  background-color: #fff;
+  border-color: #e83f34;
+  color: #333;
+  box-shadow: 0 0 0 3px rgba(232, 63, 52, 0.3);
+}
+
+.step-item.active .step-title {
+  color: #333;
+  font-weight: bold;
+}
+
+.step-item.completed .step-number {
+  background-color: #e83f34;
+  border-color: #e83f34;
+  color: white;
+}
+
+/* Hotspot e mappa interattiva */
+.hotspot-container {
+  position: relative;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.hotspot-container img {
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hotspots {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.light-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hotspot {
+  position: absolute;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+/* Area di attivazione */
+.hotspot-area {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background-color: transparent;
+  transition: border-color 0.3s ease;
+}
+
+.hotspot:hover .hotspot-label {
+  opacity: 1;
+}
+
+/* Contenitore delle luci SVG */
+.svg-lights-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+.svg-light {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+/* Dimensioni hotspot prima mappa */
+.hotspot[data-categoria="nanoprofili"] .hotspot-area { width: 220px; height: 270px; }
+.hotspot[data-categoria="incasso"] .hotspot-area { width: 150px; height: 150px; }
+.hotspot[data-categoria="sospensione"] .hotspot-area { width: 200px; height: 110px; }
+.hotspot[data-categoria="plafone"] .hotspot-area { width: 130px; height: 130px; }
+.hotspot[data-categoria="parete"] .hotspot-area { width: 200px; height: 110px; }
+.hotspot[data-categoria="particolari"] .hotspot-area { width: 90px; height: 90px; }
+.hotspot[data-categoria="scalino"] .hotspot-area { width: 280px; height: 200px; }
+.hotspot[data-categoria="wall_washer"] .hotspot-area { width: 130px; height: 130px; }
+.hotspot[data-categoria="battiscopa"] .hotspot-area { width: 270px; height: 80px; }
+
+.hotspot[data-categoria="esterni"] .hotspot-area { width: 450px; height: 150px; }
+.hotspot[data-categoria="wall_washer_ext"] .hotspot-area { width: 250px; height: 100px; }
+
+.hotspot[data-categoria="parete"]:hover ~ .svg-lights-container .svg-light.parete,
+.hotspot[data-categoria="incasso"]:hover ~ .svg-lights-container .svg-light.incasso,
+.hotspot[data-categoria="plafone"]:hover ~ .svg-lights-container .svg-light.plafone,
+.hotspot[data-categoria="scalino"]:hover ~ .svg-lights-container .svg-light.scalino,
+.hotspot[data-categoria="sospensione"]:hover ~ .svg-lights-container .svg-light.sospeso,
+.hotspot[data-categoria="battiscopa"]:hover ~ .svg-lights-container .svg-light.battiscopa,
+.hotspot[data-categoria="nanoprofili"]:hover ~ .svg-lights-container .svg-light.nanoprofili,
+.hotspot[data-categoria="particolari"]:hover ~ .svg-lights-container .svg-light.particolari,
+.hotspot[data-categoria="wall_washer"]:hover ~ .svg-lights-container .svg-light.wall_washer {
+  opacity: 1;
+}
+
+.hotspot[data-categoria="esterni"]:hover ~ .svg-lights-container .svg-light.esterni,
+.hotspot[data-categoria="wall_washer_ext"]:hover ~ .svg-lights-container .svg-light.esempio2 {
+  opacity: 1;
+}
+
+/* Card stili comuni - AGGIORNATO per includere tutte le classi */
+.profilo-card, .tipologia-card, .option-card,
+.modalita-card, .step2b-tipologia-card, .step2b-special-card,
+.profilo-card-esterni, .strip-option-card, .tipologia-strip-card,
+.special-strip-card, .tensione-card, .ip-card, .temperatura-card,
+.potenza-card, .strip-led-filtrata-card, .strip-led-compatibile-card,
+.alimentazione-card, .alimentatore-card, .potenza-alimentatore-card,
+.dimmer-card, .dimmer-category-card, .dimmer-specific-card,
+.alimentazione-cavo-card, .uscita-cavo-card, .forma-taglio-card,
+.finitura-card, .lunghezza-profilo-card, .temperatura-iniziale-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-radius: 10px !important;
+  overflow: hidden;
+  background-color: transparent;
+  border: 2px solid #ddd;
+  height: 100%;
+}
+
+.profilo-card:hover, .tipologia-card:hover, .option-card:hover,
+.modalita-card:hover, .step2b-tipologia-card:hover, .step2b-special-card:hover,
+.profilo-card-esterni:hover, .strip-option-card:hover, .tipologia-strip-card:hover,
+.special-strip-card:hover, .tensione-card:hover, .ip-card:hover, .temperatura-card:hover,
+.potenza-card:hover, .strip-led-filtrata-card:hover, .strip-led-compatibile-card:hover,
+.alimentazione-card:hover, .alimentatore-card:hover, .potenza-alimentatore-card:hover,
+.dimmer-card:hover, .dimmer-category-card:hover, .dimmer-specific-card:hover,
+.alimentazione-cavo-card:hover, .uscita-cavo-card:hover, .forma-taglio-card:hover,
+.finitura-card:hover, .lunghezza-profilo-card:hover, .temperatura-iniziale-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border-color: #ccc;
+}
+
+.profilo-card.selected, .tipologia-card.selected, .option-card.selected,
+.modalita-card.selected, .step2b-tipologia-card.selected, .step2b-special-card.selected,
+.profilo-card-esterni.selected, .strip-option-card.selected, .tipologia-strip-card.selected,
+.special-strip-card.selected, .tensione-card.selected, .ip-card.selected, .temperatura-card.selected,
+.potenza-card.selected, .strip-led-filtrata-card.selected, .strip-led-compatibile-card.selected,
+.alimentazione-card.selected, .alimentatore-card.selected, .potenza-alimentatore-card.selected,
+.dimmer-card.selected, .dimmer-category-card.selected, .dimmer-specific-card.selected,
+.alimentazione-cavo-card.selected, .uscita-cavo-card.selected, .forma-taglio-card.selected,
+.finitura-card.selected, .lunghezza-profilo-card.selected, .temperatura-iniziale-card.selected {
+  border-color: #e83f34;
+  box-shadow: 0 5px 15px rgba(232, 63, 52, 0.3);
+}
+
+.profilo-card img, .tipologia-card img {
+  height: 180px;
+  object-fit: cover;
+}
+
+.profilo-card .card-body, .tipologia-card .card-body, .option-card .card-body {
+  padding: 15px;
+}
+
+.profilo-card .card-title, .tipologia-card .card-title, .option-card .card-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.profilo-card-row, .alimentatore-column, .dimmer-category-column, .dimmer-column {
+  width: 20%;
+}
+
+/* Badge per selezioni */
+.selection-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.selection-badge {
+  padding: 6px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #ddd !important;
+  color: #333;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* Stile base per tutti i tipi di pulsanti */
+.btn-primary, .btn-secondary, .btn-seleziona-proposta, .btn-outline-primary, .btn-torna-indietro {
+  background-color: transparent !important;
+  border: 1px solid #333 !important;
+  color: #333 !important;
+}
+
+/* Stato hover per tutti i pulsanti */
+.btn-primary:hover, .btn-secondary:hover, .btn-outline-primary:hover, 
+.btn-seleziona-proposta:hover, .btn-torna-indietro:hover {
+  border-color: #e83f34 !important;
+}
+
+.btn:active, .btn:focus, button:active, button:focus {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+#btn-continua-step2, #btn-continua-step3, #btn-continua-step4, #btn-continua-step5,
+#btn-continua-step6, #btn-continua-step7, #btn-continua-strip, #btn-continua-parametri,
+#btn-finalizza, #btn-continua-personalizzazione, #btn-continua-step2-option,
+#btn-continua-tipologia-strip, #btn-continua-step3-strip, #btn-continua-scelta-modalita,
+#btn-continua-tipologia-step2b, #btn-continua-parametri-step2b, #btn-continua-potenza-step2b,
+#btn-continua-step2-esterni, .btn-success {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+  color: #fff !important;
+}
+
+/* Stile per pulsanti nei card selezionati */
+.option-card.selected .btn-primary, .profilo-card.selected .btn-primary,
+.tipologia-card.selected .btn-primary {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+  color: #fff !important;
+}
+
+/* Finiture */
+.finitura-preview {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #ddd;
+}
+
+.alluminio-anodizzato {
+  background: linear-gradient(135deg, #e1e1e1 0%, #b3b3b3 50%, #e1e1e1 100%);
+}
+
+.bianco {
+  background-color: #ffffff;
+}
+
+.nero {
+  background-color: #000000;
+}
+
+.alluminio {
+  background: linear-gradient(135deg, #f5f5f5 0%, #c4c4c4 50%, #f5f5f5 100%);
+}
+
+/* Temperatura colore preview */
+.temperatura-color-preview {
+  width: 100%;
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+/* Colori specifici per temperature */
+.temperatura-card[data-temperatura="2700K"] .temperatura-color-preview {
+  background: #FFE9C0;
+}
+
+.temperatura-card[data-temperatura="3000K"] .temperatura-color-preview {
+  background: #FFF1D9;
+}
+
+.temperatura-card[data-temperatura="4000K"] .temperatura-color-preview {
+  background: #FFFBE3;
+}
+
+.temperatura-card[data-temperatura="6000K"] .temperatura-color-preview,
+.temperatura-card[data-temperatura="6500K"] .temperatura-color-preview,
+.temperatura-card[data-temperatura="6700K"] .temperatura-color-preview {
+  background: #F5FBFF;
+}
+
+.temperatura-card[data-temperatura="CCT"] .temperatura-color-preview {
+  background: linear-gradient(to right, #FFE9C0, #F5FBFF);
+}
+
+.temperatura-card[data-temperatura="RGB"] .temperatura-color-preview {
+  background: linear-gradient(to right, red, green, blue);
+}
+
+.temperatura-card[data-temperatura="RGBW"] .temperatura-color-preview {
+  background: linear-gradient(to right, red, green, blue, white);
+}
+
+/* Form e input */
+.form-control {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+}
+
+.form-control:focus {
+  border-color: #e83f34;
+  box-shadow: 0 0 0 0.2rem rgba(232, 63, 52, 0.25);
+  outline: none;
+}
+
+/* Card header di riepilogo */
+.card-header.bg-primary {
+  background-color: #e83f34 !important;
+  color: #333 !important;
+}
+
+/* Avvisi e alert */
+.alert-info, .alert-warning {
+  background-color: #f8f9fa;
+  border: 2px solid #ddd;
+  color: #000000;
+  font-size: 1.1rem;
+}
+
+.alert-success {
+  background-color: rgba(255, 119, 0, 0.1);
+  color: #ff0000;
+  border: none;
+  font-size: 1.1rem;
+}
+
+.text-warning {
+  color: #000 !important;
+  font-size: 1.1rem;
+}
+
+/* Animazioni */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.assembly-warning {
+  font-size: 1rem;
+  color: #ff0000;
+  font-weight: bold;
+  padding: 5px 10px;
+  background-color: rgba(255, 119, 0, 0.1);
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.card-img-strip-detail {
+  display: block;
+  border-top: 1px solid #eee;
+  transition: all 0.3s ease;
+  object-fit: contain;
+}
+
+.strip-led-compatibile-card {
+  transition: all 0.3s ease;
+  border: 2px solid #ddd;
+  overflow: hidden;
+}
+
+.strip-led-compatibile-card:hover {
+  border-color: #e83f34;
+  box-shadow: 0 5px 15px rgba(232, 63, 52, 0.2);
+}
+
+.strip-led-compatibile-card.selected .card-img-strip-detail {
+  border-top: 1px solid rgba(232, 63, 52, 0.3);
+}
+
+/* Badge per proposte - questo può rimanere rosso */
+.badge.bg-warning:not(.selection-badge) {
+  background-color: #e83f34 !important;
+}
+
+/* Override specifici per i badge nella selection-badges */
+.selection-badges .badge,
+.selection-badges .selection-badge {
+  background-color: #ddd !important;
+  color: #333 !important;
+  border: none !important;
+}
+
+/* AGGIUNTE PER RIMUOVERE IL BLU E UNIFORMARE */
+
+/* Override Bootstrap primary color */
+.btn-primary {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #d63429 !important;
+  border-color: #d63429 !important;
+}
+
+.text-primary {
+  color: #e83f34 !important;
+}
+
+.bg-primary {
+  background-color: #e83f34 !important;
+}
+
+/* Override per rimuovere il blu dai link */
+a {
+  color: #333;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #e83f34;
+  text-decoration: none;
+}
+
+/* Override per form focus */
+.form-check-input:checked {
+  background-color: #e83f34;
+  border-color: #e83f34;
+}
+
+.form-check-input:focus {
+  border-color: #e83f34;
+  box-shadow: 0 0 0 0.25rem rgba(232, 63, 52, 0.25);
+}
+
+/* Override per badge info per renderli grigi */
+.bg-info {
+  background-color: #ddd !important;
+}
+
+.badge.bg-info {
+  background-color: #ddd !important;
+}
+
+/* Aggiustamenti per hover dei pulsanti continua */
+#btn-continua-step2:hover, #btn-continua-step3:hover, #btn-continua-step4:hover, 
+#btn-continua-step5:hover, #btn-continua-step6:hover, #btn-continua-step7:hover, 
+#btn-continua-strip:hover, #btn-continua-parametri:hover, #btn-finalizza:hover, 
+#btn-continua-personalizzazione:hover, #btn-continua-step2-option:hover,
+#btn-continua-tipologia-strip:hover, #btn-continua-step3-strip:hover, 
+#btn-continua-scelta-modalita:hover, #btn-continua-tipologia-step2b:hover, 
+#btn-continua-parametri-step2b:hover, #btn-continua-potenza-step2b:hover,
+#btn-continua-step2-esterni:hover, .btn-success:hover {
+  background-color: #d63429 !important;
+  border-color: #d63429 !important;
+}
+
+/* Override focus outline */
+*:focus {
+  outline-color: #e83f34 !important;
+}
+
+/* Stili per eliminare bordi blu residui */
+.card:focus,
+.card.selected {
+  outline: none;
+}
+
+/* Assicurarsi che tutti i disabled siano grigi */
+.btn:disabled,
+.btn.disabled {
+  background-color: #ddd !important;
+  border-color: #ddd !important;
+  opacity: 0.65;
+}
+
+/* Fix per selection badge colors */
+.badge:not(.selection-badge) {
+  color: #fff;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-success {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-info {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-dark {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-warning {
+  background-color: #e83f34 !important;
+}
+
+/* Ma nei selection-badges devono essere grigi */
+.selection-badges .badge.bg-warning {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-danger {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-primary {
+  background-color: #6c757d !important;
+}
+
+/* Fix per alert dialog esterni */
+.alert-dialog {
+  display: none;
+}
+
+body.categoria-esterni .alert-dialog,
+body.categoria-wall_washer_ext .alert-dialog {
+  display: block;
+}
+
+/* Fix specifico per card alimentazione senza bordi */
+#alimentazione-container .card {
+  border: 2px solid #ddd !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
+#alimentazione-container .card.selected {
+  border-color: #e83f34 !important;
+  box-shadow: 0 5px 15px rgba(232, 63, 52, 0.3) !important;
+}
+
+/* Assicurati che tutte le card abbiano lo stesso aspetto */
+.card {
+  background-color: #fff;
+}
+
+.card-body {
+  background-color: transparent;
+}
+
+/* Override forte per tutti i badge nei selection-badges */
+.selection-badges .badge.bg-primary,
+.selection-badges .badge.bg-secondary,
+.selection-badges .badge.bg-success,
+.selection-badges .badge.bg-danger,
+.selection-badges .badge.bg-warning,
+.selection-badges .badge.bg-info,
+.selection-badges .badge.bg-light,
+.selection-badges .badge.bg-dark,
+.selection-badges .selection-badge {
+  background-color: #ddd !important;
+  color: #333 !important;
+  border: none !important;
+}

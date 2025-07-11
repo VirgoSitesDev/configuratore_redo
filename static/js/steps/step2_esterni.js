@@ -1,0 +1,151 @@
+import { configurazione, mappaCategorieVisualizzazione } from '../config.js';
+import { updateProgressBar } from '../utils.js';
+
+export function initStep2EsterniListeners() {
+    $('#btn-torna-step2-esterni').on('click', function(e) {
+        e.preventDefault();
+        $("#step2-modello-esterni").fadeOut(300, function() {
+            $("#step3-temperatura-potenza").fadeIn(300);
+            updateProgressBar(3);
+        });
+    });
+}
+
+export function vaiAllaSelezioneProfiliPerEsterni() {
+    console.log("Navigazione a selezione profili per esterni");
+
+    $(".step-section").hide();
+    $("#step2-modello-esterni").fadeIn(300);
+
+    $('#categoria-nome-step2-modello-esterni').text(
+        mappaCategorieVisualizzazione[configurazione.categoriaSelezionata] || configurazione.categoriaSelezionata
+    );
+    $('#strip-configurata-esterni').text(
+        configurazione.nomeCommercialeStripLed || 'Strip LED configurata'
+    );
+
+    caricaProfiliCompatibiliConStrip();
+}
+
+export function caricaProfiliCompatibiliConStrip() {
+    $('#profili-esterni-container').empty().html(
+        '<div class="text-center mt-5"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento profili compatibili...</p></div>'
+    );
+
+    // Prima di tutto, rimuovi eventuali event listener precedenti
+    $(document).off('click', '.profilo-card-esterni');
+
+    $.ajax({
+        url: `/get_profili/${configurazione.categoriaSelezionata}`,
+        method: 'GET',
+        success: function(data) {
+            $('#profili-esterni-container').empty();
+            
+            if (!data || data.length === 0) {
+                $('#profili-esterni-container').html(
+                    '<div class="col-12 text-center"><p>Nessun profilo disponibile per questa categoria.</p></div>'
+                );
+                return;
+            }
+
+            const profiliCompatibili = filtraProfiliPerStripSelezionata(data);
+            
+            if (profiliCompatibili.length === 0) {
+                $('#profili-esterni-container').html(
+                    '<div class="col-12 text-center"><p>Nessun profilo compatibile con la strip LED configurata.</p></div>'
+                );
+                return;
+            }
+
+            let grid = $('<div class="row"></div>');
+            $('#profili-esterni-container').append(grid);
+            
+            profiliCompatibili.forEach(function(profilo) {
+                const profiloId = profilo.id || 'unknown';
+                const profiloNome = profilo.nome || 'Profilo senza nome';
+                
+                let profiloCard = $(`
+                    <div class="col-md-4 col-sm-6 mb-4 profilo-card-row">
+                        <div class="card profilo-card-esterni" 
+                             data-id="${profiloId}" 
+                             data-nome="${profiloNome}"
+                             style="cursor: pointer;">
+                            <img src="${profilo.immagine || '/static/img/placeholder_logo.jpg'}" 
+                                 class="card-img-top" alt="${profiloNome}" 
+                                 onerror="this.src='/static/img/placeholder_logo.jpg'">
+                            <div class="card-body">
+                                <h5 class="card-title">${profiloNome}</h5>
+                                <p class="card-text small text-muted">Compatibile con la tua strip LED</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                grid.append(profiloCard);
+            });
+
+            $(document).on('click', '.profilo-card-esterni', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const $card = $(this);
+                const id = $card.data('id');
+                const nome = $card.data('nome');
+
+                $('.profilo-card-esterni').removeClass('selected');
+                $card.addClass('selected');
+                configurazione.profiloSelezionato = id;
+                configurazione.nomeModello = nome;
+                $('#btn-continua-step2-esterni').prop('disabled', false);
+            });
+        },
+        error: function(error) {
+            console.error("Errore nel caricamento dei profili:", error);
+            $('#profili-esterni-container').html(
+                '<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento dei profili. Riprova più tardi.</p></div>'
+            );
+        }
+    });
+}
+
+function filtraProfiliPerStripSelezionata(profili) {
+    const stripSelezionata = configurazione.stripLedSelezionata;
+    
+    if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
+        return profili;
+    }
+    
+    return profili.filter(profilo => {
+        if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
+            return false;
+        }
+        
+        const stripCompatibili = profilo.stripLedCompatibili;
+        
+        if (stripCompatibili.includes(stripSelezionata)) {
+            return true;
+        }
+        
+        if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+            const specialKeywords = {
+                'XFLEX': ['XFLEX'],
+                'XSNAKE': ['XSNAKE'],
+                'XMAGIS': ['XMAGIS', 'MG13X12', 'MG12X17'],
+                'ZIG_ZAG': ['ZIGZAG']
+            };
+            
+            const keywords = specialKeywords[configurazione.specialStripSelezionata] || [];
+            return stripCompatibili.some(stripId => 
+                keywords.some(keyword => stripId.includes(keyword))
+            );
+        }
+        
+        if (configurazione.tipologiaStripSelezionata === 'COB') {
+            return stripCompatibili.some(id => id.includes('COB'));
+        } else if (configurazione.tipologiaStripSelezionata === 'SMD') {
+            return stripCompatibili.some(id => id.includes('SMD'));
+        }
+        
+        return false;
+    });
+}

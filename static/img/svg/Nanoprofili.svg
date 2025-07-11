@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Shadows" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2500 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Sfumatura_senza_nome_4-2);
+      }
+
+      .cls-2 {
+        fill: url(#Sfumatura_senza_nome_4-3);
+      }
+
+      .cls-3 {
+        fill: url(#Sfumatura_senza_nome_4);
+      }
+    </style>
+    <linearGradient id="Sfumatura_senza_nome_4" data-name="Sfumatura senza nome 4" x1="734" y1="755.7" x2="734" y2="781.82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dae0a3" stop-opacity=".7"/>
+      <stop offset=".06" stop-color="#dee3ad" stop-opacity=".62"/>
+      <stop offset=".21" stop-color="#e8ebc6" stop-opacity=".43"/>
+      <stop offset=".36" stop-color="#f0f2da" stop-opacity=".27"/>
+      <stop offset=".52" stop-color="#f6f8ea" stop-opacity=".15"/>
+      <stop offset=".67" stop-color="#fbfbf6" stop-opacity=".07"/>
+      <stop offset=".83" stop-color="#fefefc" stop-opacity=".02"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="Sfumatura_senza_nome_4-2" data-name="Sfumatura senza nome 4" x1="719.5" y1="648.7" x2="719.5" y2="674.82" xlink:href="#Sfumatura_senza_nome_4"/>
+    <linearGradient id="Sfumatura_senza_nome_4-3" data-name="Sfumatura senza nome 4" x1="719.5" y1="431.7" x2="719.5" y2="457.82" xlink:href="#Sfumatura_senza_nome_4"/>
+  </defs>
+  <polygon class="cls-3" points="933 754 515 754 515 783 953 779.33 933 754"/>
+  <polygon class="cls-1" points="924 647 515 647 515 676 924 672.33 924 647"/>
+  <polygon class="cls-2" points="924 430 515 430 515 459 924 455.33 924 430"/>
+</svg>
