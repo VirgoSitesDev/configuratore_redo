@@ -1,5 +1,5 @@
 import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzazione, mappaIPVisualizzazione } from '../config.js';
-import { updateProgressBar, checkPersonalizzazioneCompletion, formatTemperatura, checkParametriCompletion } from '../utils.js';
+import { updateProgressBar, checkPersonalizzazioneCompletion, formatTemperatura, checkParametriCompletion, getTemperaturaColor } from '../utils.js';
 import { caricaFinitureDisponibili, finalizzaConfigurazione, caricaOpzioniIP } from '../api.js';
 import { vaiAllaTemperaturaEPotenza } from './step3.js';
 
@@ -1031,17 +1031,42 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
           $('#temperatura-iniziale-options').empty();
           
           if (data.success && data.temperature) {
+              data.temperature.sort((a, b) => {
+                const getOrderValue = (temp) => {
+                  if (temp.includes('K')) {
+                    return parseInt(temp.replace('K', ''));
+                  } else if (temp === 'CCT') {
+                    return 10000;
+                  } else if (temp === 'RGB') {
+                    return 20000;
+                  } else if (temp === 'RGBW') {
+                    return 30000;
+                  }
+                  return 0;
+                };
+                
+                return getOrderValue(a) - getOrderValue(b);
+              });
+
               data.temperature.forEach(function(temp) {
                   $('#temperatura-iniziale-options').append(`
                       <div class="col-md-3 mb-3">
                           <div class="card option-card temperatura-card" data-temperatura="${temp}">
                               <div class="card-body text-center">
                                   <h5 class="card-title">${formatTemperatura(temp)}</h5>
+                                  <div class="temperatura-color-preview" style="background: ${getTemperaturaColor(temp)};"></div>
                               </div>
                           </div>
                       </div>
                   `);
               });
+
+              if (data.temperature.length === 1) {
+                const $unicaTemperatura = $('.temperatura-card');
+                $unicaTemperatura.addClass('selected');
+                configurazione.temperaturaSelezionata = data.temperature[0];
+                checkParametriCompletion();
+              }
 
               $('.temperatura-card').on('click', function() {
                   $('.temperatura-card').removeClass('selected');
