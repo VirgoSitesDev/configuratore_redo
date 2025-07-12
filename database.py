@@ -1,4 +1,3 @@
-# database.py
 from supabase import create_client, Client
 import os
 from typing import List, Dict, Any, Optional
@@ -7,7 +6,6 @@ import logging
 from functools import lru_cache
 from datetime import datetime, timedelta
 
-# Carica le variabili d'ambiente dal file .env
 load_dotenv()
 
 class DatabaseManager:
@@ -16,13 +14,11 @@ class DatabaseManager:
             os.environ.get('SUPABASE_URL'),
             os.environ.get('SUPABASE_KEY')
         )
-        # Cache semplice per evitare query ripetute
         self._cache = {}
         self._cache_timestamps = {}
         self._cache_duration = timedelta(minutes=30)
     
     def _get_from_cache(self, key: str) -> Optional[Any]:
-        """Ottiene un valore dalla cache se non è scaduto"""
         if key in self._cache:
             if datetime.now() - self._cache_timestamps[key] < self._cache_duration:
                 return self._cache[key]
@@ -32,34 +28,28 @@ class DatabaseManager:
         return None
     
     def _set_cache(self, key: str, value: Any):
-        """Salva un valore nella cache"""
         self._cache[key] = value
         self._cache_timestamps[key] = datetime.now()
     
     def get_categorie(self) -> List[Dict[str, Any]]:
-        """Ottiene tutte le categorie con le loro sottofamiglie - OTTIMIZZATO"""
         cache_key = "all_categorie"
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
-        # 1. Prendi tutte le categorie
+
         categorie = self.supabase.table('categorie').select('*').execute().data
-        
-        # 2. Prendi TUTTE le sottofamiglie in una sola query
+
         sottofamiglie_data = self.supabase.table('categorie_sottofamiglie')\
             .select('categoria_id, sottofamiglia')\
             .execute().data
-        
-        # 3. Crea una mappa per accesso rapido
+
         sottofamiglie_map = {}
         for sf in sottofamiglie_data:
             cat_id = sf['categoria_id']
             if cat_id not in sottofamiglie_map:
                 sottofamiglie_map[cat_id] = []
             sottofamiglie_map[cat_id].append(sf['sottofamiglia'])
-        
-        # 4. Associa le sottofamiglie alle categorie
+
         for categoria in categorie:
             categoria['sottofamiglie'] = sottofamiglie_map.get(categoria['id'], [])
         
@@ -72,8 +62,7 @@ class DatabaseManager:
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
-        # 1. Prendi tutti i profili della categoria
+
         profili = self.supabase.table('profili')\
             .select('*')\
             .eq('categoria', categoria)\
@@ -81,37 +70,30 @@ class DatabaseManager:
         
         if not profili:
             return []
-        
-        # 2. Estrai tutti gli ID dei profili
+
         profili_ids = [p['id'] for p in profili]
-        
-        # 3. Fai query batch per tutti i dati correlati
-        # Tipologie
+
         tipologie_data = self.supabase.table('profili_tipologie')\
             .select('profilo_id, tipologia')\
             .in_('profilo_id', profili_ids)\
             .execute().data
-        
-        # Finiture
+
         finiture_data = self.supabase.table('profili_finiture')\
             .select('profilo_id, finitura')\
             .in_('profilo_id', profili_ids)\
             .execute().data
-        
-        # Lunghezze
+
         lunghezze_data = self.supabase.table('profili_lunghezze')\
             .select('profilo_id, lunghezza')\
             .in_('profilo_id', profili_ids)\
             .order('lunghezza')\
             .execute().data
-        
-        # Strip compatibili
+
         strip_compatibili_data = self.supabase.table('profili_strip_compatibili')\
             .select('profilo_id, strip_id')\
             .in_('profilo_id', profili_ids)\
             .execute().data
-        
-        # 4. Crea mappe per accesso rapido
+
         tipologie_map = {}
         for t in tipologie_data:
             pid = t['profilo_id']
@@ -139,8 +121,7 @@ class DatabaseManager:
             if pid not in strip_map:
                 strip_map[pid] = []
             strip_map[pid].append(s['strip_id'])
-        
-        # 5. Associa i dati ai profili
+
         for profilo in profili:
             pid = profilo['id']
             profilo['tipologie'] = tipologie_map.get(pid, [])
@@ -155,8 +136,6 @@ class DatabaseManager:
     def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str, 
                                temperatura: str, potenza: Optional[str] = None,
                                tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Ottiene le strip LED filtrate per i parametri specificati - OTTIMIZZATO"""
-        # 1. Ottieni le strip compatibili con il profilo
         strip_compatibili = self.supabase.table('profili_strip_compatibili')\
             .select('strip_id')\
             .eq('profilo_id', profilo_id)\
@@ -166,8 +145,7 @@ class DatabaseManager:
         
         if not strip_ids:
             return []
-        
-        # 2. Query base per le strip
+
         query = self.supabase.table('strip_led').select('*')
         query = query.eq('tensione', tensione).eq('ip', ip)
         
@@ -178,25 +156,20 @@ class DatabaseManager:
         
         if not strips:
             return []
-        
-        # 3. Estrai gli ID delle strip trovate
+
         found_strip_ids = [s['id'] for s in strips]
-        
-        # 4. Fai query batch per temperature e potenze
-        # Temperature
+
         temperature_data = self.supabase.table('strip_temperature')\
             .select('strip_id, temperatura')\
             .in_('strip_id', found_strip_ids)\
             .execute().data
-        
-        # Potenze
+
         potenze_data = self.supabase.table('strip_potenze')\
             .select('strip_id, potenza, codice_prodotto, indice')\
             .in_('strip_id', found_strip_ids)\
             .order('indice')\
             .execute().data
-        
-        # 5. Crea mappe per accesso rapido
+
         temperature_map = {}
         for t in temperature_data:
             sid = t['strip_id']
@@ -213,22 +186,16 @@ class DatabaseManager:
                 codici_map[sid] = []
             potenze_map[sid].append(p['potenza'])
             codici_map[sid].append(p['codice_prodotto'])
-        
-        # 6. Filtra e assembla il risultato
+
         result = []
         for strip in strips:
             sid = strip['id']
-            
-            # Verifica temperatura
             temp_list = temperature_map.get(sid, [])
             if temperatura not in temp_list:
                 continue
-            
-            # Se specificata potenza, verifica
             if potenza and potenza not in potenze_map.get(sid, []):
                 continue
-            
-            # Aggiungi info alla strip
+
             strip['temperaturaColoreDisponibili'] = temp_list
             strip['temperatura'] = temperatura
             strip['potenzeDisponibili'] = potenze_map.get(sid, [])
@@ -242,8 +209,6 @@ class DatabaseManager:
     
     def get_alimentatori_by_tipo(self, tipo_alimentazione: str, 
                                   tensione: str = '24V') -> List[Dict[str, Any]]:
-        """Ottiene gli alimentatori per tipo e tensione - OTTIMIZZATO"""
-        # Mappa i tipi di alimentazione agli ID degli alimentatori
         alimentatori_map = {
             'ON-OFF': ['SERIE_AT24', 'SERIE_ATUS', 'SERIE_ATSIP44', 
                        'SERIE_AT24IP67', 'SERIE_ATN24IP67'],
@@ -257,8 +222,7 @@ class DatabaseManager:
         
         if not alimentatori_ids:
             return []
-        
-        # 1. Query per gli alimentatori
+
         alimentatori = self.supabase.table('alimentatori')\
             .select('*')\
             .eq('tensione', tensione)\
@@ -267,24 +231,21 @@ class DatabaseManager:
         
         if not alimentatori:
             return []
-        
-        # 2. Query batch per tutte le potenze
+
         alim_ids = [a['id'] for a in alimentatori]
         potenze_data = self.supabase.table('alimentatori_potenze')\
             .select('alimentatore_id, potenza, codice')\
             .in_('alimentatore_id', alim_ids)\
             .order('potenza')\
             .execute().data
-        
-        # 3. Crea mappa per accesso rapido
+
         potenze_map = {}
         for p in potenze_data:
             aid = p['alimentatore_id']
             if aid not in potenze_map:
                 potenze_map[aid] = []
             potenze_map[aid].append(p)
-        
-        # 4. Associa le potenze agli alimentatori
+
         for alim in alimentatori:
             aid = alim['id']
             potenze_list = potenze_map.get(aid, [])
@@ -311,8 +272,6 @@ class DatabaseManager:
         return result
     
     def get_dimmer_compatibili(self, strip_id: str) -> Dict[str, Any]:
-        """Ottiene i dimmer compatibili con una strip LED - OTTIMIZZATO"""
-        # 1. Ottieni i dimmer compatibili
         compatibilita = self.supabase.table('dimmer_strip_compatibili')\
             .select('dimmer_id')\
             .eq('strip_id', strip_id)\
@@ -329,17 +288,14 @@ class DatabaseManager:
                 'spaziNonIlluminati': {},
                 'potenzeMassime': {}
             }
-        
-        # 2. Ottieni i dettagli dei dimmer in una sola query
+
         dimmer_details = self.supabase.table('dimmer')\
             .select('*')\
             .in_('id', dimmer_ids)\
             .execute().data
-        
-        # 3. Aggiungi sempre l'opzione NESSUN_DIMMER
+
         dimmer_ids.append('NESSUN_DIMMER')
-        
-        # 4. Costruisci la risposta
+
         result = {
             'success': True,
             'opzioni': dimmer_ids,
@@ -365,7 +321,6 @@ class DatabaseManager:
                             email: Optional[str] = None,
                             telefono: Optional[str] = None,
                             note: Optional[str] = None) -> Dict[str, Any]:
-        """Salva una configurazione completata"""
         data = {
             'codice_prodotto': codice_prodotto,
             'configurazione': configurazione,
@@ -379,13 +334,11 @@ class DatabaseManager:
         return result.data[0] if result.data else None
     
     def get_dettagli_alimentatore(self, alimentatore_id: str) -> Dict[str, Any]:
-        """Ottiene i dettagli di un alimentatore specifico - OTTIMIZZATO"""
         cache_key = f"dettagli_alim_{alimentatore_id}"
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
-        # Prendi l'alimentatore
+
         alimentatore = self.supabase.table('alimentatori')\
             .select('*')\
             .eq('id', alimentatore_id)\
@@ -393,7 +346,6 @@ class DatabaseManager:
             .execute().data
         
         if alimentatore:
-            # Prendi le potenze
             potenze_data = self.supabase.table('alimentatori_potenze')\
                 .select('potenza, codice')\
                 .eq('alimentatore_id', alimentatore_id)\
@@ -407,7 +359,6 @@ class DatabaseManager:
         return alimentatore
     
     def clear_cache(self):
-        """Pulisce la cache"""
         self._cache.clear()
         self._cache_timestamps.clear()
         logging.info("Cache cleared")
