@@ -12,9 +12,12 @@ import logging
 
 app = Flask(__name__)
 CORS(app)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 db = DatabaseManager()
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 @app.route('/')
 def index():
@@ -31,36 +34,29 @@ def get_categorie():
 @app.route('/get_profili/<categoria>')
 def get_profili(categoria):
     try:
-        # 1. Ottieni tutti i profili della categoria
         profili = db.get_profili_by_categoria(categoria)
-        
-        # 2. Raccogli tutti gli ID univoci delle strip LED necessarie
+
         tutti_strip_ids = set()
         for profilo in profili:
             strip_ids = profilo.get('stripLedCompatibili', [])
             tutti_strip_ids.update(strip_ids)
-        
-        # 3. Fai UNA SOLA query per ottenere tutte le strip LED necessarie
+
         strip_led_map = {}
         if tutti_strip_ids:
-            # Converti il set in lista per la query
             strip_ids_list = list(tutti_strip_ids)
-            
-            # Query singola per tutte le strip LED
+
             strip_data_response = db.supabase.table('strip_led')\
                 .select('id, nome_commerciale')\
                 .in_('id', strip_ids_list)\
                 .execute()
-            
-            # Crea una mappa per accesso rapido
+
             if strip_data_response.data:
                 for strip in strip_data_response.data:
                     strip_led_map[strip['id']] = {
                         'id': strip['id'],
                         'nomeCommerciale': strip.get('nome_commerciale', '')
                     }
-        
-        # 4. Associa le strip LED ai profili usando la mappa
+
         for profilo in profili:
             strip_compatibili_info = []
             for strip_id in profilo.get('stripLedCompatibili', []):

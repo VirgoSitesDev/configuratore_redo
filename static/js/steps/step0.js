@@ -327,14 +327,14 @@ function renderOpzioniTemperatura(temperature) {
   $('#step2b-temperatura-options').empty();
   
   const mappaTemperatura = {
-    '2700K': '2700K (Bianco caldo)',
-    '3000K': '3000K (Bianco caldo)',
-    '4000K': '4000K (Bianco neutro)',
-    '6000K': '6000K (Bianco freddo)',
-    '6500K': '6500K (Bianco freddo)',
-    'CCT': 'CCT (Temperatura dinamica)',
-    'RGB': 'RGB (Multicolore)',
-    'RGBW': 'RGBW (RGB + Bianco)'
+    '2700K': '2700K',
+    '3000K': '3000K',
+    '4000K': '4000K',
+    '6000K': '6000K',
+    '6500K': '6500K',
+    'CCT': 'CCT',
+    'RGB': 'RGB',
+    'RGBW': 'RGBW'
   };
   
   const mappaColori = {

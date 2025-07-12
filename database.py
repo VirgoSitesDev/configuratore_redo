@@ -5,18 +5,42 @@ from dotenv import load_dotenv
 import logging
 from functools import lru_cache
 from datetime import datetime, timedelta
+import time
 
 load_dotenv()
 
 class DatabaseManager:
     def __init__(self):
-        self.supabase: Client = create_client(
-            os.environ.get('SUPABASE_URL'),
-            os.environ.get('SUPABASE_KEY')
-        )
+        try:
+            supabase_url = os.environ.get('SUPABASE_URL')
+            supabase_key = os.environ.get('SUPABASE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                raise ValueError("SUPABASE_URL o SUPABASE_KEY non configurati nel file .env")
+            
+            self.supabase: Client = create_client(supabase_url, supabase_key)
+            self._test_connection()
+            
+        except Exception as e:
+            logging.error(f"Errore inizializzazione database: {str(e)}")
+            raise
+            
         self._cache = {}
         self._cache_timestamps = {}
         self._cache_duration = timedelta(minutes=30)
+    
+    def _test_connection(self):
+        try:
+            result = self.supabase.table('categorie').select('id').limit(1).execute()
+            logging.info("✓ Connessione a Supabase verificata con successo")
+        except Exception as e:
+            logging.error(f"✗ Errore connessione Supabase: {str(e)}")
+            raise
+    
+    def _log_query_time(self, query_name: str, start_time: float):
+        elapsed = time.time() - start_time
+        if elapsed > 1.0:
+            logging.warning(f"Query lenta: {query_name} ha impiegato {elapsed:.2f} secondi")
     
     def _get_from_cache(self, key: str) -> Optional[Any]:
         if key in self._cache:
@@ -57,7 +81,8 @@ class DatabaseManager:
         return categorie
     
     def get_profili_by_categoria(self, categoria: str) -> List[Dict[str, Any]]:
-        """Ottiene i profili di una categoria specifica - OTTIMIZZATO"""
+        start_time = time.time()
+        
         cache_key = f"profili_categoria_{categoria}"
         cached = self._get_from_cache(cache_key)
         if cached:
@@ -130,6 +155,7 @@ class DatabaseManager:
             profilo['stripLedCompatibili'] = strip_map.get(pid, [])
             profilo['lunghezzaMassima'] = profilo.get('lunghezza_massima', 3000)
         
+        self._log_query_time(f"get_profili_by_categoria({categoria})", start_time)
         self._set_cache(cache_key, profili)
         return profili
     
@@ -255,7 +281,6 @@ class DatabaseManager:
         return alimentatori
     
     def get_potenze_alimentatore(self, alimentatore_id: str) -> List[int]:
-        """Ottiene le potenze disponibili per un alimentatore"""
         cache_key = f"potenze_alim_{alimentatore_id}"
         cached = self._get_from_cache(cache_key)
         if cached:
