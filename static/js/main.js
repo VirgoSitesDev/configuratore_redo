@@ -130,17 +130,6 @@ $(document).ready(function() {
     });
   });
 
-  $('#btn-continua-step2-esterni').on('click', function(e) {
-    e.preventDefault();
-    if (configurazione.profiloSelezionato) {
-        $("#step2-modello-esterni").fadeOut(300, function() {
-            import('./steps/step2.js').then(module => {
-                module.vaiAllaPersonalizzazione();
-            });
-        });
-    }
-});
-
 $(document).on('click', '.alimentazione-card', function(e) {
   e.preventDefault();
   e.stopPropagation();

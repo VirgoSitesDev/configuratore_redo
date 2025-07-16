@@ -1,5 +1,6 @@
 import { configurazione, mappaCategorieVisualizzazione } from '../config.js';
 import { updateProgressBar } from '../utils.js';
+import { caricaOpzioniProfilo } from '../api.js';
 
 export function initStep2EsterniListeners() {
     $('#btn-torna-step2-esterni').on('click', function(e) {
@@ -9,6 +10,35 @@ export function initStep2EsterniListeners() {
             updateProgressBar(3);
         });
     });
+    
+    $('#btn-continua-step2-esterni').on('click', function(e) {
+        e.preventDefault();
+        if (configurazione.profiloSelezionato) {
+            // Prima carica le opzioni del profilo (tipologie)
+            $('#tipologie-options').empty().html('<div class="text-center mt-3"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni...</p></div>');
+            
+            caricaOpzioniProfilo(configurazione.profiloSelezionato);
+            
+            // Poi vai alla personalizzazione
+            $("#step2-modello-esterni").fadeOut(300, function() {
+                // Mostra direttamente la personalizzazione se c'è solo "taglio su misura"
+                setTimeout(() => {
+                    if ($('.tipologia-card').length === 1 && $('.tipologia-card').data('id') === 'taglio_misura') {
+                        $('.tipologia-card').click();
+                        configurazione.tipologiaSelezionata = 'taglio_misura';
+                        
+                        import('./step2.js').then(module => {
+                            module.vaiAllaPersonalizzazione();
+                        });
+                    } else {
+                        // Altrimenti mostra le opzioni di tipologia
+                        $("#step2-modello").fadeIn(300);
+                        updateProgressBar(4);
+                    }
+                }, 500);
+            });
+        }
+    });
 }
 
 export function vaiAllaSelezioneProfiliPerEsterni() {
@@ -16,6 +46,7 @@ export function vaiAllaSelezioneProfiliPerEsterni() {
 
     $(".step-section").hide();
     $("#step2-modello-esterni").fadeIn(300);
+    updateProgressBar(4);
 
     $('#categoria-nome-step2-modello-esterni').text(
         mappaCategorieVisualizzazione[configurazione.categoriaSelezionata] || configurazione.categoriaSelezionata
@@ -84,6 +115,7 @@ export function caricaProfiliCompatibiliConStrip() {
                 grid.append(profiloCard);
             });
 
+            // Gestisci il click sui profili
             $(document).on('click', '.profilo-card-esterni', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -96,6 +128,8 @@ export function caricaProfiliCompatibiliConStrip() {
                 $card.addClass('selected');
                 configurazione.profiloSelezionato = id;
                 configurazione.nomeModello = nome;
+                
+                // Abilita il pulsante continua
                 $('#btn-continua-step2-esterni').prop('disabled', false);
             });
         },
@@ -122,28 +156,40 @@ function filtraProfiliPerStripSelezionata(profili) {
         
         const stripCompatibili = profilo.stripLedCompatibili;
         
+        // Controlla se la strip selezionata è direttamente compatibile
         if (stripCompatibili.includes(stripSelezionata)) {
             return true;
         }
         
+        // Per strip speciali, controlla compatibilità basata su keywords
         if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
             const specialKeywords = {
                 'XFLEX': ['XFLEX'],
                 'XSNAKE': ['XSNAKE'],
                 'XMAGIS': ['XMAGIS', 'MG13X12', 'MG12X17'],
-                'ZIG_ZAG': ['ZIGZAG']
+                'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG'],
+                'RUNNING': ['RUNNING']
             };
             
             const keywords = specialKeywords[configurazione.specialStripSelezionata] || [];
             return stripCompatibili.some(stripId => 
-                keywords.some(keyword => stripId.includes(keyword))
+                keywords.some(keyword => stripId.toUpperCase().includes(keyword))
             );
         }
         
+        // Per strip normali, controlla compatibilità basata su tipo
         if (configurazione.tipologiaStripSelezionata === 'COB') {
-            return stripCompatibili.some(id => id.includes('COB'));
+            return stripCompatibili.some(id => 
+                id.includes('COB') && 
+                id.includes(configurazione.tensioneSelezionato) &&
+                id.includes(configurazione.ipSelezionato)
+            );
         } else if (configurazione.tipologiaStripSelezionata === 'SMD') {
-            return stripCompatibili.some(id => id.includes('SMD'));
+            return stripCompatibili.some(id => 
+                id.includes('SMD') && 
+                id.includes(configurazione.tensioneSelezionato) &&
+                id.includes(configurazione.ipSelezionato)
+            );
         }
         
         return false;

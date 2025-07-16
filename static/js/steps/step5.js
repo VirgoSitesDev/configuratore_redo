@@ -9,8 +9,14 @@ export function initStep5Listeners() {
     
     $("#step5-controllo").fadeOut(300, function() {
       if (configurazione.tensioneSelezionato === '220V') {
-        $("#step3-temperatura-potenza").fadeIn(300);
-        updateProgressBar(3);
+        // Per 220V, torna sempre allo step della potenza
+        if (configurazione.isFlussoProfiliEsterni) {
+          $("#step4-alimentazione").fadeIn(300);
+          updateProgressBar(4);
+        } else {
+          $("#step3-temperatura-potenza").fadeIn(300);
+          updateProgressBar(3);
+        }
       } else {
         $("#step4-alimentazione").fadeIn(300);
         updateProgressBar(4);

@@ -12,6 +12,11 @@ export function initStep4Listeners() {
         $("#step2b-configurazione-strip").fadeIn(300);
         updateProgressBar(2);
       });
+    } else if (configurazione.isFlussoProfiliEsterni) {
+      $("#step4-alimentazione").fadeOut(300, function() {
+        $("#step2-personalizzazione").fadeIn(300);
+        updateProgressBar(5);
+      });
     } else {
       $("#step4-alimentazione").fadeOut(300, function() {
         $("#step3-temperatura-potenza").fadeIn(300);

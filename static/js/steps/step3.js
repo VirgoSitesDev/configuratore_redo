@@ -19,9 +19,13 @@ export function initStep3Listeners() {
     e.preventDefault();
     
     if (configurazione.potenzaSelezionata && configurazione.stripLedSceltaFinale) {
-      if (configurazione.tensioneSelezionato === '220V') {
+      // Per gli esterni, dopo aver scelto la strip, vai alla selezione del profilo
+      if (configurazione.isFlussoProfiliEsterni) {
+        $("#step3-temperatura-potenza").fadeOut(300, function() {
+          vaiAllaSelezioneProfiliPerEsterni();
+        });
+      } else if (configurazione.tensioneSelezionato === '220V') {
         configurazione.alimentazioneSelezionata = 'SENZA_ALIMENTATORE';
-
         $("#step3-temperatura-potenza").fadeOut(300, function() {
           updateProgressBar(5);
           vaiAlControllo();
@@ -42,25 +46,35 @@ export function initStep3Listeners() {
 }
 
 export function vaiAllaTemperaturaEPotenza() {
-  if (configurazione.isFlussoProfiliEsterni && !configurazione.profiloSelezionato) {
-    $("#step3-temperatura-potenza").fadeOut(300, function() {
-      vaiAllaSelezioneProfiliPerEsterni();
+  if (configurazione.isFlussoProfiliEsterni) {
+    // AGGIUNGI QUESTO LOG
+    console.log("Caricamento potenza per esterni con parametri:", {
+        temperaturaSelezionata: configurazione.temperaturaSelezionata,
+        tensioneSelezionato: configurazione.tensioneSelezionato,
+        ipSelezionato: configurazione.ipSelezionato,
+        tipologiaStripSelezionata: configurazione.tipologiaStripSelezionata
     });
-    return;
-  }
-
-  if (configurazione.modalitaConfigurazione === 'solo_strip') {
-
-    import('./step4.js').then(module => {
-      module.vaiAllAlimentazione();
-    });
-    return;
+    
+      caricaOpzioniPotenza('ESTERNI', configurazione.temperaturaSelezionata);
+  } else {
+      caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
   }
 
   selezionaStripLedAutomaticamente();
+
+  if (!configurazione.temperaturaSelezionata && configurazione.temperaturaColoreSelezionata) {
+    configurazione.temperaturaSelezionata = configurazione.temperaturaColoreSelezionata;
+  }
   
-  $('#profilo-nome-step3').text(configurazione.nomeModello);
-  $('#tipologia-nome-step3').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
+  // Per gli esterni, non mostrare il profilo nei badge
+  if (configurazione.isFlussoProfiliEsterni) {
+    $('#profilo-nome-step3').parent().hide();
+    $('#tipologia-nome-step3').parent().hide();
+  } else {
+    $('#profilo-nome-step3').text(configurazione.nomeModello);
+    $('#tipologia-nome-step3').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
+  }
+  
   $('#strip-nome-step3').text(mappaStripLedVisualizzazione[configurazione.stripLedSelezionata] || configurazione.stripLedSelezionata);
 
   updateProgressBar(3);
@@ -71,7 +85,12 @@ export function vaiAllaTemperaturaEPotenza() {
   $('#strip-led-model-section').hide();
   $('#btn-continua-step3').prop('disabled', true);
 
-  caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
+  // Per gli esterni, carica le opzioni di potenza senza profilo selezionato
+  if (configurazione.isFlussoProfiliEsterni) {
+    caricaOpzioniPotenza('ESTERNI', configurazione.temperaturaSelezionata);
+  } else {
+    caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
+  }
 }
 
 function selezionaStripLedAutomaticamente() {
@@ -80,11 +99,9 @@ function selezionaStripLedAutomaticamente() {
   if (configurazione.tipologiaStripSelezionata === 'SMD') {
     stripId = `STRIP_${configurazione.tensioneSelezionato}_SMD_${configurazione.ipSelezionato}`;
   }
-
   else if (configurazione.tipologiaStripSelezionata === 'COB') {
     stripId = `STRIP_${configurazione.tensioneSelezionato}_COB_${configurazione.ipSelezionato}`;
   }
-
   else if (configurazione.temperaturaSelezionata === 'RGB') {
     if (configurazione.tipologiaStripSelezionata === 'SMD') {
       stripId = `STRIP_${configurazione.tensioneSelezionato}_RGB_SMD_${configurazione.ipSelezionato}`;
@@ -92,7 +109,6 @@ function selezionaStripLedAutomaticamente() {
       stripId = `STRIP_${configurazione.tensioneSelezionato}_RGB_COB_${configurazione.ipSelezionato}`;
     }
   }
-
   else if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
     stripId = `STRIP_${configurazione.tensioneSelezionato}_SMD_${configurazione.ipSelezionato}`;
   }
@@ -109,14 +125,28 @@ export function initPotenzaListener() {
     configurazione.codicePotenza = $(this).data('codice');
 
     $('#strip-led-model-section').show();
-    caricaStripLedCompatibili(
-      configurazione.profiloSelezionato,
-      configurazione.tensioneSelezionato,
-      configurazione.ipSelezionato,
-      configurazione.temperaturaSelezionata,
-      configurazione.potenzaSelezionata,
-      configurazione.tipologiaStripSelezionata
-    );
+    
+    // Per gli esterni, carica le strip compatibili senza profilo
+    if (configurazione.isFlussoProfiliEsterni) {
+      caricaStripLedCompatibili(
+        'ESTERNI',
+        configurazione.tensioneSelezionato,
+        configurazione.ipSelezionato,
+        configurazione.temperaturaSelezionata,
+        configurazione.potenzaSelezionata,
+        configurazione.tipologiaStripSelezionata
+      );
+    } else {
+      caricaStripLedCompatibili(
+        configurazione.profiloSelezionato,
+        configurazione.tensioneSelezionato,
+        configurazione.ipSelezionato,
+        configurazione.temperaturaSelezionata,
+        configurazione.potenzaSelezionata,
+        configurazione.tipologiaStripSelezionata
+      );
+    }
+    
     $('#btn-continua-step3').prop('disabled', true);
   });
 

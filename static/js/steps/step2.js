@@ -384,13 +384,19 @@ export function prepareTipologiaStripListeners() {
 }
 
 export function vaiAllaPersonalizzazione() {
-  $('#profilo-nome-step2-personalizzazione').text(configurazione.nomeModello);
-  $('#tipologia-nome-step2-personalizzazione').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
-  
-  $("#step2-modello").fadeOut(300, function() {
-    $("#step2-personalizzazione").fadeIn(300);
-    
-    preparePersonalizzazioneListeners();
+    $('#profilo-nome-step2-personalizzazione').text(configurazione.nomeModello);
+    $('#tipologia-nome-step2-personalizzazione').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
+
+    // Determina da quale step arriviamo
+    let fromStep = "#step2-modello";
+    if (configurazione.isFlussoProfiliEsterni) {
+      fromStep = "#step2-modello-esterni";
+    }
+
+    $(fromStep).fadeOut(300, function() {
+      $("#step2-personalizzazione").fadeIn(300);
+      
+      preparePersonalizzazioneListeners();
 
     if (configurazione.tipologiaSelezionata === 'profilo_intero' && configurazione.lunghezzaRichiesta) {
       $('#lunghezza-info-container').remove();
@@ -543,6 +549,10 @@ function togglePersonalizzazioneLunghezza() {
     `;
 
     $('#finitura-container').closest('.container').after(infoMessage);
+
+    if (configurazione.isFlussoProfiliEsterni && !configurazione.tipologiaSelezionata) {
+      configurazione.tipologiaSelezionata = 'taglio_misura';
+    }
 
     if (!configurazione.lunghezzaRichiesta && lunghezzaMassima) {
       configurazione.lunghezzaRichiesta = lunghezzaMassima;
@@ -1114,7 +1124,7 @@ export function saltaAlimentazionePerEsterni() {
       });
   }
   
-  updateProgressBar(4);
+  updateProgressBar(6);
   
   $("#step2-personalizzazione").fadeOut(300, function() {
       $("#step4-alimentazione").fadeIn(300);
@@ -1126,6 +1136,10 @@ export function saltaAlimentazionePerEsterni() {
       configurazione.alimentazioneSelezionata = null;
       configurazione.tipologiaAlimentatoreSelezionata = null;
       configurazione.potenzaAlimentatoreSelezionata = null;
+
+      import('./step4.js').then(module => {
+        module.prepareAlimentazioneListeners();
+      });
   });
 }
 

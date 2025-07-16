@@ -15,7 +15,8 @@ export function updateProgressBar(step) {
       4: 3,  // Step temperatura/potenza -> Step 3
       5: 4,  // Step selezione profilo -> Step 4
       6: 5,  // Step personalizzazione -> Step 5
-      7: 6   // Step alimentazione -> Step 6
+      7: 6,  // Step proposte -> Step 6
+      8: 6   // Step riepilogo -> Step 6
     };
     
     if (stepMappingEsterni[step]) {

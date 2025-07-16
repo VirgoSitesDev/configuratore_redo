@@ -233,6 +233,75 @@ class DatabaseManager:
         
         return result
     
+    def get_all_strip_led_filtrate(self, tensione: str, ip: str, 
+                                   temperatura: str, potenza: Optional[str] = None,
+                                   tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Ottiene tutte le strip LED filtrate per i parametri specificati,
+        senza considerare la compatibilità con un profilo specifico.
+        Usato per il flusso esterni.
+        """
+        query = self.supabase.table('strip_led').select('*')
+        query = query.eq('tensione', tensione).eq('ip', ip)
+        
+        if tipologia:
+            query = query.eq('tipo', tipologia)
+        
+        strips = query.execute().data
+        
+        if not strips:
+            return []
+
+        found_strip_ids = [s['id'] for s in strips]
+
+        temperature_data = self.supabase.table('strip_temperature')\
+            .select('strip_id, temperatura')\
+            .in_('strip_id', found_strip_ids)\
+            .execute().data
+
+        potenze_data = self.supabase.table('strip_potenze')\
+            .select('strip_id, potenza, codice_prodotto, indice')\
+            .in_('strip_id', found_strip_ids)\
+            .order('indice')\
+            .execute().data
+
+        temperature_map = {}
+        for t in temperature_data:
+            sid = t['strip_id']
+            if sid not in temperature_map:
+                temperature_map[sid] = []
+            temperature_map[sid].append(t['temperatura'])
+        
+        potenze_map = {}
+        codici_map = {}
+        for p in potenze_data:
+            sid = p['strip_id']
+            if sid not in potenze_map:
+                potenze_map[sid] = []
+                codici_map[sid] = []
+            potenze_map[sid].append(p['potenza'])
+            codici_map[sid].append(p['codice_prodotto'])
+
+        result = []
+        for strip in strips:
+            sid = strip['id']
+            temp_list = temperature_map.get(sid, [])
+            if temperatura not in temp_list:
+                continue
+            if potenza and potenza not in potenze_map.get(sid, []):
+                continue
+
+            strip['temperaturaColoreDisponibili'] = temp_list
+            strip['temperatura'] = temperatura
+            strip['potenzeDisponibili'] = potenze_map.get(sid, [])
+            strip['codiciProdotto'] = codici_map.get(sid, [])
+            strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
+            strip['taglioMinimo'] = strip.get('taglio_minimo', {})
+            
+            result.append(strip)
+        
+        return result
+    
     def get_alimentatori_by_tipo(self, tipo_alimentazione: str, 
                                   tensione: str = '24V') -> List[Dict[str, Any]]:
         alimentatori_map = {

@@ -12,8 +12,15 @@ export function initStep7Listeners() {
           configurazione.stripLedSelezionata === 'senza_strip' || 
           configurazione.includeStripLed === false) {
 
-        $("#step2-personalizzazione").fadeIn(300);
-        updateProgressBar(2);
+        if (configurazione.isFlussoProfiliEsterni) {
+          // Per gli esterni senza strip, torna alla personalizzazione
+          $("#step2-personalizzazione").fadeIn(300);
+          updateProgressBar(5);
+        } else {
+          // Per gli interni senza strip, torna alla personalizzazione
+          $("#step2-personalizzazione").fadeIn(300);
+          updateProgressBar(2);
+        }
       } else {
         $("#step6-proposte").fadeIn(300);
         updateProgressBar(6);

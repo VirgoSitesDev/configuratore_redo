@@ -560,8 +560,25 @@ export function caricaOpzioniPotenza(profiloId, temperatura) {
 
   $('#btn-continua-step3').prop('disabled', true);
   
+  // Per gli esterni, usa un URL diverso senza profilo
+  let url;
+  if (profiloId === 'ESTERNI') {
+    url = `/get_opzioni_potenza/ESTERNI/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
+  } else {
+    url = `/get_opzioni_potenza/${profiloId}/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
+  }
+  
+  console.log("Chiamata API potenza con URL:", url);
+  console.log("Parametri:", {
+    profiloId: profiloId,
+    tensione: configurazione.tensioneSelezionato,
+    ip: configurazione.ipSelezionato,
+    temperatura: temperatura,
+    tipologiaStrip: configurazione.tipologiaStripSelezionata
+  });
+
   $.ajax({
-    url: `/get_opzioni_potenza/${profiloId}/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`,
+    url: url,
     method: 'GET',
     success: function(data) {
       $('#potenza-container').empty();
@@ -613,8 +630,14 @@ export function caricaOpzioniPotenza(profiloId, temperatura) {
         );
       }
     },
-    error: function(error) {
-      console.error("Errore nel caricamento delle opzioni potenza:", error);
+    error: function(xhr, status, error) {
+      // MODIFICA L'ERROR HANDLER
+      console.error("Errore AJAX potenza:", {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        responseText: xhr.responseText,
+        error: error
+      });
       $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni potenza 2. Riprova più tardi.</p></div>');
     }
   });
@@ -675,8 +698,16 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
   var potenzaNew = potenza.replace(' ', '-');
   var potenzaFinale = potenzaNew.replace('/', '_');
   
+  // Per gli esterni, usa un URL diverso
+  let url;
+  if (profiloId === 'ESTERNI') {
+    url = `/get_strip_led_filtrate/ESTERNI/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;
+  } else {
+    url = `/get_strip_led_filtrate/${profiloId}/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;
+  }
+  
   $.ajax({
-    url: `/get_strip_led_filtrate/${profiloId}/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`,
+    url: url,
     method: 'GET',
     success: function(data) {
       
