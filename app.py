@@ -12,13 +12,8 @@ import logging
 
 app = Flask(__name__)
 CORS(app)
-logging.basicConfig(level=logging.WARNING)
 
 db = DatabaseManager()
-
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -364,17 +359,26 @@ def calcola_lunghezze():
         strip_data = db.supabase.table('strip_led').select('*').eq('id', strip_id).single().execute()
         if strip_data.data:
             strip_info = strip_data.data
-            tagli_minimi = strip_info.get('taglio_minimo', {})
-            if tagli_minimi and potenza_selezionata in tagli_minimi:
-                taglio_minimo_str = tagli_minimi[potenza_selezionata]
-                import re
-                match = re.search(r'(\d+(?:[.,]\d+)?)', taglio_minimo_str)
-                if match:
-                    taglio_minimo_val = match.group(1).replace(',', '.')
-                    try:
-                        taglio_minimo = float(taglio_minimo_val)
-                    except ValueError:
-                        pass
+            tagli_minimi = strip_info.get('taglio_minimo', [])
+
+            potenze_data = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_id).order('indice').execute()
+            if potenze_data.data:
+                indice_potenza = -1
+                for record in potenze_data.data:
+                    if record.get('potenza') == potenza_selezionata:
+                        indice_potenza = record.get('indice', -1)
+                        break
+
+                if indice_potenza >= 0 and indice_potenza < len(tagli_minimi):
+                    taglio_minimo_str = tagli_minimi[indice_potenza]
+                    import re
+                    match = re.search(r'(\d+(?:[.,]\d+)?)', taglio_minimo_str)
+                    if match:
+                        taglio_minimo_val = match.group(1).replace(',', '.')
+                        try:
+                            taglio_minimo = float(taglio_minimo_val)
+                        except ValueError:
+                            pass
 
     def calcola_proposte_singole(lunghezza):
         if lunghezza > 0:
