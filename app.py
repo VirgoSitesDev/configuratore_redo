@@ -226,6 +226,58 @@ def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipol
         return jsonify({'success': True, 'strip_led': strips})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+    
+@app.route('/get_opzioni_temperatura_filtrate_esterni/<tensione>/<ip>/<tipologia>')
+def get_opzioni_temperatura_filtrate_esterni(tensione, ip, tipologia):
+    try:
+        # Prima ottieni tutte le strip con tensione, IP e tipologia
+        query = db.supabase.table('strip_led').select('id')\
+            .eq('tensione', tensione)\
+            .eq('ip', ip)
+        
+        if tipologia and tipologia != 'None':
+            query = query.eq('tipo', tipologia)
+        
+        strips = query.execute().data
+        
+        if not strips:
+            return jsonify({'success': True, 'temperature': []})
+        
+        strip_ids = [s['id'] for s in strips]
+        
+        # Ora ottieni tutte le temperature disponibili per queste strip
+        temperature_data = db.supabase.table('strip_temperature')\
+            .select('temperatura')\
+            .in_('strip_id', strip_ids)\
+            .execute().data
+        
+        # Estrai temperature uniche
+        temperature_uniche = list(set([t['temperatura'] for t in temperature_data]))
+        
+        # Ordina le temperature
+        temperature_ordinate = sorted(temperature_uniche, key=lambda t: (
+            0 if 'K' in t and t.replace('K', '').isdigit() else 1,
+            int(t.replace('K', '')) if 'K' in t and t.replace('K', '').isdigit() else 0,
+            2 if t == 'CCT' else 3 if t == 'RGB' else 4 if t == 'RGBW' else 5,
+            t
+        ))
+        
+        return jsonify({
+            'success': True,
+            'temperature': temperature_ordinate,
+            'debug': {
+                'strips_trovate': len(strips),
+                'temperature_trovate': len(temperature_ordinate)
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        })
 
 @app.route('/get_opzioni_alimentatore/<tipo_alimentazione>/<tensione_strip>')
 @app.route('/get_opzioni_alimentatore/<tipo_alimentazione>/<tensione_strip>/<int:potenza_consigliata>')
@@ -806,113 +858,6 @@ def get_strip_led_by_nome_commerciale(nome_commerciale):
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'database': 'supabase'})
-
-@app.route('/debug_esterni/<tensione>/<ip>/<temperatura>/<tipologia>')
-def debug_esterni(tensione, ip, temperatura, tipologia):
-    try:
-        result = {
-            'parametri_ricevuti': {
-                'tensione': tensione,
-                'ip': ip,
-                'temperatura': temperatura,
-                'tipologia': tipologia
-            }
-        }
-        
-        # 1. Verifica quante strip esistono con tensione e IP
-        strips_base = db.supabase.table('strip_led')\
-            .select('id, nome, tipo, tensione, ip')\
-            .eq('tensione', tensione)\
-            .eq('ip', ip)\
-            .execute().data
-        
-        result['strips_con_tensione_ip'] = {
-            'count': len(strips_base),
-            'strips': [{'id': s['id'], 'nome': s.get('nome', ''), 'tipo': s.get('tipo', '')} for s in strips_base[:5]]
-        }
-        
-        # 2. Verifica se il filtro tipo funziona
-        if tipologia and tipologia != 'None':
-            strips_con_tipo = db.supabase.table('strip_led')\
-                .select('id, nome, tipo')\
-                .eq('tensione', tensione)\
-                .eq('ip', ip)\
-                .eq('tipo', tipologia)\
-                .execute().data
-            
-            result['strips_con_tipo'] = {
-                'count': len(strips_con_tipo),
-                'strips': [{'id': s['id'], 'nome': s.get('nome', ''), 'tipo': s.get('tipo', '')} for s in strips_con_tipo[:5]]
-            }
-        
-        # 3. Verifica tutti i tipi disponibili
-        tutti_tipi = db.supabase.table('strip_led')\
-            .select('tipo')\
-            .eq('tensione', tensione)\
-            .eq('ip', ip)\
-            .execute().data
-        
-        tipi_unici = list(set([t.get('tipo', 'NULL') for t in tutti_tipi if t.get('tipo')]))
-        result['tipi_disponibili'] = tipi_unici
-        
-        # 4. Test con get_all_strip_led_filtrate
-        strips_filtrate = db.get_all_strip_led_filtrate(tensione, ip, temperatura, None, tipologia)
-        result['strips_filtrate'] = {
-            'count': len(strips_filtrate),
-            'strips': [{
-                'id': s['id'], 
-                'nome': s.get('nome', ''),
-                'potenze': s.get('potenzeDisponibili', [])
-            } for s in strips_filtrate[:5]]
-        }
-        
-        # 5. Se troviamo strip, verifica le temperature
-        if strips_base:
-            strip_id = strips_base[0]['id']
-            temperature = db.supabase.table('strip_temperature')\
-                .select('temperatura')\
-                .eq('strip_id', strip_id)\
-                .execute().data
-            
-            result['esempio_temperature'] = {
-                'strip_id': strip_id,
-                'temperature': [t['temperatura'] for t in temperature]
-            }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        import traceback
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()})
-
-
-@app.route('/debug_database_values')
-def debug_database_values():
-    try:
-        # Ottieni valori unici per debugging
-        strips = db.supabase.table('strip_led').select('tipo, tensione, ip').execute().data
-        
-        tipi = list(set([s.get('tipo', 'NULL') for s in strips if s.get('tipo')]))
-        tensioni = list(set([s.get('tensione', 'NULL') for s in strips if s.get('tensione')]))
-        ips = list(set([s.get('ip', 'NULL') for s in strips if s.get('ip')]))
-        
-        # Conta strips per tipo
-        tipo_counts = {}
-        for tipo in tipi:
-            count = len([s for s in strips if s.get('tipo') == tipo])
-            tipo_counts[tipo] = count
-        
-        return jsonify({
-            'tipi_disponibili': sorted(tipi),
-            'tensioni_disponibili': sorted(tensioni),
-            'ip_disponibili': sorted(ips),
-            'conteggio_per_tipo': tipo_counts,
-            'totale_strips': len(strips)
-        })
-        
-    except Exception as e:
-        import traceback
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
