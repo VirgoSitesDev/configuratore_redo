@@ -1025,14 +1025,13 @@ function caricaOpzioniIPStandalone(tensione, tipologiaStrip, specialStrip) {
                   }, 50);
               }
               
-              // Event listener per il click
               $('.ip-card').on('click', function() {
-                  $('.ip-card').removeClass('selected');
-                  $(this).addClass('selected');
-                  configurazione.ipSelezionato = $(this).data('ip');
-                  caricaOpzioniTemperaturaStandalone(tensione, configurazione.ipSelezionato, tipologiaStrip, specialStrip);
-                  checkParametriCompletion();
-              });
+                $('.ip-card').removeClass('selected');
+                $(this).addClass('selected');
+                configurazione.ipSelezionato = $(this).data('ip');
+                caricaOpzioniTemperaturaStandalone(configurazione.tensioneSelezionato, configurazione.ipSelezionato, configurazione.tipologiaStripSelezionata, configurazione.specialStripSelezionata);
+                checkParametriCompletion();
+            });
           } else {
               $('#ip-options').html('<p class="text-danger">Nessuna opzione IP disponibile per questa configurazione.</p>');
           }
