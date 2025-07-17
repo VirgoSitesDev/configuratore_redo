@@ -17,6 +17,7 @@ export function initStep0Listeners() {
       $("#step0-scelta-modalita").fadeOut(300, function() {
         $("#step1-tipologia").fadeIn(300);
         updateProgressBar(1);
+        initStep2bTipologiaListeners();
       });
     } else if (configurazione.modalitaConfigurazione === 'solo_strip') {
       $("#step0-scelta-modalita").fadeOut(300, function() {
@@ -61,7 +62,7 @@ function initStep2bTipologiaListeners() {
       updateProgressBar(0);
     });
   });
-
+  
   $('#btn-continua-tipologia-step2b').on('click', function(e) {
     e.preventDefault();
     $("#step2b-tipologia-strip").fadeOut(300, function() {
@@ -139,6 +140,7 @@ function initStep2bPotenzaListeners() {
 }
 
 function caricaOpzioniStep2b() {
+  console.log("MA QUI CI ARRIVA");
   $('#step2b-tensione-options').html('<div class="text-center"><div class="spinner-border"></div><p>Caricamento...</p></div>');
   $('#step2b-ip-options').empty();
   $('#step2b-temperatura-options').empty();
@@ -242,7 +244,7 @@ function caricaOpzioniIP() {
   });
 }
 
-function renderOpzioniIP(opzioniIP) {
+export function renderOpzioniIP(opzioniIP) {
   $('#step2b-ip-options').empty();
 
   if (!opzioniIP || !Array.isArray(opzioniIP) || opzioniIP.length === 0) {

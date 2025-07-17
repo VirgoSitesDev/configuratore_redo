@@ -144,17 +144,22 @@ export function caricaProfiliCompatibiliConStrip() {
 
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata;
+    console.log("MA CHE COSA STA SUCCEDENDO");
+
+    console.log(stripSelezionata);
     
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
         return profili;
     }
     
     return profili.filter(profilo => {
+        console.log(profilo);
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
             return false;
         }
         
         const stripCompatibili = profilo.stripLedCompatibili;
+        console.log(stripCompatibili);
         
         // Controlla se la strip selezionata è direttamente compatibile
         if (stripCompatibili.includes(stripSelezionata)) {

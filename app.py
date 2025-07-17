@@ -765,6 +765,7 @@ def get_opzioni_strip_standalone():
 def get_opzioni_ip_standalone():
     try:
         data = request.get_json()
+        print(f"DEBUG IP - Dati ricevuti: {data}")  # AGGIUNGI QUESTO
         
         if not data:
             return jsonify({'success': False, 'message': 'Nessun dato ricevuto'})
@@ -772,6 +773,8 @@ def get_opzioni_ip_standalone():
         tipologia = data.get('tipologia', '')
         tensione = data.get('tensione', '')
         special = data.get('special')
+        
+        print(f"DEBUG IP - Parametri estratti: tipologia={tipologia}, tensione={tensione}, special={special}")  # E QUESTO
 
         gradi_ip = ['IP20', 'IP65', 'IP66', 'IP67']
 
@@ -783,14 +786,25 @@ def get_opzioni_ip_standalone():
             gradi_ip = ['IP20', 'IP65', 'IP66', 'IP67']
 
         if tipologia == 'SPECIAL' and special:
+            print(f"DEBUG IP - Caso SPECIAL con special={special}")  # E QUESTO
             if special in ['XFLEX', 'XSNAKE']:
                 gradi_ip = ['IP20', 'IP65']
             elif special == 'RUNNING':
                 gradi_ip = ['IP20', 'IP66']
+            elif special == 'ZIG_ZAG':
+                gradi_ip = ['IP20', 'IP65', 'IP66']
+                print(f"DEBUG IP - ZIG_ZAG matched, gradi_ip={gradi_ip}")  # E QUESTO
+            elif special == 'XMAGIS':
+                gradi_ip = ['IP20', 'IP65']
+        
+        print(f"DEBUG IP - Gradi IP finali: {gradi_ip}")  # E QUESTO
         
         return jsonify({'success': True, 'gradi_ip': gradi_ip})
         
     except Exception as e:
+        print(f"DEBUG IP - ERRORE: {str(e)}")  # E QUESTO
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': f'Errore interno: {str(e)}'})
 
 @app.route('/get_opzioni_temperatura_standalone', methods=['POST'])
