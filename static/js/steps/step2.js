@@ -1,4 +1,4 @@
-import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzazione, mappaIPVisualizzazione } from '../config.js';
+import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzazione } from '../config.js';
 import { updateProgressBar, checkPersonalizzazioneCompletion, formatTemperatura, checkParametriCompletion, getTemperaturaColor } from '../utils.js';
 import { caricaFinitureDisponibili, finalizzaConfigurazione, caricaOpzioniIP } from '../api.js';
 import { vaiAllaTemperaturaEPotenza } from './step3.js';
