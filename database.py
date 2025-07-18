@@ -159,17 +159,33 @@ class DatabaseManager:
         self._set_cache(cache_key, profili)
         return profili
     
+
     def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str, 
-                               temperatura: str, potenza: Optional[str] = None,
-                               tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
+                            temperatura: str, potenza: Optional[str] = None,
+                            tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
+        # DEBUG: Log dei parametri in ingresso
+        logging.info(f"get_strip_led_filtrate chiamata con: profilo_id={profilo_id}, tensione={tensione}, ip={ip}, temperatura={temperatura}, potenza={potenza}, tipologia={tipologia}")
+        
+        # DEBUG: Verifica se il profilo esiste
+        profilo_check = self.supabase.table('profili').select('id, nome').eq('id', profilo_id).execute()
+        logging.info(f"Profilo trovato: {profilo_check.data}")
+        
         strip_compatibili = self.supabase.table('profili_strip_compatibili')\
             .select('strip_id')\
             .eq('profilo_id', profilo_id)\
             .execute().data
         
+        # DEBUG: Log delle strip compatibili trovate
+        logging.info(f"Strip compatibili trovate per profilo {profilo_id}: {len(strip_compatibili)} strip")
+        logging.info(f"Strip IDs: {[s['strip_id'] for s in strip_compatibili]}")
+        
         strip_ids = [s['strip_id'] for s in strip_compatibili]
         
         if not strip_ids:
+            # DEBUG: Controlla se ci sono dati nella tabella compatibilità
+            all_compat = self.supabase.table('profili_strip_compatibili').select('*').limit(10).execute().data
+            logging.warning(f"Nessuna strip compatibile trovata per profilo {profilo_id}!")
+            logging.info(f"Primi 10 record della tabella compatibilità: {all_compat}")
             return []
 
         query = self.supabase.table('strip_led').select('*')
