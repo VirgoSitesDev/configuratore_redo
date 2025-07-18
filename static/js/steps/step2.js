@@ -863,7 +863,14 @@ function renderizzaOpzioniTensione(tensioni) {
         $unicaTensione.addClass('selected');
         configurazione.tensioneSelezionato = tensioni[0];
 
-        caricaOpzioniIP(configurazione.profiloSelezionato, configurazione.tensioneSelezionato);
+        // IMPORTANTE: Controlla se siamo nel flusso esterni
+        if (configurazione.isFlussoProfiliEsterni) {
+            console.log("Flusso esterni (auto): chiamo caricaOpzioniIPStandalone");
+            caricaOpzioniIPStandalone(configurazione.tensioneSelezionato, configurazione.tipologiaStripSelezionata, configurazione.specialStripSelezionata);
+        } else {
+            console.log("Flusso normale (auto): chiamo caricaOpzioniIP");
+            caricaOpzioniIP(configurazione.profiloSelezionato, configurazione.tensioneSelezionato);
+        }
       }
     }, 50);
   }
@@ -883,27 +890,7 @@ function renderizzaOpzioniTensione(tensioni) {
     }
     
     checkParametriCompletion();
-});
-
-if (tensioni.length === 1) {
-  setTimeout(function() {
-      const $unicaTensione = $('.tensione-card');
-      
-      if ($unicaTensione.length > 0) {
-          $unicaTensione.addClass('selected');
-          configurazione.tensioneSelezionato = tensioni[0];
-
-          // IMPORTANTE: Controlla se siamo nel flusso esterni
-          if (configurazione.isFlussoProfiliEsterni) {
-              console.log("Flusso esterni (auto): chiamo caricaOpzioniIPStandalone");
-              caricaOpzioniIPStandalone(configurazione.tensioneSelezionato, configurazione.tipologiaStripSelezionata, configurazione.specialStripSelezionata);
-          } else {
-              console.log("Flusso normale (auto): chiamo caricaOpzioniIP");
-              caricaOpzioniIP(configurazione.profiloSelezionato, configurazione.tensioneSelezionato);
-          }
-      }
-  }, 50);
-}
+  });
 }
 
 function checkPersonalizzazioneComplete() {
@@ -1018,12 +1005,12 @@ function caricaOpzioniIPStandalone(tensione, tipologiaStrip, specialStrip) {
               
               // Se c'è solo un'opzione, selezionala automaticamente
               if (data.gradi_ip.length === 1) {
-                  setTimeout(() => {
-                      $('.ip-card').addClass('selected');
-                      configurazione.ipSelezionato = data.gradi_ip[0];
-                      caricaOpzioniTemperaturaStandalone(tensione, data.gradi_ip[0], tipologiaStrip, specialStrip);
-                  }, 50);
-              }
+                setTimeout(() => {
+                    $('.ip-card').addClass('selected');
+                    configurazione.ipSelezionato = data.gradi_ip[0];
+                    caricaOpzioniTemperaturaStandalone(configurazione.tensioneSelezionato, data.gradi_ip[0], configurazione.tipologiaStripSelezionata, configurazione.specialStripSelezionata);
+                }, 50);
+            }
               
               $('.ip-card').on('click', function() {
                 $('.ip-card').removeClass('selected');
