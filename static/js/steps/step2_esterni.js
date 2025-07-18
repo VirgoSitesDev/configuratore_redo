@@ -60,17 +60,10 @@ export function caricaProfiliCompatibiliConStrip() {
 
     $(document).off('click', '.profilo-card-esterni');
 
-    console.log("=== DEBUG CARICAMENTO PROFILI ===");
-    console.log("Categoria selezionata:", configurazione.categoriaSelezionata);
-    console.log("Strip da cercare:", configurazione.stripLedSelezionata);
-
     $.ajax({
         url: `/get_profili/${configurazione.categoriaSelezionata}`,
         method: 'GET',
         success: function(data) {
-            console.log("Dati ricevuti dal server:", data);
-            console.log("Numero profili ricevuti:", data ? data.length : 0);
-            
             $('#profili-esterni-container').empty();
             
             if (!data || data.length === 0) {
@@ -80,25 +73,9 @@ export function caricaProfiliCompatibiliConStrip() {
                 return;
             }
 
-            // Debug: mostra tutti i profili e le loro compatibilità
-            console.log("=== ANALISI PROFILI RICEVUTI ===");
-            data.forEach((profilo, index) => {
-                console.log(`Profilo ${index + 1}:`, {
-                    id: profilo.id,
-                    nome: profilo.nome,
-                    stripLedCompatibili: profilo.stripLedCompatibili || []
-                });
-            });
-
             const profiliCompatibili = filtraProfiliPerStripSelezionata(data);
             
             if (profiliCompatibili.length === 0) {
-                console.log("⚠️ NESSUN PROFILO COMPATIBILE TROVATO!");
-                console.log("Possibili cause:");
-                console.log("1. ID strip non corrisponde");
-                console.log("2. Dati compatibilità mancanti");
-                console.log("3. Errore nel filtro");
-                
                 $('#profili-esterni-container').html(
                     '<div class="col-12 text-center"><p>Nessun profilo compatibile con la strip LED configurata.</p><p class="small text-muted">ID Strip cercato: ' + configurazione.stripLedSelezionata + '</p></div>'
                 );
@@ -161,60 +138,25 @@ export function caricaProfiliCompatibiliConStrip() {
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata;
 
-    console.log("=== DEBUG FILTRO PROFILI ===");
-    console.log("Strip selezionata dalla configurazione:", stripSelezionata);
-    console.log("Tipo di stripSelezionata:", typeof stripSelezionata);
-    console.log("Totale profili da filtrare:", profili.length);
-
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
-        console.log("Nessuna strip selezionata, ritorno tutti i profili");
         return profili;
     }
     
-    // Debug: mostra cosa c'è in configurazione
-    console.log("Configurazione completa strip:", {
-        stripLedSelezionata: configurazione.stripLedSelezionata,
-        nomeCommercialeStripLed: configurazione.nomeCommercialeStripLed,
-        tensioneSelezionato: configurazione.tensioneSelezionato,
-        ipSelezionato: configurazione.ipSelezionato,
-        temperaturaSelezionata: configurazione.temperaturaSelezionata,
-        tipologiaStripSelezionata: configurazione.tipologiaStripSelezionata,
-        specialStripSelezionata: configurazione.specialStripSelezionata
-    });
-    
     const profiliCompatibili = profili.filter((profilo, index) => {
-        console.log(`\n--- Profilo ${index + 1}: ${profilo.nome} (ID: ${profilo.id}) ---`);
         
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
-            console.log("❌ Profilo senza stripLedCompatibili");
             return false;
         }
         
-        console.log("Strip compatibili per questo profilo:", profilo.stripLedCompatibili);
-        console.log("Lunghezza array compatibili:", profilo.stripLedCompatibili.length);
-        
         // Verifica se la strip selezionata è nell'array
         const isCompatibile = profilo.stripLedCompatibili.includes(stripSelezionata);
-        console.log(`Verifica include('${stripSelezionata}'):`, isCompatibile);
         
         // Debug aggiuntivo: verifica corrispondenze parziali
         const matchParziali = profilo.stripLedCompatibili.filter(strip => 
             strip.includes('ZIGZAG') || strip.includes('24V') || strip.includes('IP')
         );
-        console.log("Strip compatibili che contengono ZIGZAG/24V/IP:", matchParziali);
-        
-        if (isCompatibile) {
-            console.log("✅ Profilo COMPATIBILE");
-        } else {
-            console.log("❌ Profilo NON compatibile");
-        }
         
         return isCompatibile;
     });
-
-    console.log(`\n=== RISULTATO FILTRO ===`);
-    console.log(`Profili compatibili trovati: ${profiliCompatibili.length} su ${profili.length}`);
-    console.log("IDs profili compatibili:", profiliCompatibili.map(p => p.id));
-
     return profiliCompatibili;
 }

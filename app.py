@@ -251,58 +251,6 @@ def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipol
         return jsonify({'success': True, 'strip_led': strips})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-    
-@app.route('/get_opzioni_temperatura_filtrate_esterni/<tensione>/<ip>/<tipologia>')
-def get_opzioni_temperatura_filtrate_esterni(tensione, ip, tipologia):
-    try:
-        # Prima ottieni tutte le strip con tensione, IP e tipologia
-        query = db.supabase.table('strip_led').select('id')\
-            .eq('tensione', tensione)\
-            .eq('ip', ip)
-        
-        if tipologia and tipologia != 'None':
-            query = query.eq('tipo', tipologia)
-        
-        strips = query.execute().data
-        
-        if not strips:
-            return jsonify({'success': True, 'temperature': []})
-        
-        strip_ids = [s['id'] for s in strips]
-        
-        # Ora ottieni tutte le temperature disponibili per queste strip
-        temperature_data = db.supabase.table('strip_temperature')\
-            .select('temperatura')\
-            .in_('strip_id', strip_ids)\
-            .execute().data
-        
-        # Estrai temperature uniche
-        temperature_uniche = list(set([t['temperatura'] for t in temperature_data]))
-        
-        # Ordina le temperature
-        temperature_ordinate = sorted(temperature_uniche, key=lambda t: (
-            0 if 'K' in t and t.replace('K', '').isdigit() else 1,
-            int(t.replace('K', '')) if 'K' in t and t.replace('K', '').isdigit() else 0,
-            2 if t == 'CCT' else 3 if t == 'RGB' else 4 if t == 'RGBW' else 5,
-            t
-        ))
-        
-        return jsonify({
-            'success': True,
-            'temperature': temperature_ordinate,
-            'debug': {
-                'strips_trovate': len(strips),
-                'temperature_trovate': len(temperature_ordinate)
-            }
-        })
-        
-    except Exception as e:
-        import traceback
-        return jsonify({
-            'success': False,
-            'message': str(e),
-            'traceback': traceback.format_exc()
-        })
 
 @app.route('/get_opzioni_alimentatore/<tipo_alimentazione>/<tensione_strip>')
 @app.route('/get_opzioni_alimentatore/<tipo_alimentazione>/<tensione_strip>/<int:potenza_consigliata>')
@@ -881,75 +829,57 @@ def get_opzioni_temperatura_standalone():
         tensione = data.get('tensione', '')
         ip = data.get('ip', '')
         special = data.get('special')
+        categoria = data.get('categoria')  # Nuovo parametro per gestire meglio il filtro
         
-        logging.info(f"DEBUG TEMPERATURA - Parametri estratti: tipologia={tipologia}, tensione={tensione}, ip={ip}, special={special}")
+        logging.info(f"DEBUG TEMPERATURA - Parametri estratti: tipologia={tipologia}, tensione={tensione}, ip={ip}, special={special}, categoria={categoria}")
 
-        # Step 1: Prima trova TUTTE le strip LED con i parametri base
+        # Costruisci la query base
+        strips = []
+        
         if tipologia == 'SPECIAL' and special:
             logging.info(f"DEBUG TEMPERATURA - Ricerca SPECIAL strip: {special}")
             
-            # Per special strip, cerca in base a nome/id senza altri filtri
-            all_strips = db.supabase.table('strip_led')\
+            # Per special strip, usa una strategia più robusta
+            query = db.supabase.table('strip_led')\
                 .select('id, nome_commerciale, tensione, ip, tipo')\
-                .execute().data
+                .eq('tensione', tensione)\
+                .eq('ip', ip)
             
-            # Filtra manualmente per trovare le special strip corrette
-            strips_candidati = []
+            all_strips = query.execute().data
+            
+            # Filtra per special strip
+            special_keywords = {
+                'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17'],
+                'XFLEX': ['XFLEX', 'FLEX'],
+                'XSNAKE': ['XSNAKE', 'SNAKE', 'SNK'],
+                'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
+                'RUNNING': ['RUNNING']
+            }
+            
+            keywords = special_keywords.get(special, [])
+            
             for strip in all_strips:
                 nome_commerciale = (strip.get('nome_commerciale') or '').upper()
                 strip_id = (strip.get('id') or '').upper()
                 
-                match_found = False
-                
-                if special == 'XMAGIS':
-                    if ('XMAGIS' in nome_commerciale or 'XMAGIS' in strip_id or 
-                        'MG13X12' in nome_commerciale or 'MG12X17' in nome_commerciale or
-                        'MAGIS' in nome_commerciale):
-                        match_found = True
-                elif special == 'XFLEX':
-                    if ('XFLEX' in nome_commerciale or 'XFLEX' in strip_id or
-                        'FLEX' in nome_commerciale):
-                        match_found = True
-                elif special == 'XSNAKE':
-                    if ('XSNAKE' in nome_commerciale or 'XSNAKE' in strip_id or 
-                        'SNK' in strip_id or 'SNAKE' in nome_commerciale):
-                        match_found = True
-                elif special == 'ZIG_ZAG':
-                    if ('ZIGZAG' in nome_commerciale or 'ZIGZAG' in strip_id or 
-                        'ZIG_ZAG' in nome_commerciale or 'ZIG-ZAG' in nome_commerciale):
-                        match_found = True
-                elif special == 'RUNNING':
-                    if ('RUNNING' in nome_commerciale or 'RUNNING' in strip_id):
-                        match_found = True
-                
-                if match_found:
-                    strips_candidati.append(strip)
+                # Verifica se la strip contiene una delle keywords
+                if any(keyword in nome_commerciale or keyword in strip_id for keyword in keywords):
+                    strips.append(strip)
                     logging.info(f"DEBUG TEMPERATURA - Special strip trovata: {strip_id} ({nome_commerciale})")
             
-            logging.info(f"DEBUG TEMPERATURA - Special strip totali trovate: {len(strips_candidati)}")
-            
-            # Step 2: Ora filtra per tensione e IP
-            strips = []
-            for strip in strips_candidati:
-                if strip.get('tensione') == tensione and strip.get('ip') == ip:
-                    strips.append(strip)
-                    logging.info(f"DEBUG TEMPERATURA - Strip match finale: {strip['id']} - {strip['tensione']} - {strip['ip']}")
-        
         else:
             # Per tipologie normali (COB, SMD)
-            query = db.supabase.table('strip_led').select('id, nome_commerciale, tensione, ip')\
+            query = db.supabase.table('strip_led').select('id, nome_commerciale, tensione, ip, tipo')\
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
             
-            if tipologia and tipologia != 'None':
+            if tipologia and tipologia not in ['None', 'SPECIAL']:
                 query = query.eq('tipo', tipologia)
             
             strips = query.execute().data
             logging.info(f"DEBUG TEMPERATURA - Strip normali trovate: {len(strips)}")
         
         logging.info(f"DEBUG TEMPERATURA - Strip finali dopo tutti i filtri: {len(strips)}")
-        for strip in strips:
-            logging.info(f"  -> {strip['id']} ({strip.get('nome_commerciale', 'N/A')})")
         
         if not strips:
             logging.warning("DEBUG TEMPERATURA - Nessuna strip trovata per i parametri specificati")
@@ -959,7 +889,7 @@ def get_opzioni_temperatura_standalone():
         strip_ids = [s['id'] for s in strips]
         logging.info(f"DEBUG TEMPERATURA - Strip IDs finali: {strip_ids}")
         
-        # Ora cerca le temperature disponibili per queste strip nella tabella strip_temperature
+        # Cerca le temperature disponibili per queste strip
         temperature_data = db.supabase.table('strip_temperature')\
             .select('temperatura')\
             .in_('strip_id', strip_ids)\
@@ -977,7 +907,7 @@ def get_opzioni_temperatura_standalone():
         # Ordina le temperature logicamente
         def get_temperatura_order(temp):
             if 'K' in temp and temp.replace('K', '').isdigit():
-                return (0, int(temp.replace('K', '')))  # Temperature Kelvin per prime, ordinate numericamente
+                return (0, int(temp.replace('K', '')))  # Temperature Kelvin prime, ordinate numericamente
             elif temp == 'CCT':
                 return (1, 0)  # CCT dopo le temperature fisse
             elif temp == 'RGB':
@@ -989,7 +919,7 @@ def get_opzioni_temperatura_standalone():
         
         temperature_ordinate = sorted(temperature_uniche, key=get_temperatura_order)
         
-        logging.info(f"DEBUG TEMPERATURA - Temperature disponibili trovate nel DB: {temperature_ordinate}")
+        logging.info(f"DEBUG TEMPERATURA - Temperature disponibili nel DB: {temperature_ordinate}")
         
         return jsonify({
             'success': True, 
@@ -1002,7 +932,8 @@ def get_opzioni_temperatura_standalone():
                     'tipologia': tipologia,
                     'tensione': tensione,
                     'ip': ip,
-                    'special': special
+                    'special': special,
+                    'categoria': categoria
                 }
             }
         })
@@ -1024,16 +955,12 @@ def get_opzioni_potenza_standalone():
         temperatura = data.get('temperatura')
         
         # Prima trova le strip che corrispondono ai criteri
-        print("DEBUGGONE FINALE PER POTENZA STANDALONE")
-        print("TENSIONE SCELTA: " + tensione)
-        print("IP SCELTA: " + ip)
         query = db.supabase.table('strip_led').select('id')\
             .eq('tensione', tensione)\
             .eq('ip', ip)
         
         # Applica filtri per special strip
         strips = query.execute().data
-        print(strips)
         if tipologia == 'SPECIAL' and special:
             if special == 'XMAGIS':
                 query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
@@ -1047,13 +974,11 @@ def get_opzioni_potenza_standalone():
                 query = query.or_('nome_commerciale.ilike.%RUNNING%,id.ilike.%RUNNING%')
         
         strips = query.execute().data
-        print(strips)
         
         if not strips:
             return jsonify({'success': True, 'potenze': []})
         
         strip_ids = [s['id'] for s in strips]
-        print(strip_ids)
         
         # Filtra per temperatura se specificata
         if temperatura:
@@ -1104,30 +1029,18 @@ def get_strip_compatibile_standalone():
 def get_strip_led_filtrate_standalone():
     try:
         data = request.json
-        
-        print("=== DEBUG get_strip_led_filtrate_standalone ===")
-        print(f"Dati ricevuti: {data}")
-        
+
         tipologia = data.get('tipologia')
         special = data.get('special')
         tensione = data.get('tensione')
         ip = data.get('ip')
         temperatura = data.get('temperatura')
         potenza = data.get('potenza')
-        
-        print(f"Parametri estratti:")
-        print(f"  tipologia: {tipologia}")
-        print(f"  special: {special}")
-        print(f"  tensione: {tensione}")
-        print(f"  ip: {ip}")
-        print(f"  temperatura: {temperatura}")
-        print(f"  potenza: {potenza}")
-        
+
         # NUOVO APPROCCIO: Per Special Strip, prima cerchiamo la tipologia specifica
         # poi filtriamo per parametri compatibili invece che il contrario
         
         if tipologia == 'SPECIAL' and special:
-            print(f"\n=== GESTIONE SPECIAL STRIP: {special} ===")
             
             special_keywords = {
                 'XFLEX': ['XFLEX', 'FLEX'],
@@ -1138,10 +1051,8 @@ def get_strip_led_filtrate_standalone():
             }
             
             keywords = special_keywords.get(special, [])
-            print(f"Keywords per {special}: {keywords}")
             
             if not keywords:
-                print(f"❌ Nessuna keyword trovata per {special}")
                 return jsonify({'success': False, 'message': f'Tipologia special strip non riconosciuta: {special}'})
             
             # Prima trova TUTTE le strip di questo tipo special (senza filtri tensione/IP)
@@ -1153,37 +1064,25 @@ def get_strip_led_filtrate_standalone():
                 or_conditions.append(f"id.ilike.%{keyword}%")
             
             or_query = ','.join(or_conditions)
-            print(f"Query per trovare special strip: {or_query}")
             
             special_strips = base_query.or_(or_query).execute().data
-            print(f"Special strip trovate (tutti): {len(special_strips)}")
-            
-            for strip in special_strips:
-                print(f"  - {strip['id']}: {strip.get('nome_commerciale', 'N/A')} (T:{strip['tensione']}, IP:{strip['ip']})")
-            
+
             # Ora filtra per tensione (obbligatorio)
             if tensione:
                 special_strips = [s for s in special_strips if s['tensione'] == tensione]
-                print(f"Dopo filtro tensione {tensione}: {len(special_strips)} strip")
             
             # Per IP: se l'utente ha selezionato un IP che non esiste per questa special strip,
             # mostriamo comunque le strip disponibili con i loro IP reali
             if ip:
                 strips_con_ip_richiesto = [s for s in special_strips if s['ip'] == ip]
                 if strips_con_ip_richiesto:
-                    print(f"Trovate {len(strips_con_ip_richiesto)} strip con IP {ip} richiesto")
                     special_strips = strips_con_ip_richiesto
-                else:
-                    print(f"⚠️ Nessuna strip trovata con IP {ip}, mostro tutte le strip disponibili per questa special:")
-                    for strip in special_strips:
-                        print(f"    Disponibile: IP {strip['ip']}")
-                    # Continuiamo con tutte le strip trovate invece di bloccare
-            
+
+            # Continuiamo con tutte le strip trovate invece di bloccare
             strips = special_strips
             
         else:
             # Logica normale per non-special strip
-            print(f"\n=== GESTIONE STRIP NORMALE ===")
             query = db.supabase.table('strip_led').select('*')
             
             if tensione:
@@ -1192,13 +1091,11 @@ def get_strip_led_filtrate_standalone():
                 query = query.eq('ip', ip)
                 
             strips = query.execute().data
-        
-        print(f"\nStrip finali da processare: {len(strips)}")
+
         
         result = []
         for strip in strips:
             strip_id = strip['id']
-            print(f"\nProcessing strip: {strip_id}")
             
             # Controllo temperatura
             if temperatura:
@@ -1208,9 +1105,7 @@ def get_strip_led_filtrate_standalone():
                     .eq('temperatura', temperatura)\
                     .execute().data
                 
-                print(f"  Temperature check per {temperatura}: {len(temp_check)} risultati")
                 if not temp_check:
-                    print(f"  ❌ Strip {strip_id} saltata per temperatura")
                     continue
             
             # Controllo potenza
@@ -1220,10 +1115,8 @@ def get_strip_led_filtrate_standalone():
                     .eq('strip_id', strip_id)\
                     .eq('potenza', potenza)\
                     .execute().data
-                
-                print(f"  Potenza check per {potenza}: {len(potenza_check)} risultati")
+
                 if not potenza_check:
-                    print(f"  ❌ Strip {strip_id} saltata per potenza")
                     continue
             
             # Ottieni temperature disponibili
@@ -1239,28 +1132,18 @@ def get_strip_led_filtrate_standalone():
                 .order('indice')\
                 .execute().data
             
-            print(f"  Temperature disponibili: {[t['temperatura'] for t in temperatures]}")
-            print(f"  Potenze disponibili: {[p['potenza'] for p in potenze]}")
-            
             strip['temperaturaColoreDisponibili'] = [t['temperatura'] for t in temperatures]
             strip['potenzeDisponibili'] = [p['potenza'] for p in potenze]
             strip['codiciProdotto'] = [p['codice_prodotto'] for p in potenze]
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
             strip['temperatura'] = temperatura
-            
-            print(f"  ✅ Strip {strip_id} aggiunta al risultato")
+
             result.append(strip)
-        
-        print(f"\n=== RISULTATO FINALE ===")
-        print(f"Strip nel risultato finale: {len(result)}")
-        for strip in result:
-            print(f"  - {strip['id']}: {strip.get('nomeCommerciale', 'N/A')} (T:{strip['tensione']}, IP:{strip['ip']})")
-        
+
         return jsonify({'success': True, 'strip_led': result})
         
     except Exception as e:
-        print(f"❌ ERRORE in get_strip_led_filtrate_standalone: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)})

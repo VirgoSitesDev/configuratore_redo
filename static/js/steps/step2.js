@@ -1152,70 +1152,78 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
   
   $('#temperatura-iniziale-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento temperature...</p>');
 
-  if (configurazione.isFlussoProfiliEsterni) {
-      $.ajax({
-          url: `/get_opzioni_temperatura_filtrate_esterni/${tensione}/${ip}/${tipologiaStrip}`,
-          method: 'GET',
-          success: function(data) {
-              $('#temperatura-iniziale-options').empty();
-              
-              if (!data.success) {
-                  $('#temperatura-iniziale-options').html('<p class="text-danger">Errore nel caricamento delle temperature.</p>');
-                  isLoadingTemperatura = false;
-                  return;
-              }
-              
-              if (!data.temperature || data.temperature.length === 0) {
-                  $('#temperatura-iniziale-options').html(`
-                      <div class="col-12">
-                          <div class="alert alert-warning">
-                              <p>Nessuna temperatura disponibile per questa combinazione.</p>
-                          </div>
-                      </div>
-                  `);
-                  isLoadingTemperatura = false;
-                  return;
-              }
-
-              data.temperature.forEach(function(temp) {
-                  $('#temperatura-iniziale-options').append(`
-                      <div class="col-md-4 mb-3">
-                          <div class="card option-card temperatura-card" data-temperatura="${temp}">
-                              <div class="card-body text-center">
-                                  <h5 class="card-title">${formatTemperatura(temp)}</h5>
-                                  <div class="temperatura-color-preview" style="background: ${getTemperaturaColor(temp)};"></div>
-                              </div>
-                          </div>
-                      </div>
-                  `);
-              });
-
-              if (data.temperature.length === 1) {
-                  setTimeout(() => {
-                      const $unicaTemperatura = $('.temperatura-card');
-                      $unicaTemperatura.addClass('selected');
-                      configurazione.temperaturaSelezionata = data.temperature[0];
-                      isLoadingTemperatura = false;
-                      checkParametriCompletion();
-                  }, 50);
-              } else {
-                  isLoadingTemperatura = false;
-              }
-
-              $('.temperatura-card').off('click').on('click', function() {
-                  $('.temperatura-card').removeClass('selected');
-                  $(this).addClass('selected');
-                  configurazione.temperaturaSelezionata = $(this).data('temperatura');
-                  checkParametriCompletion();
-              });
-          },
-          error: function(error) {
-              console.error("Errore nel caricamento delle temperature filtrate:", error);
+  // Usa sempre la funzione standalone unificata (sia per esterni che normali)
+  $.ajax({
+      url: '/get_opzioni_temperatura_standalone',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+          tipologia: tipologiaStrip,
+          tensione: tensione,
+          ip: ip,
+          special: specialStrip,
+          categoria: configurazione.categoriaSelezionata  // Aggiungi categoria per un miglior filtro
+      }),
+      success: function(data) {
+          $('#temperatura-iniziale-options').empty();
+          
+          if (!data.success) {
               $('#temperatura-iniziale-options').html('<p class="text-danger">Errore nel caricamento delle temperature.</p>');
               isLoadingTemperatura = false;
+              return;
           }
-      });
-  }
+          
+          if (!data.temperature || data.temperature.length === 0) {
+              $('#temperatura-iniziale-options').html(`
+                  <div class="col-12">
+                      <div class="alert alert-warning">
+                          <p>Nessuna temperatura disponibile per questa combinazione.</p>
+                          <p class="small">Parametri: ${tipologiaStrip}${specialStrip ? ` (${specialStrip})` : ''}, ${tensione}, ${ip}</p>
+                      </div>
+                  </div>
+              `);
+              isLoadingTemperatura = false;
+              return;
+          }
+
+          data.temperature.forEach(function(temp) {
+              $('#temperatura-iniziale-options').append(`
+                  <div class="col-md-4 mb-3">
+                      <div class="card option-card temperatura-card" data-temperatura="${temp}">
+                          <div class="card-body text-center">
+                              <h5 class="card-title">${formatTemperatura(temp)}</h5>
+                              <div class="temperatura-color-preview" style="background: ${getTemperaturaColor(temp)};"></div>
+                          </div>
+                      </div>
+                  </div>
+              `);
+          });
+
+          if (data.temperature.length === 1) {
+              setTimeout(() => {
+                  const $unicaTemperatura = $('.temperatura-card');
+                  $unicaTemperatura.addClass('selected');
+                  configurazione.temperaturaSelezionata = data.temperature[0];
+                  isLoadingTemperatura = false;
+                  checkParametriCompletion();
+              }, 50);
+          } else {
+              isLoadingTemperatura = false;
+          }
+
+          $('.temperatura-card').off('click').on('click', function() {
+              $('.temperatura-card').removeClass('selected');
+              $(this).addClass('selected');
+              configurazione.temperaturaSelezionata = $(this).data('temperatura');
+              checkParametriCompletion();
+          });
+      },
+      error: function(xhr, status, error) {
+          console.error("Errore nel caricamento delle temperature:", error);
+          $('#temperatura-iniziale-options').html('<p class="text-danger">Errore nel caricamento delle temperature.</p>');
+          isLoadingTemperatura = false;
+      }
+  });
 }
 
 export function saltaAlimentazionePerEsterni() {

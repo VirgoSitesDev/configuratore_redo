@@ -95,7 +95,6 @@ export function vaiAllaTemperaturaEPotenza() {
 function renderizzaOpzioniPotenza(potenze) {
   $('#potenza-container').empty();
   
-  console.log(potenze);
   potenze.forEach(function(potenza) {
     $('#potenza-container').append(`
       <div class="col-md-4 mb-3">
@@ -114,7 +113,6 @@ function renderizzaOpzioniPotenza(potenze) {
       configurazione.potenzaSelezionata = potenze[0].id || potenze[0];
       $('#strip-led-model-section').show();
       
-      console.log(configurazione.isFlussoProfiliEsterni);
       if (configurazione.isFlussoProfiliEsterni) {
         caricaStripLedFiltrate();
       } else {
@@ -134,16 +132,6 @@ function renderizzaOpzioniPotenza(potenze) {
 function caricaStripLedFiltrate() {
   $('#strip-led-compatibili-container').empty().html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento strip LED...</p></div>');
   
-  console.log("=== DEBUG caricaStripLedFiltrate ===");
-  console.log("Parametri configurazione attuali:", {
-    tipologiaStripSelezionata: configurazione.tipologiaStripSelezionata,
-    specialStripSelezionata: configurazione.specialStripSelezionata,
-    tensioneSelezionato: configurazione.tensioneSelezionato,
-    ipSelezionato: configurazione.ipSelezionato,
-    temperaturaSelezionata: configurazione.temperaturaSelezionata,
-    potenzaSelezionata: configurazione.potenzaSelezionata
-  });
-  
   const requestData = {
     tipologia: configurazione.tipologiaStripSelezionata,
     special: configurazione.specialStripSelezionata,
@@ -153,31 +141,13 @@ function caricaStripLedFiltrate() {
     potenza: configurazione.potenzaSelezionata
   };
   
-  console.log("Dati che invio al server:", requestData);
-  
   $.ajax({
     url: '/get_strip_led_filtrate_standalone',
     method: 'POST',
     contentType: 'application/json',
     data: JSON.stringify(requestData),
-    beforeSend: function() {
-      console.log("⏳ Invio richiesta al server...");
-    },
-    success: function(data) {
-      console.log("✅ Risposta ricevuta dal server:", data);
-      
+    success: function(data) {      
       if (data.success && data.strip_led) {
-        console.log("Strip LED trovate:", data.strip_led.length);
-        data.strip_led.forEach((strip, index) => {
-          console.log(`Strip ${index + 1}:`, {
-            id: strip.id,
-            nomeCommerciale: strip.nomeCommerciale,
-            tensione: strip.tensione,
-            ip: strip.ip,
-            temperatura: strip.temperatura
-          });
-        });
-        
         let stripHtml = '<div class="row">';
         
         data.strip_led.forEach(function(strip) {
@@ -215,15 +185,6 @@ function caricaStripLedFiltrate() {
             configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
             configurazione.stripLedSelezionata = stripSelezionata.id;
             
-            console.log("=== STRIP SELEZIONATA AUTOMATICAMENTE ===");
-            console.log("ID impostato:", stripSelezionata.id);
-            console.log("Nome commerciale:", stripSelezionata.nomeCommerciale);
-            console.log("Configurazione aggiornata:", {
-              stripLedSceltaFinale: configurazione.stripLedSceltaFinale,
-              nomeCommercialeStripLed: configurazione.nomeCommercialeStripLed,
-              stripLedSelezionata: configurazione.stripLedSelezionata
-            });
-            
             $('#btn-continua-step3').prop('disabled', false);
           }, 100);
         }
@@ -246,9 +207,6 @@ function caricaStripLedFiltrate() {
         '<div class="alert alert-danger">Errore nel caricamento delle strip LED. Riprova più tardi.</div>'
       );
     },
-    complete: function() {
-      console.log("🏁 Richiesta AJAX completata");
-    }
   });
 }
 
@@ -283,7 +241,6 @@ export function initPotenzaListener() {
     configurazione.potenzaSelezionata = $(this).data('potenza');
     configurazione.codicePotenza = $(this).data('codice');
 
-    console.log(configurazione.isFlussoProfiliEsterni);
     if (configurazione.isFlussoProfiliEsterni) {
       caricaStripLedFiltrate();
     } else {
@@ -328,20 +285,10 @@ export function initPotenzaListener() {
     
     const stripId = $(this).data('strip-id');
     const nomeCommerciale = $(this).data('nome-commerciale') || '';
-    
-    console.log("=== STRIP SELEZIONATA MANUALMENTE ===");
-    console.log("Strip ID dal data attribute:", stripId);
-    console.log("Nome commerciale dal data attribute:", nomeCommerciale);
-    
+
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
-    
-    console.log("Configurazione dopo selezione manuale:", {
-      stripLedSceltaFinale: configurazione.stripLedSceltaFinale,
-      nomeCommercialeStripLed: configurazione.nomeCommercialeStripLed,
-      stripLedSelezionata: configurazione.stripLedSelezionata
-    });
     
     $('#btn-continua-step3').prop('disabled', false);
   });
@@ -351,20 +298,10 @@ export function initPotenzaListener() {
     
     const stripId = $(this).data('strip-id');
     const nomeCommerciale = $(this).data('nome-commerciale') || '';
-    
-    console.log("=== STRIP SELEZIONATA MANUALMENTE ===");
-    console.log("Strip ID dal data attribute:", stripId);
-    console.log("Nome commerciale dal data attribute:", nomeCommerciale);
-    
+
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
-    
-    console.log("Configurazione dopo selezione manuale:", {
-      stripLedSceltaFinale: configurazione.stripLedSceltaFinale,
-      nomeCommercialeStripLed: configurazione.nomeCommercialeStripLed,
-      stripLedSelezionata: configurazione.stripLedSelezionata
-    });
     
     $('#btn-continua-step3').prop('disabled', false);
   });

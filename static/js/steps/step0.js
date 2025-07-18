@@ -307,7 +307,8 @@ function caricaOpzioniTemperatura() {
       tipologia: configurazione.tipologiaStripSelezionata,
       tensione: configurazione.tensioneSelezionato,
       ip: configurazione.ipSelezionato,
-      special: configurazione.specialStripSelezionata
+      special: configurazione.specialStripSelezionata,
+      categoria: 'solo_strip'  // Identifica che è flusso solo strip
     }),
     success: function(data) {
       if (data.success) {
