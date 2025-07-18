@@ -115,7 +115,6 @@ const configurazione = {
 
   const mappaSpecialStripVisualizzazione = {
 	'XFLEX': 'XFLEX',
-	'RUNNING': 'RUNNING',
 	'ZIG_ZAG': 'ZIG ZAG',
 	'XSNAKE': 'XSNAKE',
 	'XMAGIS': 'XMAGIS'

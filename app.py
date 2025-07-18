@@ -773,8 +773,6 @@ def get_opzioni_ip_standalone():
                 query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
                 query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
-            elif special == 'RUNNING':
-                query = query.or_('nome_commerciale.ilike.%RUNNING%,id.ilike.%RUNNING%')
         
         # Esegui la query
         strips = query.execute().data
@@ -853,7 +851,6 @@ def get_opzioni_temperatura_standalone():
                 'XFLEX': ['XFLEX', 'FLEX'],
                 'XSNAKE': ['XSNAKE', 'SNAKE', 'SNK'],
                 'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
-                'RUNNING': ['RUNNING']
             }
             
             keywords = special_keywords.get(special, [])
@@ -970,8 +967,6 @@ def get_opzioni_potenza_standalone():
                 query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
                 query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
-            elif special == 'RUNNING':
-                query = query.or_('nome_commerciale.ilike.%RUNNING%,id.ilike.%RUNNING%')
         
         strips = query.execute().data
         
@@ -1047,7 +1042,6 @@ def get_strip_led_filtrate_standalone():
                 'XSNAKE': ['XSNAKE', 'SNAKE'],
                 'XMAGIS': ['XMAGIS', 'MAGIS'],
                 'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG'],
-                'RUNNING': ['RUNNING']
             }
             
             keywords = special_keywords.get(special, [])

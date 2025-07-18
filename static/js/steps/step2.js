@@ -145,6 +145,8 @@ $('#btn-continua-step2-option').on('click', function(e) {
 });
 }
 
+
+// Modifica la funzione vaiAllaTipologiaStrip per applicare il filtro agli esterni
 export function vaiAllaTipologiaStrip() {
   configurazione.tipologiaStripSelezionata = null;
   configurazione.specialStripSelezionata = null;
@@ -177,7 +179,8 @@ export function vaiAllaTipologiaStrip() {
   if (configurazione.isFlussoProfiliEsterni) {
     $("#step1-tipologia").fadeOut(300, function() {
       $("#step2-tipologia-strip").fadeIn(300);
-      analizzaEMostraTipologieCompatibili();
+      // APPLICA IL FILTRO PER ESTERNI SUBITO DOPO IL FADE IN
+      applicaFiltroTipologieEsterni();
     });
   } else {
     $("#step2-option-strip").fadeOut(300, function() {
@@ -187,101 +190,45 @@ export function vaiAllaTipologiaStrip() {
   }
 }
 
-export function analizzaTipologiePerEsterni() {
-  $('.tipologia-strip-card').off('click');
-  $('.special-strip-card').off('click');
-  
+function applicaFiltroTipologieEsterni() {
+  // Nascondi tutte le tipologie
   $('.tipologia-strip-card').parent().hide();
-
-  $.ajax({
-    url: `/get_profili/${configurazione.categoriaSelezionata}`,
-    method: 'GET',
-    success: function(profili) {
-      let stripCompatibiliTotali = [];
-      profili.forEach(profilo => {
-        if (profilo.stripLedCompatibili && profilo.stripLedCompatibili.length > 0) {
-          stripCompatibiliTotali = stripCompatibiliTotali.concat(profilo.stripLedCompatibili);
-        }
-      });
-
-      stripCompatibiliTotali = [...new Set(stripCompatibiliTotali)];
-
-      const specialStripDisponibili = verificaSpecialStripDisponibili(stripCompatibiliTotali);
-      
-      if (specialStripDisponibili.length === 0) {
-        $('#tipologia-strip-container').html(`
-          <div class="alert alert-warning">
-            <p>Nessuna strip LED speciale disponibile per i profili esterni selezionati.</p>
-            <p>Prova a selezionare una categoria diversa.</p>
-          </div>
-        `);
-        $('#btn-continua-tipologia-strip').prop('disabled', true);
-        return;
-      }
-
-      $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').parent().show();
-      
-      setTimeout(() => {
-        $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').addClass('selected');
-        configurazione.tipologiaStripSelezionata = 'SPECIAL';
-        $('#special-strip-container').fadeIn(300);
-
-        filtraSpecialStripPerEsterni(specialStripDisponibili);
-        
-        $('#btn-continua-tipologia-strip').prop('disabled', true);
-      }, 100);
-
-      setTimeout(() => {
-        prepareTipologiaStripListeners();
-      }, 200);
-    },
-    error: function(error) {
-      console.error("Errore nel caricamento dei profili esterni:", error);
-      $('#tipologia-strip-container').html(`
-        <div class="alert alert-danger">
-          <p>Errore nel caricamento dei profili. Riprova più tardi.</p>
-        </div>
-      `);
-    }
-  });
-}
-
-function verificaSpecialStripDisponibili(stripCompatibili) {
-  const specialStripMap = {
-    'XFLEX': ['XFLEX', 'FLEX'],
-    'RUNNING': ['RUNNING'],
-    'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
-    'XSNAKE': ['XSNAKE', 'SNAKE'],
-    'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17']
-  };
   
-  const disponibili = [];
+  // Per gli esterni mostra solo SPECIAL
+  $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').parent().show();
   
-  for (const [specialType, keywords] of Object.entries(specialStripMap)) {
-    const isCompatibile = stripCompatibili.some(stripId => 
-      keywords.some(keyword => stripId.toUpperCase().includes(keyword))
-    );
+  // Seleziona automaticamente SPECIAL
+  setTimeout(() => {
+    $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').addClass('selected');
+    configurazione.tipologiaStripSelezionata = 'SPECIAL';
+    $('#special-strip-container').fadeIn(300);
     
-    if (isCompatibile) {
-      disponibili.push(specialType);
-    }
-  }
-  
-  return disponibili;
+    // Filtra le special strip per gli esterni
+    filtraSpecialStripPerEsterniFiltrate();
+    
+    $('#btn-continua-tipologia-strip').prop('disabled', true);
+    
+    // Prepara i listener
+    prepareTipologiaStripListeners();
+  }, 100);
 }
 
-function filtraSpecialStripPerEsterni(specialStripDisponibili) {
+function filtraSpecialStripPerEsterniFiltrate() {
   $('.special-strip-card').parent().hide();
 
-  specialStripDisponibili.forEach(specialType => {
+  // Per gli esterni sono disponibili solo queste special strip
+  const specialStripEsterni = ['XFLEX', 'XSNAKE', 'XMAGIS'];
+  
+  specialStripEsterni.forEach(specialType => {
     $(`.special-strip-card[data-special-strip="${specialType}"]`).parent().show();
   });
 
-  if (specialStripDisponibili.length === 1) {
-    const $unicaSpecial = $(`.special-strip-card[data-special-strip="${specialStripDisponibili[0]}"]`);
+  // Se c'è solo una opzione disponibile, selezionala automaticamente
+  if (specialStripEsterni.length === 1) {
+    const $unica = $(`.special-strip-card[data-special-strip="${specialStripEsterni[0]}"]`);
     setTimeout(() => {
-      $unicaSpecial.addClass('selected');
-      configurazione.specialStripSelezionata = specialStripDisponibili[0];
+      $unica.addClass('selected');
+      configurazione.specialStripSelezionata = specialStripEsterni[0];
       $('#btn-continua-tipologia-strip').prop('disabled', false);
     }, 100);
   }
@@ -289,7 +236,7 @@ function filtraSpecialStripPerEsterni(specialStripDisponibili) {
 
 function analizzaEMostraTipologieCompatibili() {
   if (configurazione.isFlussoProfiliEsterni) {
-    analizzaTipologiePerEsterni();
+    applicaFiltroTipologieEsterni();
     return;
   }
   $('.tipologia-strip-card').parent().hide();
@@ -333,7 +280,6 @@ function analizzaEMostraTipologieCompatibili() {
         !id.includes('COB') && !id.includes('SMD') || 
         id.includes('ZIGZAG') || 
         id.includes('XFLEX') || 
-        id.includes('RUNNING') || 
         id.includes('XSNAKE') || 
         id.includes('XMAGIS'));
         
@@ -397,11 +343,11 @@ function analizzaEMostraTipologieCompatibili() {
 function filtraSpecialStripCompatibili(stripCompatibili) {
   $('.special-strip-card').parent().hide();
 
+  // Rimuove solo RUNNING (inventata), mantiene ZIG_ZAG per interni
   const specialStripMap = {
     'XFLEX': ['XFLEX', 'FLEX'],
-    'RUNNING': ['RUNNING'],
-    'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIGZAG'],
-    'XSNAKE': ['XSNAKE', 'XSNAKE', 'SNAKE'],
+    'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
+    'XSNAKE': ['XSNAKE', 'SNAKE'],
     'XMAGIS': ['XMAGIS', 'MAGIS']
   };
 
