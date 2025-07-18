@@ -145,15 +145,25 @@ export function caricaProfiliCompatibiliConStrip() {
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata;
     
+    console.log("⚠️ Filtrando profili per strip:", stripSelezionata);
+    
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
         return profili;
     }
     
-    return profili.filter(profilo => {
+    const profiliCompatibili = profili.filter(profilo => {
+        console.log(`Profilo ${profilo.nome} - Strip compatibili:`, profilo.stripLedCompatibili);
+        
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
             return false;
         }
         
-        return profilo.stripLedCompatibili.includes(stripSelezionata);
+        const isCompatibile = profilo.stripLedCompatibili.includes(stripSelezionata);
+        console.log(`${profilo.nome} è compatibile con ${stripSelezionata}?`, isCompatibile);
+        
+        return isCompatibile;
     });
+    
+    console.log("Profili compatibili trovati:", profiliCompatibili.length);
+    return profiliCompatibili;
 }
