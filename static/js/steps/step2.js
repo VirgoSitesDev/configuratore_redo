@@ -183,13 +183,16 @@ export function vaiAllaTipologiaStrip() {
 }
 
 export function analizzaTipologiePerEsterni() {
-  $('.tipologia-strip-card').parent().show();
-
-  if (configurazione.categoriaSelezionata === 'esterni') {
-    $('.tipologia-strip-card').parent().show();
-  } else if (configurazione.categoriaSelezionata === 'wall_washer_ext') {
-    $('.tipologia-strip-card').parent().show();
-  }
+  $('.tipologia-strip-card').parent().hide();
+  
+  $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').parent().show();
+  
+  setTimeout(() => {
+    $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').addClass('selected');
+    configurazione.tipologiaStripSelezionata = 'SPECIAL';
+    $('#special-strip-container').fadeIn(300);
+    $('#btn-continua-tipologia-strip').prop('disabled', true);
+  }, 100);
   
   prepareTipologiaStripListeners();
 }
@@ -802,10 +805,31 @@ export function caricaOpzioniParametriFiltrate() {
   configurazione.temperaturaSelezionata = null;
   
   $('#btn-continua-parametri').prop('disabled', true);
+  
+  if (configurazione.isFlussoProfiliEsterni) {
     $.ajax({
-      url: configurazione.isFlussoProfiliEsterni 
-      ? `/get_opzioni_tensione/ESTERNI/${configurazione.tipologiaStripSelezionata}`
-      : `/get_opzioni_tensione/${configurazione.profiloSelezionato}/${configurazione.tipologiaStripSelezionata}`,
+      url: '/get_opzioni_strip_standalone',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        tipologia: configurazione.tipologiaStripSelezionata,
+        special: configurazione.specialStripSelezionata
+      }),
+      success: function(data) {
+        if (data.success) {
+          renderizzaOpzioniTensione(data.tensioni);
+        } else {
+          $('#tensione-options').html('<p class="text-danger">Errore nel caricamento delle opzioni tensione.</p>');
+        }
+      },
+      error: function(error) {
+        console.error("Errore nel caricamento delle opzioni tensione:", error);
+        $('#tensione-options').html('<p class="text-danger">Errore nel caricamento delle opzioni tensione. Riprova più tardi.</p>');
+      }
+    });
+  } else {
+    $.ajax({
+      url: `/get_opzioni_tensione/${configurazione.profiloSelezionato}/${configurazione.tipologiaStripSelezionata}`,
       method: 'GET',
       success: function(data) {
         if (data.success && data.voltaggi) {
@@ -827,6 +851,7 @@ export function caricaOpzioniParametriFiltrate() {
         $('#tensione-options').html('<p class="text-danger">Errore nel caricamento delle opzioni tensione. Riprova più tardi.</p>');
       }
     });
+  }
 }
 
 function renderizzaOpzioniTensione(tensioni) {

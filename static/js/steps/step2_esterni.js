@@ -144,59 +144,16 @@ export function caricaProfiliCompatibiliConStrip() {
 
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata;
-    console.log("MA CHE COSA STA SUCCEDENDO");
-
-    console.log(stripSelezionata);
     
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
         return profili;
     }
     
     return profili.filter(profilo => {
-        console.log(profilo);
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
             return false;
         }
         
-        const stripCompatibili = profilo.stripLedCompatibili;
-        console.log(stripCompatibili);
-        
-        // Controlla se la strip selezionata è direttamente compatibile
-        if (stripCompatibili.includes(stripSelezionata)) {
-            return true;
-        }
-        
-        // Per strip speciali, controlla compatibilità basata su keywords
-        if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
-            const specialKeywords = {
-                'XFLEX': ['XFLEX'],
-                'XSNAKE': ['XSNAKE'],
-                'XMAGIS': ['XMAGIS', 'MG13X12', 'MG12X17'],
-                'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG'],
-                'RUNNING': ['RUNNING']
-            };
-            
-            const keywords = specialKeywords[configurazione.specialStripSelezionata] || [];
-            return stripCompatibili.some(stripId => 
-                keywords.some(keyword => stripId.toUpperCase().includes(keyword))
-            );
-        }
-        
-        // Per strip normali, controlla compatibilità basata su tipo
-        if (configurazione.tipologiaStripSelezionata === 'COB') {
-            return stripCompatibili.some(id => 
-                id.includes('COB') && 
-                id.includes(configurazione.tensioneSelezionato) &&
-                id.includes(configurazione.ipSelezionato)
-            );
-        } else if (configurazione.tipologiaStripSelezionata === 'SMD') {
-            return stripCompatibili.some(id => 
-                id.includes('SMD') && 
-                id.includes(configurazione.tensioneSelezionato) &&
-                id.includes(configurazione.ipSelezionato)
-            );
-        }
-        
-        return false;
+        return profilo.stripLedCompatibili.includes(stripSelezionata);
     });
 }

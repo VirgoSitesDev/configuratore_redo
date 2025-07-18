@@ -47,17 +47,25 @@ export function initStep3Listeners() {
 
 export function vaiAllaTemperaturaEPotenza() {
   if (configurazione.isFlussoProfiliEsterni) {
-    // AGGIUNGI QUESTO LOG
-    console.log("Caricamento potenza per esterni con parametri:", {
-        temperaturaSelezionata: configurazione.temperaturaSelezionata,
-        tensioneSelezionato: configurazione.tensioneSelezionato,
-        ipSelezionato: configurazione.ipSelezionato,
-        tipologiaStripSelezionata: configurazione.tipologiaStripSelezionata
+    $.ajax({
+      url: '/get_opzioni_potenza_standalone',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        tipologia: configurazione.tipologiaStripSelezionata,
+        tensione: configurazione.tensioneSelezionato,
+        ip: configurazione.ipSelezionato,
+        temperatura: configurazione.temperaturaSelezionata,
+        special: configurazione.specialStripSelezionata
+      }),
+      success: function(data) {
+        if (data.success) {
+          renderizzaOpzioniPotenza(data.potenze);
+        }
+      }
     });
-    
-      caricaOpzioniPotenza('ESTERNI', configurazione.temperaturaSelezionata);
   } else {
-      caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
+    caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
   }
 
   selezionaStripLedAutomaticamente();
@@ -66,7 +74,6 @@ export function vaiAllaTemperaturaEPotenza() {
     configurazione.temperaturaSelezionata = configurazione.temperaturaColoreSelezionata;
   }
   
-  // Per gli esterni, non mostrare il profilo nei badge
   if (configurazione.isFlussoProfiliEsterni) {
     $('#profilo-nome-step3').parent().hide();
     $('#tipologia-nome-step3').parent().hide();
@@ -84,13 +91,103 @@ export function vaiAllaTemperaturaEPotenza() {
   configurazione.stripLedSceltaFinale = null;
   $('#strip-led-model-section').hide();
   $('#btn-continua-step3').prop('disabled', true);
+}
 
-  // Per gli esterni, carica le opzioni di potenza senza profilo selezionato
-  if (configurazione.isFlussoProfiliEsterni) {
-    caricaOpzioniPotenza('ESTERNI', configurazione.temperaturaSelezionata);
-  } else {
-    caricaOpzioniPotenza(configurazione.profiloSelezionato, configurazione.temperaturaSelezionata);
+function renderizzaOpzioniPotenza(potenze) {
+  $('#potenza-container').empty();
+  
+  potenze.forEach(function(potenza) {
+    $('#potenza-container').append(`
+      <div class="col-md-4 mb-3">
+        <div class="card option-card potenza-card" data-potenza="${potenza.id || potenza}">
+          <div class="card-body">
+            <h5 class="card-title">${potenza.nome || potenza}</h5>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  if (potenze.length === 1) {
+    setTimeout(() => {
+      $('.potenza-card').addClass('selected');
+      configurazione.potenzaSelezionata = potenze[0].id || potenze[0];
+      $('#strip-led-model-section').show();
+      
+      if (configurazione.isFlussoProfiliEsterni) {
+        caricaStripLedFiltrate();
+      } else {
+        caricaStripLedCompatibili(
+          configurazione.profiloSelezionato,
+          configurazione.tensioneSelezionato,
+          configurazione.ipSelezionato,
+          configurazione.temperaturaSelezionata,
+          configurazione.potenzaSelezionata,
+          configurazione.tipologiaStripSelezionata
+        );
+      }
+    }, 100);
   }
+}
+
+function caricaStripLedFiltrate() {
+  $('#strip-led-compatibili-container').empty().html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento strip LED...</p></div>');
+  
+  $.ajax({
+    url: '/get_strip_led_filtrate_standalone',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      tipologia: configurazione.tipologiaStripSelezionata,
+      special: configurazione.specialStripSelezionata,
+      tensione: configurazione.tensioneSelezionato,
+      ip: configurazione.ipSelezionato,
+      temperatura: configurazione.temperaturaSelezionata,
+      potenza: configurazione.potenzaSelezionata
+    }),
+    success: function(data) {
+      if (data.success && data.strip_led) {
+        let stripHtml = '<div class="row">';
+        
+        data.strip_led.forEach(function(strip) {
+          const nomeVisualizzato = strip.nomeCommerciale || strip.nome;
+          const imgPath = `/static/img/strip/${strip.id}.jpg`;
+          
+          stripHtml += `
+            <div class="col-md-4 mb-3">
+              <div class="card option-card strip-led-compatibile-card" 
+                  data-strip-id="${strip.id}" 
+                  data-nome-commerciale="${strip.nomeCommerciale || ''}">
+                <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}" 
+                    style="height: 180px; object-fit: cover;" 
+                    onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px';">
+                <div class="card-body">
+                  <h5 class="card-title">${nomeVisualizzato}</h5>
+                  <p class="card-text small">
+                    Tensione: ${strip.tensione}, IP: ${strip.ip}, Temperatura: ${strip.temperatura}
+                  </p>
+                  <p class="card-text small">Potenza: ${configurazione.potenzaSelezionata}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        stripHtml += '</div>';
+        $('#strip-led-compatibili-container').html(stripHtml);
+
+        if (data.strip_led.length === 1) {
+          setTimeout(() => {
+            $('.strip-led-compatibile-card').addClass('selected');
+            configurazione.stripLedSceltaFinale = data.strip_led[0].id;
+            configurazione.nomeCommercialeStripLed = data.strip_led[0].nomeCommerciale || '';
+            configurazione.stripLedSelezionata = data.strip_led[0].id;
+            $('#btn-continua-step3').prop('disabled', false);
+          }, 100);
+        }
+      }
+    }
+  });
 }
 
 function selezionaStripLedAutomaticamente() {
@@ -123,6 +220,19 @@ export function initPotenzaListener() {
     $(this).addClass('selected');
     configurazione.potenzaSelezionata = $(this).data('potenza');
     configurazione.codicePotenza = $(this).data('codice');
+
+    if (configurazione.isFlussoProfiliEsterni) {
+      caricaStripLedFiltrate();
+    } else {
+      caricaStripLedCompatibili(
+        configurazione.profiloSelezionato,
+        configurazione.tensioneSelezionato,
+        configurazione.ipSelezionato,
+        configurazione.temperaturaSelezionata,
+        configurazione.potenzaSelezionata,
+        configurazione.tipologiaStripSelezionata
+      );
+    }
 
     $('#strip-led-model-section').show();
     

@@ -840,6 +840,94 @@ def get_strip_compatibile_standalone():
         }
     })
 
+@app.route('/get_strip_led_filtrate_standalone', methods=['POST'])
+def get_strip_led_filtrate_standalone():
+    try:
+        data = request.json
+        
+        tipologia = data.get('tipologia')
+        special = data.get('special')
+        tensione = data.get('tensione')
+        ip = data.get('ip')
+        temperatura = data.get('temperatura')
+        potenza = data.get('potenza')
+        
+        query = db.supabase.table('strip_led').select('*')
+        
+        if tensione:
+            query = query.eq('tensione', tensione)
+        if ip:
+            query = query.eq('ip', ip)
+        
+        if tipologia == 'SPECIAL' and special:
+            special_keywords = {
+                'XFLEX': ['XFLEX'],
+                'XSNAKE': ['XSNAKE'],
+                'XMAGIS': ['XMAGIS', 'MG13X12', 'MG12X17'],
+                'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG'],
+                'RUNNING': ['RUNNING']
+            }
+            
+            keywords = special_keywords.get(special, [])
+            if keywords:
+                or_conditions = []
+                for keyword in keywords:
+                    or_conditions.append(f"nome_commerciale.ilike.%{keyword}%")
+                    or_conditions.append(f"id.ilike.%{keyword}%")
+                
+                query = query.or_(','.join(or_conditions))
+        
+        strips = query.execute().data
+        
+        result = []
+        for strip in strips:
+            strip_id = strip['id']
+            
+            if temperatura:
+                temp_check = db.supabase.table('strip_temperature')\
+                    .select('temperatura')\
+                    .eq('strip_id', strip_id)\
+                    .eq('temperatura', temperatura)\
+                    .execute().data
+                
+                if not temp_check:
+                    continue
+            
+            if potenza:
+                potenza_check = db.supabase.table('strip_potenze')\
+                    .select('potenza')\
+                    .eq('strip_id', strip_id)\
+                    .eq('potenza', potenza)\
+                    .execute().data
+                
+                if not potenza_check:
+                    continue
+            
+            temperatures = db.supabase.table('strip_temperature')\
+                .select('temperatura')\
+                .eq('strip_id', strip_id)\
+                .execute().data
+            
+            potenze = db.supabase.table('strip_potenze')\
+                .select('potenza, codice_prodotto')\
+                .eq('strip_id', strip_id)\
+                .order('indice')\
+                .execute().data
+            
+            strip['temperaturaColoreDisponibili'] = [t['temperatura'] for t in temperatures]
+            strip['potenzeDisponibili'] = [p['potenza'] for p in potenze]
+            strip['codiciProdotto'] = [p['codice_prodotto'] for p in potenze]
+            strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
+            strip['taglioMinimo'] = strip.get('taglio_minimo', {})
+            strip['temperatura'] = temperatura
+            
+            result.append(strip)
+        
+        return jsonify({'success': True, 'strip_led': result})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/get_strip_led_by_nome_commerciale/<nome_commerciale>')
 def get_strip_led_by_nome_commerciale(nome_commerciale):
     try:
