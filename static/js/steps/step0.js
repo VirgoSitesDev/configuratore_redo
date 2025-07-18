@@ -150,6 +150,29 @@ function caricaOpzioniStep2b() {
   
   $('#btn-continua-parametri-step2b').prop('disabled', true);
   
+  // Per il flusso solo strip, applichiamo gli stessi filtri per categoria
+  if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
+    console.log('🔍 Applicazione filtri special strip per categoria:', configurazione.categoriaSelezionata);
+    
+    // Se è stata impostata una categoria (es. da precedente selezione), applica filtri
+    if (configurazione.categoriaSelezionata === 'esterni') {
+      // Per esterni, solo XSNAKE e XMAGIS
+      $('.step2b-special-card').parent().hide();
+      $('.step2b-special-card[data-special="XSNAKE"]').parent().show();
+      $('.step2b-special-card[data-special="XMAGIS"]').parent().show();
+      console.log('✅ Filtro esterni applicato: XSNAKE, XMAGIS disponibili');
+    } else if (configurazione.categoriaSelezionata === 'wall_washer_ext') {
+      // Per wall washer esterni, solo XFLEX
+      $('.step2b-special-card').parent().hide();
+      $('.step2b-special-card[data-special="XFLEX"]').parent().show();
+      console.log('✅ Filtro wall washer esterni applicato: solo XFLEX disponibile');
+    } else {
+      // Per altre categorie o senza categoria, mostra tutte
+      $('.step2b-special-card').parent().show();
+      console.log('✅ Nessun filtro applicato: tutte le special strip disponibili');
+    }
+  }
+  
   $.ajax({
     url: '/get_opzioni_strip_standalone',
     method: 'POST',

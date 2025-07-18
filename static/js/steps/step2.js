@@ -216,21 +216,38 @@ function applicaFiltroTipologieEsterni() {
 function filtraSpecialStripPerEsterniFiltrate() {
   $('.special-strip-card').parent().hide();
 
-  // Per gli esterni sono disponibili solo queste special strip
-  const specialStripEsterni = ['XFLEX', 'XSNAKE', 'XMAGIS'];
+  // Per gli esterni NON è disponibile XFLEX (è solo per wall washer)
+  // Sono disponibili solo XSNAKE e XMAGIS
+  const specialStripEsterni = ['XSNAKE', 'XMAGIS'];
+  
+  console.log('🔍 Filtraggio special strip per esterni:', specialStripEsterni);
   
   specialStripEsterni.forEach(specialType => {
-    $(`.special-strip-card[data-special-strip="${specialType}"]`).parent().show();
+    const $card = $(`.special-strip-card[data-special-strip="${specialType}"]`);
+    if ($card.length > 0) {
+      $card.parent().show();
+      console.log(`✅ Mostro special strip: ${specialType}`);
+    } else {
+      console.log(`❌ Card non trovata per: ${specialType}`);
+    }
   });
+
+  // Nascondi esplicitamente XFLEX per esterni
+  $(`.special-strip-card[data-special-strip="XFLEX"]`).parent().hide();
 
   // Se c'è solo una opzione disponibile, selezionala automaticamente
   if (specialStripEsterni.length === 1) {
     const $unica = $(`.special-strip-card[data-special-strip="${specialStripEsterni[0]}"]`);
     setTimeout(() => {
-      $unica.addClass('selected');
-      configurazione.specialStripSelezionata = specialStripEsterni[0];
-      $('#btn-continua-tipologia-strip').prop('disabled', false);
+      if ($unica.length > 0) {
+        $unica.addClass('selected');
+        configurazione.specialStripSelezionata = specialStripEsterni[0];
+        $('#btn-continua-tipologia-strip').prop('disabled', false);
+        console.log(`✅ Selezione automatica: ${specialStripEsterni[0]}`);
+      }
     }, 100);
+  } else {
+    console.log(`🔄 Più opzioni disponibili (${specialStripEsterni.length}), richiesta selezione manuale`);
   }
 }
 
