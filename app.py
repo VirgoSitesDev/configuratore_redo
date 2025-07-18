@@ -815,50 +815,69 @@ def get_opzioni_temperatura_standalone():
 
 @app.route('/get_opzioni_potenza_standalone', methods=['POST'])
 def get_opzioni_potenza_standalone():
-    data = request.json
-    tipologia = data.get('tipologia')
-    special = data.get('special')
-    tensione = data.get('tensione')
-    ip = data.get('ip')
-    temperatura = data.get('temperatura')
-    
-    # Query per trovare le strip LED che corrispondono ai criteri
-    query = db.supabase.table('strip_led').select('id').eq('tensione', tensione).eq('ip', ip)
-    
-    if tipologia == 'SPECIAL' and special:
-        # Per ZIGZAG, cerca strip che contengono ZIGZAG nel nome
-        if special == 'ZIG_ZAG':
-            query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
-    
-    strips = query.execute().data
-    
-    if not strips:
-        return jsonify({'success': True, 'potenze': []})
-    
-    # Ottieni le potenze disponibili per queste strip
-    strip_ids = [s['id'] for s in strips]
-    
-    # Filtra per temperatura
-    temp_data = db.supabase.table('strip_temperature')\
-        .select('strip_id')\
-        .eq('temperatura', temperatura)\
-        .in_('strip_id', strip_ids)\
-        .execute().data
-    
-    valid_strip_ids = [t['strip_id'] for t in temp_data]
-    
-    # Ottieni le potenze
-    potenze_data = db.supabase.table('strip_potenze')\
-        .select('potenza')\
-        .in_('strip_id', valid_strip_ids)\
-        .execute().data
-    
-    # Rimuovi duplicati e ordina
-    potenze_uniche = sorted(list(set([p['potenza'] for p in potenze_data])))
-    
-    potenze = [{'id': p, 'nome': p} for p in potenze_uniche]
-    
-    return jsonify({'success': True, 'potenze': potenze})
+    try:
+        data = request.json
+        tipologia = data.get('tipologia')
+        special = data.get('special')
+        tensione = data.get('tensione')
+        ip = data.get('ip')
+        temperatura = data.get('temperatura')
+        
+        # Prima trova le strip che corrispondono ai criteri
+        query = db.supabase.table('strip_led').select('id')\
+            .eq('tensione', tensione)\
+            .eq('ip', ip)
+        
+        # Applica filtri per special strip
+        if tipologia == 'SPECIAL' and special:
+            if special == 'XMAGIS':
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+            elif special == 'XFLEX':
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+            elif special == 'XSNAKE':
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+            elif special == 'ZIG_ZAG':
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+            elif special == 'RUNNING':
+                query = query.or_('nome_commerciale.ilike.%RUNNING%,id.ilike.%RUNNING%')
+        
+        strips = query.execute().data
+        
+        if not strips:
+            return jsonify({'success': True, 'potenze': []})
+        
+        strip_ids = [s['id'] for s in strips]
+        
+        # Filtra per temperatura se specificata
+        if temperatura:
+            temp_check = db.supabase.table('strip_temperature')\
+                .select('strip_id')\
+                .eq('temperatura', temperatura)\
+                .in_('strip_id', strip_ids)\
+                .execute().data
+            
+            strip_ids = [t['strip_id'] for t in temp_check]
+        
+        if not strip_ids:
+            return jsonify({'success': True, 'potenze': []})
+        
+        # Ottieni le potenze disponibili
+        potenze_data = db.supabase.table('strip_potenze')\
+            .select('potenza')\
+            .in_('strip_id', strip_ids)\
+            .execute().data
+        
+        # Rimuovi duplicati e ordina
+        potenze_uniche = sorted(list(set([p['potenza'] for p in potenze_data])), 
+                               key=lambda x: float(x.replace('W/m', '').replace(',', '.')))
+        
+        potenze = [{'id': p, 'nome': p} for p in potenze_uniche]
+        
+        return jsonify({'success': True, 'potenze': potenze})
+        
+    except Exception as e:
+        logging.error(f"Errore in get_opzioni_potenza_standalone: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_strip_compatibile_standalone', methods=['POST'])
 def get_strip_compatibile_standalone():
