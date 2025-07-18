@@ -4,6 +4,10 @@ import { caricaFinitureDisponibili, finalizzaConfigurazione, caricaOpzioniIP } f
 import { vaiAllaTemperaturaEPotenza } from './step3.js';
 import { renderOpzioniIP } from './step0.js'
 
+// Flag per prevenire chiamate multiple
+let isLoadingIP = false;
+let isLoadingTemperatura = false;
+
 export function initStep2Listeners() {
   $('#btn-continua-step2').on('click', function(e) {
     e.preventDefault();
@@ -49,6 +53,10 @@ export function initStep2Listeners() {
 
   $('#btn-torna-step2-parametri').on('click', function(e) {
     e.preventDefault();
+    
+    // Reset dei flag quando si torna indietro
+    isLoadingIP = false;
+    isLoadingTemperatura = false;
     
     $("#step2-parametri").fadeOut(300, function() {
       $("#step2-tipologia-strip").fadeIn(300);
@@ -183,6 +191,10 @@ export function vaiAllaTipologiaStrip() {
 }
 
 export function analizzaTipologiePerEsterni() {
+  // Rimuovi prima tutti gli event handler esistenti
+  $('.tipologia-strip-card').off('click');
+  $('.special-strip-card').off('click');
+  
   $('.tipologia-strip-card').parent().hide();
   
   $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').parent().show();
@@ -194,7 +206,10 @@ export function analizzaTipologiePerEsterni() {
     $('#btn-continua-tipologia-strip').prop('disabled', true);
   }, 100);
   
-  prepareTipologiaStripListeners();
+  // Registra i listener dopo la selezione automatica
+  setTimeout(() => {
+    prepareTipologiaStripListeners();
+  }, 200);
 }
 
 function analizzaEMostraTipologieCompatibili() {
@@ -346,7 +361,8 @@ function filtraSpecialStripCompatibili(stripCompatibili) {
 }
 
 export function prepareTipologiaStripListeners() {
-  $('.tipologia-strip-card').on('click', function() {
+  // Rimuovi event handler esistenti prima di aggiungerne di nuovi
+  $('.tipologia-strip-card').off('click').on('click', function() {
     $('.tipologia-strip-card').removeClass('selected');
     $(this).addClass('selected');
     
@@ -378,7 +394,7 @@ export function prepareTipologiaStripListeners() {
     }
   });
   
-  $('.special-strip-card').on('click', function() {
+  $('.special-strip-card').off('click').on('click', function() {
     $('.special-strip-card').removeClass('selected');
     $(this).addClass('selected');
     
@@ -767,6 +783,10 @@ export function vaiAlleOpzioniStripLed() {
 }
 
 export function vaiAiParametriStripLed() {
+  // Reset dei flag quando si va ai parametri
+  isLoadingIP = false;
+  isLoadingTemperatura = false;
+  
   $('#profilo-nome-step2-parametri').text(configurazione.nomeModello);
   $('#tipologia-nome-step2-parametri').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
 
@@ -796,6 +816,10 @@ export function vaiAiParametriStripLed() {
 }
 
 export function caricaOpzioniParametriFiltrate() {
+  // Reset dei flag quando si inizia una nuova serie di caricamenti
+  isLoadingIP = false;
+  isLoadingTemperatura = false;
+  
   $('#tensione-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento opzioni tensione...</p>');
   $('#ip-options').empty();
   $('#temperatura-iniziale-options').empty();
@@ -900,7 +924,8 @@ function renderizzaOpzioniTensione(tensioni) {
     }, 50);
   }
 
-  $('.tensione-card').on('click', function() {
+  // Rimuovi event handler esistenti prima di aggiungerne di nuovi
+  $('.tensione-card').off('click').on('click', function() {
     $('.tensione-card').removeClass('selected');
     $(this).addClass('selected');
     configurazione.tensioneSelezionato = $(this).data('tensione');
@@ -982,6 +1007,13 @@ export function forceBtnProfiloIntero() {
 }
 
 function caricaOpzioniIPStandalone(tensione, tipologiaStrip, specialStrip) {
+  // Previeni chiamate multiple
+  if (isLoadingIP) {
+    console.log("Già in caricamento IP, skip");
+    return;
+  }
+  isLoadingIP = true;
+  
   $('#ip-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento opzioni IP...</p>');
   
   console.log("Chiamata IP con parametri:", {
@@ -1033,11 +1065,15 @@ function caricaOpzioniIPStandalone(tensione, tipologiaStrip, specialStrip) {
                 setTimeout(() => {
                     $('.ip-card').addClass('selected');
                     configurazione.ipSelezionato = data.gradi_ip[0];
+                    isLoadingIP = false;
                     caricaOpzioniTemperaturaStandalone(configurazione.tensioneSelezionato, data.gradi_ip[0], configurazione.tipologiaStripSelezionata, configurazione.specialStripSelezionata);
                 }, 50);
+            } else {
+                isLoadingIP = false;
             }
               
-              $('.ip-card').on('click', function() {
+              // Rimuovi event handler esistenti prima di aggiungerne di nuovi
+              $('.ip-card').off('click').on('click', function() {
                 $('.ip-card').removeClass('selected');
                 $(this).addClass('selected');
                 configurazione.ipSelezionato = $(this).data('ip');
@@ -1046,16 +1082,25 @@ function caricaOpzioniIPStandalone(tensione, tipologiaStrip, specialStrip) {
             });
           } else {
               $('#ip-options').html('<p class="text-danger">Nessuna opzione IP disponibile per questa configurazione.</p>');
+              isLoadingIP = false;
           }
       },
       error: function(xhr, status, error) {
           console.error("Errore AJAX IP:", error);
           $('#ip-options').html('<p class="text-danger">Errore nel caricamento delle opzioni IP.</p>');
+          isLoadingIP = false;
       }
   });
 }
 
 function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specialStrip) {
+  // Previeni chiamate multiple
+  if (isLoadingTemperatura) {
+    console.log("Già in caricamento temperatura, skip");
+    return;
+  }
+  isLoadingTemperatura = true;
+  
   $('#temperatura-iniziale-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento temperature...</p>');
   
   // Per gli esterni, usa l'endpoint filtrato
@@ -1068,6 +1113,7 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
               
               if (!data.success) {
                   $('#temperatura-iniziale-options').html('<p class="text-danger">Errore nel caricamento delle temperature.</p>');
+                  isLoadingTemperatura = false;
                   return;
               }
               
@@ -1079,6 +1125,7 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
                           </div>
                       </div>
                   `);
+                  isLoadingTemperatura = false;
                   return;
               }
               
@@ -1101,11 +1148,14 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
                       const $unicaTemperatura = $('.temperatura-card');
                       $unicaTemperatura.addClass('selected');
                       configurazione.temperaturaSelezionata = data.temperature[0];
+                      isLoadingTemperatura = false;
                       checkParametriCompletion();
                   }, 50);
+              } else {
+                  isLoadingTemperatura = false;
               }
 
-              $('.temperatura-card').on('click', function() {
+              $('.temperatura-card').off('click').on('click', function() {
                   $('.temperatura-card').removeClass('selected');
                   $(this).addClass('selected');
                   configurazione.temperaturaSelezionata = $(this).data('temperatura');
@@ -1115,6 +1165,7 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
           error: function(error) {
               console.error("Errore nel caricamento delle temperature filtrate:", error);
               $('#temperatura-iniziale-options').html('<p class="text-danger">Errore nel caricamento delle temperature.</p>');
+              isLoadingTemperatura = false;
           }
       });
   }
