@@ -382,6 +382,12 @@ function filtraSpecialStripCompatibili(stripCompatibili) {
 }
 
 export function prepareTipologiaStripListeners() {
+  // Se è un flusso per gli esterni e non è già stato applicato il filtro, applicalo
+  if (configurazione.isFlussoProfiliEsterni && !$('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').hasClass('selected')) {
+    applicaFiltroTipologieEsterni();
+    return; // Uscire qui perché applicaFiltroTipologieEsterni() gestisce tutto
+  }
+
   $('.tipologia-strip-card').off('click').on('click', function() {
     $('.tipologia-strip-card').removeClass('selected');
     $(this).addClass('selected');
@@ -398,19 +404,24 @@ export function prepareTipologiaStripListeners() {
       $('#special-strip-container').fadeIn(300);
       $('#btn-continua-tipologia-strip').prop('disabled', true);
 
-      $.ajax({
-        url: `/get_profili/${configurazione.categoriaSelezionata}`,
-        method: 'GET',
-        success: function(data) {
-          const profiloSelezionato = data.find(p => p.id === configurazione.profiloSelezionato);
-          if (profiloSelezionato && profiloSelezionato.stripLedCompatibili) {
-            filtraSpecialStripCompatibili(profiloSelezionato.stripLedCompatibili);
+      if (!configurazione.isFlussoProfiliEsterni) {
+        $.ajax({
+          url: `/get_profili/${configurazione.categoriaSelezionata}`,
+          method: 'GET',
+          success: function(data) {
+            const profiloSelezionato = data.find(p => p.id === configurazione.profiloSelezionato);
+            if (profiloSelezionato && profiloSelezionato.stripLedCompatibili) {
+              filtraSpecialStripCompatibili(profiloSelezionato.stripLedCompatibili);
+            }
+          },
+          error: function(error) {
+            console.error("Errore nel caricamento delle strip compatibili:", error);
           }
-        },
-        error: function(error) {
-          console.error("Errore nel caricamento delle strip compatibili:", error);
-        }
-      });
+        });
+      } else {
+        // Per gli esterni, filtra le special strip disponibili
+        filtraSpecialStripPerEsterniFiltrate();
+      }
     }
   });
   

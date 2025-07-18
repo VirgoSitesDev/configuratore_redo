@@ -1,6 +1,6 @@
 import { configurazione, mappaCategorieVisualizzazione } from '../config.js';
 import { updateProgressBar } from '../utils.js';
-import { caricaOpzioniProfilo } from '../api.js';
+import { caricaOpzioniProfilo, caricaFinitureDisponibili } from '../api.js';
 
 export function initStep2EsterniListeners() {
     $('#btn-torna-step2-esterni').on('click', function(e) {
@@ -24,12 +24,29 @@ export function initStep2EsterniListeners() {
                         $('.tipologia-card').click();
                         configurazione.tipologiaSelezionata = 'taglio_misura';
                         
+                        // Nascondi completamente la sezione modello prima di andare alla personalizzazione
+                        $("#step2-modello").hide();
+                        
                         import('./step2.js').then(module => {
                             module.vaiAllaPersonalizzazione();
                         });
                     } else {
                         $("#step2-modello").fadeIn(300);
                         updateProgressBar(4);
+                        
+                        // Aggiungi listener per la selezione della tipologia nel flusso esterni
+                        $('.tipologia-card').off('click.esterni').on('click.esterni', function() {
+                            $('.tipologia-card').removeClass('selected');
+                            $(this).addClass('selected');
+                            configurazione.tipologiaSelezionata = $(this).data('id');
+                            
+                            // Nascondi la sezione modello e vai alla personalizzazione
+                            $("#step2-modello").fadeOut(300, function() {
+                                import('./step2.js').then(module => {
+                                    module.vaiAllaPersonalizzazione();
+                                });
+                            });
+                        });
                     }
                 }, 500);
             });

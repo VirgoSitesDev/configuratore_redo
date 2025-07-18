@@ -1006,17 +1006,29 @@ def get_opzioni_potenza_standalone():
         logging.error(f"Errore in get_opzioni_potenza_standalone: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
+
 @app.route('/get_strip_compatibile_standalone', methods=['POST'])
 def get_strip_compatibile_standalone():
     data = request.json
     
-    strip_id = f"STRIP_{data.get('tensione')}_COB_{data.get('ip')}"
+    tipologia = data.get('tipologia')
+    tensione = data.get('tensione')
+    ip = data.get('ip')
+    special = data.get('special')
+    
+    # Genera l'ID corretto in base alla tipologia
+    if tipologia == 'SPECIAL' and special:
+        strip_id = f"STRIP_{tensione}_{ip}_{special}"
+        nome_commerciale = f"Strip {special} {tensione} {ip}"
+    else:
+        strip_id = f"STRIP_{tensione}_{tipologia}_{ip}"
+        nome_commerciale = f"Strip {tipologia} {tensione} {ip}"
     
     return jsonify({
         'success': True,
         'strip_led': {
             'id': strip_id,
-            'nomeCommerciale': f"Strip {data.get('tipologia')} {data.get('tensione')} {data.get('ip')}"
+            'nomeCommerciale': nome_commerciale
         }
     })
 
