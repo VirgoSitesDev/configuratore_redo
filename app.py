@@ -790,7 +790,7 @@ def get_opzioni_strip_standalone():
 def get_opzioni_ip_standalone():
     try:
         data = request.get_json()
-        print(f"DEBUG IP - Dati ricevuti: {data}")  # AGGIUNGI QUESTO
+        logging.info(f"DEBUG IP - Dati ricevuti: {data}")
         
         if not data:
             return jsonify({'success': False, 'message': 'Nessun dato ricevuto'})
@@ -799,44 +799,219 @@ def get_opzioni_ip_standalone():
         tensione = data.get('tensione', '')
         special = data.get('special')
         
-        print(f"DEBUG IP - Parametri estratti: tipologia={tipologia}, tensione={tensione}, special={special}")  # E QUESTO
+        logging.info(f"DEBUG IP - Parametri estratti: tipologia={tipologia}, tensione={tensione}, special={special}")
 
-        gradi_ip = ['IP20', 'IP65', 'IP66', 'IP67']
-
-        if tensione == '220V':
-            gradi_ip = ['IP65', 'IP67']
-        elif tensione == '48V':
-            gradi_ip = ['IP20', 'IP65', 'IP66']
-        elif tensione == '24V':
-            gradi_ip = ['IP20', 'IP65', 'IP66', 'IP67']
-
+        # Costruisci la query base per trovare le strip LED
+        query = db.supabase.table('strip_led').select('ip')\
+            .eq('tensione', tensione)
+        
+        # Applica filtro per tipologia se presente
+        if tipologia and tipologia != 'None':
+            query = query.eq('tipo', tipologia)
+        
+        # Applica filtri per special strip se presente
         if tipologia == 'SPECIAL' and special:
-            print(f"DEBUG IP - Caso SPECIAL con special={special}")  # E QUESTO
-            if special in ['XFLEX', 'XSNAKE']:
-                gradi_ip = ['IP20', 'IP65']
-            elif special == 'RUNNING':
-                gradi_ip = ['IP20', 'IP66']
+            logging.info(f"DEBUG IP - Caso SPECIAL con special={special}")
+            
+            # Resetta la query per applicare i filtri OR per le special strip
+            query = db.supabase.table('strip_led').select('ip')\
+                .eq('tensione', tensione)
+            
+            if special == 'XMAGIS':
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+            elif special == 'XFLEX':
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+            elif special == 'XSNAKE':
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
-                gradi_ip = ['IP20', 'IP65', 'IP66']
-                print(f"DEBUG IP - ZIG_ZAG matched, gradi_ip={gradi_ip}")  # E QUESTO
-            elif special == 'XMAGIS':
-                gradi_ip = ['IP20', 'IP67']
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+            elif special == 'RUNNING':
+                query = query.or_('nome_commerciale.ilike.%RUNNING%,id.ilike.%RUNNING%')
         
-        print(f"DEBUG IP - Gradi IP finali: {gradi_ip}")  # E QUESTO
+        # Esegui la query
+        strips = query.execute().data
+        logging.info(f"DEBUG IP - Strip trovate: {len(strips)}")
         
-        return jsonify({'success': True, 'gradi_ip': gradi_ip})
+        if not strips:
+            logging.warning("DEBUG IP - Nessuna strip trovata per i parametri specificati")
+            return jsonify({'success': True, 'gradi_ip': []})
+        
+        # Estrai tutti gli IP unici dalle strip trovate
+        ip_disponibili = list(set([strip['ip'] for strip in strips if strip['ip']]))
+        
+        # Ordina gli IP (IP20 < IP65 < IP66 < IP67)
+        def get_ip_order(ip):
+            ip_order = {'IP20': 1, 'IP44': 2, 'IP65': 3, 'IP66': 4, 'IP67': 5}
+            return ip_order.get(ip, 999)
+        
+        ip_ordinati = sorted(ip_disponibili, key=get_ip_order)
+        
+        logging.info(f"DEBUG IP - IP disponibili trovati nel DB: {ip_ordinati}")
+        
+        return jsonify({
+            'success': True, 
+            'gradi_ip': ip_ordinati,
+            'debug': {
+                'strips_trovate': len(strips),
+                'ip_unici': len(ip_disponibili),
+                'parametri': {
+                    'tipologia': tipologia,
+                    'tensione': tensione,
+                    'special': special
+                }
+            }
+        })
         
     except Exception as e:
-        print(f"DEBUG IP - ERRORE: {str(e)}")  # E QUESTO
+        logging.error(f"DEBUG IP - ERRORE: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'Errore interno: {str(e)}'})
 
 @app.route('/get_opzioni_temperatura_standalone', methods=['POST'])
 def get_opzioni_temperatura_standalone():
-    data = request.json
-    temperature = ['2700K', '3000K', '4000K', '6000K', 'CCT', 'RGB', 'RGBW']
-    return jsonify({'success': True, 'temperature': temperature})
+    try:
+        data = request.get_json()
+        logging.info(f"DEBUG TEMPERATURA - Dati ricevuti: {data}")
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'Nessun dato ricevuto'})
+        
+        tipologia = data.get('tipologia', '')
+        tensione = data.get('tensione', '')
+        ip = data.get('ip', '')
+        special = data.get('special')
+        
+        logging.info(f"DEBUG TEMPERATURA - Parametri estratti: tipologia={tipologia}, tensione={tensione}, ip={ip}, special={special}")
+
+        # Step 1: Prima trova TUTTE le strip LED con i parametri base
+        if tipologia == 'SPECIAL' and special:
+            logging.info(f"DEBUG TEMPERATURA - Ricerca SPECIAL strip: {special}")
+            
+            # Per special strip, cerca in base a nome/id senza altri filtri
+            all_strips = db.supabase.table('strip_led')\
+                .select('id, nome_commerciale, tensione, ip, tipo')\
+                .execute().data
+            
+            # Filtra manualmente per trovare le special strip corrette
+            strips_candidati = []
+            for strip in all_strips:
+                nome_commerciale = (strip.get('nome_commerciale') or '').upper()
+                strip_id = (strip.get('id') or '').upper()
+                
+                match_found = False
+                
+                if special == 'XMAGIS':
+                    if ('XMAGIS' in nome_commerciale or 'XMAGIS' in strip_id or 
+                        'MG13X12' in nome_commerciale or 'MG12X17' in nome_commerciale or
+                        'MAGIS' in nome_commerciale):
+                        match_found = True
+                elif special == 'XFLEX':
+                    if ('XFLEX' in nome_commerciale or 'XFLEX' in strip_id or
+                        'FLEX' in nome_commerciale):
+                        match_found = True
+                elif special == 'XSNAKE':
+                    if ('XSNAKE' in nome_commerciale or 'XSNAKE' in strip_id or 
+                        'SNK' in strip_id or 'SNAKE' in nome_commerciale):
+                        match_found = True
+                elif special == 'ZIG_ZAG':
+                    if ('ZIGZAG' in nome_commerciale or 'ZIGZAG' in strip_id or 
+                        'ZIG_ZAG' in nome_commerciale or 'ZIG-ZAG' in nome_commerciale):
+                        match_found = True
+                elif special == 'RUNNING':
+                    if ('RUNNING' in nome_commerciale or 'RUNNING' in strip_id):
+                        match_found = True
+                
+                if match_found:
+                    strips_candidati.append(strip)
+                    logging.info(f"DEBUG TEMPERATURA - Special strip trovata: {strip_id} ({nome_commerciale})")
+            
+            logging.info(f"DEBUG TEMPERATURA - Special strip totali trovate: {len(strips_candidati)}")
+            
+            # Step 2: Ora filtra per tensione e IP
+            strips = []
+            for strip in strips_candidati:
+                if strip.get('tensione') == tensione and strip.get('ip') == ip:
+                    strips.append(strip)
+                    logging.info(f"DEBUG TEMPERATURA - Strip match finale: {strip['id']} - {strip['tensione']} - {strip['ip']}")
+        
+        else:
+            # Per tipologie normali (COB, SMD)
+            query = db.supabase.table('strip_led').select('id, nome_commerciale, tensione, ip')\
+                .eq('tensione', tensione)\
+                .eq('ip', ip)
+            
+            if tipologia and tipologia != 'None':
+                query = query.eq('tipo', tipologia)
+            
+            strips = query.execute().data
+            logging.info(f"DEBUG TEMPERATURA - Strip normali trovate: {len(strips)}")
+        
+        logging.info(f"DEBUG TEMPERATURA - Strip finali dopo tutti i filtri: {len(strips)}")
+        for strip in strips:
+            logging.info(f"  -> {strip['id']} ({strip.get('nome_commerciale', 'N/A')})")
+        
+        if not strips:
+            logging.warning("DEBUG TEMPERATURA - Nessuna strip trovata per i parametri specificati")
+            return jsonify({'success': True, 'temperature': []})
+        
+        # Estrai gli ID delle strip trovate
+        strip_ids = [s['id'] for s in strips]
+        logging.info(f"DEBUG TEMPERATURA - Strip IDs finali: {strip_ids}")
+        
+        # Ora cerca le temperature disponibili per queste strip nella tabella strip_temperature
+        temperature_data = db.supabase.table('strip_temperature')\
+            .select('temperatura')\
+            .in_('strip_id', strip_ids)\
+            .execute().data
+        
+        logging.info(f"DEBUG TEMPERATURA - Temperature data trovate: {len(temperature_data)}")
+        
+        if not temperature_data:
+            logging.warning("DEBUG TEMPERATURA - Nessuna temperatura trovata per le strip")
+            return jsonify({'success': True, 'temperature': []})
+        
+        # Estrai temperature uniche
+        temperature_uniche = list(set([t['temperatura'] for t in temperature_data if t['temperatura']]))
+        
+        # Ordina le temperature logicamente
+        def get_temperatura_order(temp):
+            if 'K' in temp and temp.replace('K', '').isdigit():
+                return (0, int(temp.replace('K', '')))  # Temperature Kelvin per prime, ordinate numericamente
+            elif temp == 'CCT':
+                return (1, 0)  # CCT dopo le temperature fisse
+            elif temp == 'RGB':
+                return (2, 0)  # RGB dopo CCT
+            elif temp == 'RGBW':
+                return (3, 0)  # RGBW per ultimo
+            else:
+                return (4, 0)  # Altre temperature non riconosciute
+        
+        temperature_ordinate = sorted(temperature_uniche, key=get_temperatura_order)
+        
+        logging.info(f"DEBUG TEMPERATURA - Temperature disponibili trovate nel DB: {temperature_ordinate}")
+        
+        return jsonify({
+            'success': True, 
+            'temperature': temperature_ordinate,
+            'debug': {
+                'strips_trovate': len(strips),
+                'temperature_records': len(temperature_data),
+                'temperature_uniche': len(temperature_uniche),
+                'parametri': {
+                    'tipologia': tipologia,
+                    'tensione': tensione,
+                    'ip': ip,
+                    'special': special
+                }
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"DEBUG TEMPERATURA - ERRORE: {str(e)}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'Errore interno: {str(e)}'})
 
 @app.route('/get_opzioni_potenza_standalone', methods=['POST'])
 def get_opzioni_potenza_standalone():
