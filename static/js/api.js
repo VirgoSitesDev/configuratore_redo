@@ -559,86 +559,135 @@ export function caricaOpzioniPotenza(profiloId, temperatura) {
   configurazione.stripLedSceltaFinale = null;
 
   $('#btn-continua-step3').prop('disabled', true);
-  
-  // Per gli esterni, usa un URL diverso senza profilo
-  let url;
-  if (profiloId === 'ESTERNI') {
-    url = `/get_opzioni_potenza/ESTERNI/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
+
+  if (profiloId === 'ESTERNI' || configurazione.isFlussoProfiliEsterni) {
+    $.ajax({
+      url: `/get_strip_compatibili_esterni/${configurazione.categoriaSelezionata}`,
+      method: 'GET',
+      success: function(compatData) {
+        if (compatData.success && compatData.strip_compatibili.length > 0) {
+          const stripFiltrate = compatData.strip_details.filter(strip => {
+            if (strip.tensione !== configurazione.tensioneSelezionato) return false;
+            if (strip.ip !== configurazione.ipSelezionato) return false;
+
+            if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+              const specialKeywords = {
+                'XFLEX': ['XFLEX'],
+                'XSNAKE': ['XSNAKE'],
+                'XMAGIS': ['XMAGIS', 'MG13X12', 'MG12X17'],
+                'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG'],
+                'RUNNING': ['RUNNING']
+              };
+              const keywords = specialKeywords[configurazione.specialStripSelezionata] || [];
+              const hasKeyword = keywords.some(keyword => 
+                (strip.nome_commerciale && strip.nome_commerciale.toUpperCase().includes(keyword)) ||
+                (strip.id && strip.id.toUpperCase().includes(keyword))
+              );
+              if (!hasKeyword) return false;
+            }
+            
+            return true;
+          });
+          
+          if (stripFiltrate.length > 0) {
+            caricaPotenzeDaStrip(stripFiltrate, temperatura);
+          } else {
+            $('#potenza-container').html('<div class="col-12 text-center"><p>Nessuna potenza disponibile per questa configurazione.</p></div>');
+          }
+        } else {
+          $('#potenza-container').html('<div class="col-12 text-center"><p>Nessuna strip LED compatibile trovata per i profili esterni.</p></div>');
+        }
+      },
+      error: function(error) {
+        console.error("Errore nel caricamento delle strip compatibili:", error);
+        caricaPotenzaStandard();
+      }
+    });
   } else {
-    url = `/get_opzioni_potenza/${profiloId}/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
+    let url = `/get_opzioni_potenza/${profiloId}/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
+    
+    $.ajax({
+      url: url,
+      method: 'GET',
+      success: function(data) {
+        $('#potenza-container').empty();
+        
+        if (!data.success) {
+          $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni potenza.</p></div>');
+          return;
+        }
+        
+        if (!data.potenze || data.potenze.length === 0) {
+          $('#potenza-container').html('<div class="col-12 text-center"><p>Nessuna opzione di potenza disponibile per questa combinazione.</p></div>');
+          return;
+        }
+
+        renderizzaOpzioniPotenza(data.potenze);
+      },
+      error: function(xhr, status, error) {
+        console.error("Errore AJAX potenza:", {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          responseText: xhr.responseText,
+          error: error
+        });
+        $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni potenza. Riprova più tardi.</p></div>');
+      }
+    });
   }
-  
-  console.log("Chiamata API potenza con URL:", url);
-  console.log("Parametri:", {
-    profiloId: profiloId,
-    tensione: configurazione.tensioneSelezionato,
-    ip: configurazione.ipSelezionato,
-    temperatura: temperatura,
-    tipologiaStrip: configurazione.tipologiaStripSelezionata
-  });
+}
+
+function caricaPotenzeDaStrip(stripFiltrate, temperatura) {
+  const stripIds = stripFiltrate.map(s => s.id);
 
   $.ajax({
-    url: url,
-    method: 'GET',
+    url: '/get_opzioni_potenza_standalone',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      tipologia: configurazione.tipologiaStripSelezionata,
+      tensione: configurazione.tensioneSelezionato,
+      ip: configurazione.ipSelezionato,
+      temperatura: temperatura,
+      special: configurazione.specialStripSelezionata,
+      strip_ids: stripIds
+    }),
     success: function(data) {
       $('#potenza-container').empty();
       
-      if (!data.success) {
-        $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni potenza 1.</p></div>');
-        return;
-      }
-      
-      if (!data.potenze || data.potenze.length === 0) {
-        $('#potenza-container').html('<div class="col-12 text-center"><p>Nessuna opzione di potenza disponibile per questa combinazione.</p></div>');
-        return;
-      }
-
-      data.potenze.sort((a, b) => {
-        const getWattValue = (potenza) => {
-          const match = potenza.id.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : 0;
-        };
-        return getWattValue(a) - getWattValue(b);
-      });
-      
-      data.potenze.forEach(function(potenza) {
-        $('#potenza-container').append(`
-          <div class="col-md-4 mb-3">
-            <div class="card option-card potenza-card" data-potenza="${potenza.id}" data-codice="${potenza.codice}">
-              <div class="card-body">
-                <h5 class="card-title">${potenza.nome}</h5>
-              </div>
-            </div>
-          </div>
-        `);
-      });
-
-      if (data.potenze.length === 1) {
-        const $unicaPotenza = $('.potenza-card');
-        $unicaPotenza.addClass('selected');
-        configurazione.potenzaSelezionata = data.potenze[0].id;
-        configurazione.codicePotenza = data.potenze[0].codice;
-
-        $('#strip-led-model-section').show();
-        caricaStripLedCompatibili(
-          configurazione.profiloSelezionato,
-          configurazione.tensioneSelezionato,
-          configurazione.ipSelezionato,
-          configurazione.temperaturaSelezionata,
-          configurazione.potenzaSelezionata,
-          configurazione.tipologiaStripSelezionata
-        );
+      if (data.success && data.potenze && data.potenze.length > 0) {
+        renderizzaOpzioniPotenza(data.potenze);
+      } else {
+        $('#potenza-container').html('<div class="col-12 text-center"><p>Nessuna potenza disponibile per questa configurazione.</p></div>');
       }
     },
-    error: function(xhr, status, error) {
-      // MODIFICA L'ERROR HANDLER
-      console.error("Errore AJAX potenza:", {
-        status: xhr.status,
-        statusText: xhr.statusText,
-        responseText: xhr.responseText,
-        error: error
-      });
-      $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni potenza 2. Riprova più tardi.</p></div>');
+    error: function(error) {
+      console.error("Errore nel caricamento delle potenze:", error);
+      caricaPotenzaStandard();
+    }
+  });
+}
+
+function caricaPotenzaStandard() {
+  $.ajax({
+    url: '/get_opzioni_potenza_standalone',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      tipologia: configurazione.tipologiaStripSelezionata,
+      tensione: configurazione.tensioneSelezionato,
+      ip: configurazione.ipSelezionato,
+      temperatura: configurazione.temperaturaSelezionata,
+      special: configurazione.specialStripSelezionata
+    }),
+    success: function(data) {
+      $('#potenza-container').empty();
+      
+      if (data.success && data.potenze) {
+        renderizzaOpzioniPotenza(data.potenze);
+      } else {
+        $('#potenza-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle potenze.</p></div>');
+      }
     }
   });
 }
@@ -697,8 +746,7 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
   $('#btn-continua-step3').prop('disabled', true);
   var potenzaNew = potenza.replace(' ', '-');
   var potenzaFinale = potenzaNew.replace('/', '_');
-  
-  // Per gli esterni, usa un URL diverso
+
   let url;
   if (profiloId === 'ESTERNI') {
     url = `/get_strip_led_filtrate/ESTERNI/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;

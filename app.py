@@ -980,6 +980,41 @@ def get_strip_led_filtrate_standalone():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+    
+@app.route('/get_strip_compatibili_esterni/<categoria>')
+def get_strip_compatibili_esterni(categoria):
+    try:
+        # Ottieni tutti i profili della categoria
+        profili = db.get_profili_by_categoria(categoria)
+        
+        # Raccogli tutte le strip compatibili
+        strip_compatibili_totali = set()
+        for profilo in profili:
+            if 'stripLedCompatibili' in profilo:
+                strip_compatibili_totali.update(profilo['stripLedCompatibili'])
+        
+        # Ottieni i dettagli delle strip compatibili
+        if strip_compatibili_totali:
+            strip_details = db.supabase.table('strip_led')\
+                .select('*')\
+                .in_('id', list(strip_compatibili_totali))\
+                .execute()
+            
+            return jsonify({
+                'success': True,
+                'strip_compatibili': list(strip_compatibili_totali),
+                'strip_details': strip_details.data if strip_details.data else []
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'strip_compatibili': [],
+                'strip_details': []
+            })
+            
+    except Exception as e:
+        logging.error(f"Errore in get_strip_compatibili_esterni: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/get_strip_led_by_nome_commerciale/<nome_commerciale>')
 def get_strip_led_by_nome_commerciale(nome_commerciale):

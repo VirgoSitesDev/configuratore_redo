@@ -140,7 +140,6 @@ function initStep2bPotenzaListeners() {
 }
 
 function caricaOpzioniStep2b() {
-  console.log("MA QUI CI ARRIVA");
   $('#step2b-tensione-options').html('<div class="text-center"><div class="spinner-border"></div><p>Caricamento...</p></div>');
   $('#step2b-ip-options').empty();
   $('#step2b-temperatura-options').empty();

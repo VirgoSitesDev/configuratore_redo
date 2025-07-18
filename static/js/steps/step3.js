@@ -19,7 +19,6 @@ export function initStep3Listeners() {
     e.preventDefault();
     
     if (configurazione.potenzaSelezionata && configurazione.stripLedSceltaFinale) {
-      // Per gli esterni, dopo aver scelto la strip, vai alla selezione del profilo
       if (configurazione.isFlussoProfiliEsterni) {
         $("#step3-temperatura-potenza").fadeOut(300, function() {
           vaiAllaSelezioneProfiliPerEsterni();
@@ -235,8 +234,7 @@ export function initPotenzaListener() {
     }
 
     $('#strip-led-model-section').show();
-    
-    // Per gli esterni, carica le strip compatibili senza profilo
+
     if (configurazione.isFlussoProfiliEsterni) {
       caricaStripLedCompatibili(
         'ESTERNI',

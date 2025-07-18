@@ -87,7 +87,6 @@ $(document).ready(function() {
 
     if (categoria === 'esterni' || categoria === 'wall_washer_ext') {
         configurazione.isFlussoProfiliEsterni = true;
-        console.log("Flusso profili esterni attivato per categoria:", categoria);
         
         $('.categoria-selezionata').text(`Categoria: ${mappaCategorieVisualizzazione[categoria] || categoria}`);
 
@@ -145,8 +144,6 @@ $(document).on('click', '.alimentazione-card', function(e) {
   
   const alimentazione = $card.data('alimentazione');
   configurazione.alimentazioneSelezionata = alimentazione;
-  
-  console.log("Alimentazione selezionata:", alimentazione);
   
   if (alimentazione === 'SENZA_ALIMENTATORE') {
       $('#alimentatore-section').hide();
@@ -207,8 +204,6 @@ $(document).on('click', '.alimentatore-card', function(e) {
   
   const alimentatoreId = $(this).data('alimentatore');
   configurazione.tipologiaAlimentatoreSelezionata = alimentatoreId;
-  
-  console.log("Alimentatore selezionato:", alimentatoreId);
 
   $('#potenza-alimentatore-section').show();
   $('#potenza-alimentatore-container').empty().html(

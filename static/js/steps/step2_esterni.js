@@ -14,14 +14,11 @@ export function initStep2EsterniListeners() {
     $('#btn-continua-step2-esterni').on('click', function(e) {
         e.preventDefault();
         if (configurazione.profiloSelezionato) {
-            // Prima carica le opzioni del profilo (tipologie)
             $('#tipologie-options').empty().html('<div class="text-center mt-3"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni...</p></div>');
             
             caricaOpzioniProfilo(configurazione.profiloSelezionato);
-            
-            // Poi vai alla personalizzazione
+
             $("#step2-modello-esterni").fadeOut(300, function() {
-                // Mostra direttamente la personalizzazione se c'è solo "taglio su misura"
                 setTimeout(() => {
                     if ($('.tipologia-card').length === 1 && $('.tipologia-card').data('id') === 'taglio_misura') {
                         $('.tipologia-card').click();
@@ -31,7 +28,6 @@ export function initStep2EsterniListeners() {
                             module.vaiAllaPersonalizzazione();
                         });
                     } else {
-                        // Altrimenti mostra le opzioni di tipologia
                         $("#step2-modello").fadeIn(300);
                         updateProgressBar(4);
                     }
@@ -42,7 +38,6 @@ export function initStep2EsterniListeners() {
 }
 
 export function vaiAllaSelezioneProfiliPerEsterni() {
-    console.log("Navigazione a selezione profili per esterni");
 
     $(".step-section").hide();
     $("#step2-modello-esterni").fadeIn(300);
@@ -63,7 +58,6 @@ export function caricaProfiliCompatibiliConStrip() {
         '<div class="text-center mt-5"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento profili compatibili...</p></div>'
     );
 
-    // Prima di tutto, rimuovi eventuali event listener precedenti
     $(document).off('click', '.profilo-card-esterni');
 
     $.ajax({
@@ -115,7 +109,6 @@ export function caricaProfiliCompatibiliConStrip() {
                 grid.append(profiloCard);
             });
 
-            // Gestisci il click sui profili
             $(document).on('click', '.profilo-card-esterni', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -128,8 +121,7 @@ export function caricaProfiliCompatibiliConStrip() {
                 $card.addClass('selected');
                 configurazione.profiloSelezionato = id;
                 configurazione.nomeModello = nome;
-                
-                // Abilita il pulsante continua
+
                 $('#btn-continua-step2-esterni').prop('disabled', false);
             });
         },
@@ -144,26 +136,21 @@ export function caricaProfiliCompatibiliConStrip() {
 
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata;
-    
-    console.log("⚠️ Filtrando profili per strip:", stripSelezionata);
-    
+
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
         return profili;
     }
     
     const profiliCompatibili = profili.filter(profilo => {
-        console.log(`Profilo ${profilo.nome} - Strip compatibili:`, profilo.stripLedCompatibili);
         
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
             return false;
         }
         
         const isCompatibile = profilo.stripLedCompatibili.includes(stripSelezionata);
-        console.log(`${profilo.nome} è compatibile con ${stripSelezionata}?`, isCompatibile);
         
         return isCompatibile;
     });
-    
-    console.log("Profili compatibili trovati:", profiliCompatibili.length);
+
     return profiliCompatibili;
 }

@@ -13,11 +13,9 @@ export function initStep7Listeners() {
           configurazione.includeStripLed === false) {
 
         if (configurazione.isFlussoProfiliEsterni) {
-          // Per gli esterni senza strip, torna alla personalizzazione
           $("#step2-personalizzazione").fadeIn(300);
           updateProgressBar(5);
         } else {
-          // Per gli interni senza strip, torna alla personalizzazione
           $("#step2-personalizzazione").fadeIn(300);
           updateProgressBar(2);
         }
