@@ -380,6 +380,106 @@ def calcola_potenza_consigliata():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/get_strip_compatibile_standalone', methods=['POST'])
+def get_strip_compatibile_standalone():
+    """Trova una strip reale dal database invece di generare ID fittizi"""
+    try:
+        data = request.json
+        
+        tipologia = data.get('tipologia')
+        tensione = data.get('tensione')
+        ip = data.get('ip')
+        temperatura = data.get('temperatura')
+        potenza = data.get('potenza')
+        special = data.get('special')
+        
+        logging.info(f"=== get_strip_compatibile_standalone ===")
+        logging.info(f"Parametri: tipologia={tipologia}, tensione={tensione}, ip={ip}, temperatura={temperatura}, potenza={potenza}, special={special}")
+        
+        # Costruisci la query per trovare strip reali
+        query = db.supabase.table('strip_led').select('*')
+        query = query.eq('tensione', tensione).eq('ip', ip)
+        
+        # Applica filtri per tipologia
+        if tipologia == 'SPECIAL' and special:
+            # Per special strip, filtra per nome commerciale/id
+            if special == 'XMAGIS':
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+            elif special == 'XFLEX':
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+            elif special == 'XSNAKE':
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+            elif special == 'ZIG_ZAG':
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+        elif tipologia and tipologia != 'None':
+            query = query.eq('tipo', tipologia)
+        
+        strips = query.execute().data
+        logging.info(f"Strip trovate: {len(strips)}")
+        
+        if not strips:
+            return jsonify({
+                'success': False, 
+                'message': 'Nessuna strip trovata per i parametri specificati'
+            })
+        
+        # Filtra per temperatura se specificata
+        if temperatura:
+            strip_ids = [s['id'] for s in strips]
+            temp_check = db.supabase.table('strip_temperature')\
+                .select('strip_id')\
+                .eq('temperatura', temperatura)\
+                .in_('strip_id', strip_ids)\
+                .execute().data
+            
+            strip_ids_con_temp = [t['strip_id'] for t in temp_check]
+            strips = [s for s in strips if s['id'] in strip_ids_con_temp]
+            logging.info(f"Strip dopo filtro temperatura: {len(strips)}")
+        
+        # Filtra per potenza se specificata
+        if potenza:
+            strip_ids = [s['id'] for s in strips]
+            potenza_check = db.supabase.table('strip_potenze')\
+                .select('strip_id')\
+                .eq('potenza', potenza)\
+                .in_('strip_id', strip_ids)\
+                .execute().data
+            
+            strip_ids_con_potenza = [p['strip_id'] for p in potenza_check]
+            strips = [s for s in strips if s['id'] in strip_ids_con_potenza]
+            logging.info(f"Strip dopo filtro potenza: {len(strips)}")
+        
+        if not strips:
+            return jsonify({
+                'success': False, 
+                'message': 'Nessuna strip trovata dopo tutti i filtri'
+            })
+        
+        # Prendi la prima strip che corrisponde ai criteri
+        strip_scelta = strips[0]
+        logging.info(f"Strip scelta: {strip_scelta['id']} - {strip_scelta.get('nome_commerciale', '')}")
+        
+        return jsonify({
+            'success': True,
+            'strip_led': {
+                'id': strip_scelta['id'],  # ✅ ID REALE dal database
+                'nomeCommerciale': strip_scelta.get('nome_commerciale', ''),
+                'nome': strip_scelta.get('nome', ''),
+                'tensione': strip_scelta.get('tensione', ''),
+                'ip': strip_scelta.get('ip', ''),
+                'tipo': strip_scelta.get('tipo', '')
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Errore in get_strip_compatibile_standalone: {str(e)}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# 2. Sostituisci calcola_lunghezze con questa versione COMPLETA:
+
 @app.route('/calcola_lunghezze', methods=['POST'])
 def calcola_lunghezze():
     data = request.json
@@ -389,33 +489,54 @@ def calcola_lunghezze():
     lunghezze_multiple = data.get('lunghezzeMultiple', {})
     forma_taglio = data.get('formaDiTaglioSelezionata', 'DRITTO_SEMPLICE')
     
+    logging.info(f"=== calcola_lunghezze ===")
+    logging.info(f"dim_richiesta={dim_richiesta}, strip_id={strip_id}, potenza={potenza_selezionata}")
+    
     taglio_minimo = 1
     spazio_produzione = 5
 
+    # ✅ PROTEZIONE: Gestisci il caso strip non trovata
     if strip_id and strip_id != 'NO_STRIP' and potenza_selezionata:
-        strip_data = db.supabase.table('strip_led').select('*').eq('id', strip_id).single().execute()
-        if strip_data.data:
-            strip_info = strip_data.data
-            tagli_minimi = strip_info.get('taglio_minimo', [])
+        try:
+            # Prova a cercare la strip nel database
+            strip_data_result = db.supabase.table('strip_led').select('*').eq('id', strip_id).execute()
+            
+            if strip_data_result.data and len(strip_data_result.data) > 0:
+                # Strip trovata
+                strip_info = strip_data_result.data[0]  # Prendi il primo risultato
+                tagli_minimi = strip_info.get('taglio_minimo', [])
+                logging.info(f"Strip trovata: {strip_id}, tagli_minimi: {tagli_minimi}")
 
-            potenze_data = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_id).order('indice').execute()
-            if potenze_data.data:
-                indice_potenza = -1
-                for record in potenze_data.data:
-                    if record.get('potenza') == potenza_selezionata:
-                        indice_potenza = record.get('indice', -1)
-                        break
+                # Continua con la logica esistente per il taglio minimo
+                potenze_data = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_id).order('indice').execute()
+                if potenze_data.data:
+                    indice_potenza = -1
+                    for record in potenze_data.data:
+                        if record.get('potenza') == potenza_selezionata:
+                            indice_potenza = record.get('indice', -1)
+                            break
 
-                if indice_potenza >= 0 and indice_potenza < len(tagli_minimi):
-                    taglio_minimo_str = tagli_minimi[indice_potenza]
-                    import re
-                    match = re.search(r'(\d+(?:[.,]\d+)?)', taglio_minimo_str)
-                    if match:
-                        taglio_minimo_val = match.group(1).replace(',', '.')
-                        try:
-                            taglio_minimo = float(taglio_minimo_val)
-                        except ValueError:
-                            pass
+                    if indice_potenza >= 0 and indice_potenza < len(tagli_minimi):
+                        taglio_minimo_str = tagli_minimi[indice_potenza]
+                        import re
+                        match = re.search(r'(\d+(?:[.,]\d+)?)', taglio_minimo_str)
+                        if match:
+                            taglio_minimo_val = match.group(1).replace(',', '.')
+                            try:
+                                taglio_minimo = float(taglio_minimo_val)
+                                logging.info(f"Taglio minimo calcolato: {taglio_minimo}")
+                            except ValueError:
+                                logging.warning(f"Impossibile convertire taglio_minimo: {taglio_minimo_val}")
+                                pass
+            else:
+                # Strip non trovata nel database
+                logging.warning(f"Strip non trovata nel database: {strip_id}")
+                logging.info("Usando taglio minimo default: 1")
+                
+        except Exception as e:
+            # Errore nella ricerca della strip
+            logging.error(f"Errore nella ricerca della strip {strip_id}: {str(e)}")
+            logging.info("Usando taglio minimo default: 1")
 
     def calcola_proposte_singole(lunghezza):
         if lunghezza > 0:
@@ -718,21 +839,116 @@ def genera_excel_configurazione(configurazione, codice_prodotto):
     
     return filename
 
+# Aggiungi questi nuovi endpoint in app.py
+
+@app.route('/get_tipologie_strip_disponibili')
+def get_tipologie_strip_disponibili():
+    """Ottiene tutte le tipologie di strip disponibili nel database"""
+    try:
+        # Ottieni tutte le tipologie distinte dal database
+        tipologie_data = db.supabase.table('strip_led').select('tipo').execute().data
+        tipologie_uniche = list(set([t['tipo'] for t in tipologie_data if t['tipo']]))
+        
+        return jsonify({'success': True, 'tipologie': tipologie_uniche})
+    except Exception as e:
+        logging.error(f"Errore in get_tipologie_strip_disponibili: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_special_strip_disponibili')
+def get_special_strip_disponibili():
+    """Ottiene tutte le special strip disponibili nel database"""
+    try:
+        # Ottieni tutte le strip con nomi commerciali
+        strips_data = db.supabase.table('strip_led').select('nome_commerciale, id').execute().data
+        
+        special_strips = set()
+        
+        # Definisci le keywords per identificare le special strip
+        special_keywords = {
+            'XFLEX': ['XFLEX', 'FLEX'],
+            'XSNAKE': ['XSNAKE', 'SNAKE', 'SNK'],
+            'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17'],
+            'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG']
+        }
+        
+        # Cerca le special strip nel database
+        for strip in strips_data:
+            nome_commerciale = (strip.get('nome_commerciale') or '').upper()
+            strip_id = (strip.get('id') or '').upper()
+            
+            for special_type, keywords in special_keywords.items():
+                if any(keyword in nome_commerciale or keyword in strip_id for keyword in keywords):
+                    special_strips.add(special_type)
+                    break
+        
+        return jsonify({'success': True, 'special_strips': list(special_strips)})
+    except Exception as e:
+        logging.error(f"Errore in get_special_strip_disponibili: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+# Sostituisci l'endpoint esistente get_opzioni_strip_standalone con questo:
 @app.route('/get_opzioni_strip_standalone', methods=['POST'])
 def get_opzioni_strip_standalone():
-    data = request.json
-    tipologia = data.get('tipologia')
-    special = data.get('special')
-    
-    tensioni_disponibili = ['24V', '48V', '220V']
-    
-    if tipologia == 'SPECIAL' and special:
-        if special in ['XFLEX', 'XSNAKE', 'XMAGIS']:
-            tensioni_disponibili = ['24V']
-        elif special == 'ZIG_ZAG':
-            tensioni_disponibili = ['24V', '48V']
-    
-    return jsonify({'success': True, 'tensioni': tensioni_disponibili})
+    """Ottiene le tensioni disponibili dal database per tipologia e special strip"""
+    try:
+        data = request.json
+        tipologia = data.get('tipologia')
+        special = data.get('special')
+        
+        logging.info(f"get_opzioni_strip_standalone chiamata con: tipologia={tipologia}, special={special}")
+        
+        # Interroga il database per le tensioni disponibili
+        query = db.supabase.table('strip_led').select('tensione')
+        
+        if tipologia and tipologia != 'None':
+            if tipologia == 'SPECIAL':
+                # Per special strip, filtra per nome commerciale/id
+                if special:
+                    if special == 'XMAGIS':
+                        query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+                    elif special == 'XFLEX':
+                        query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+                    elif special == 'XSNAKE':
+                        query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+                    elif special == 'ZIG_ZAG':
+                        query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+                else:
+                    # Se SPECIAL ma senza tipo specifico, cerca tutte le special strip
+                    special_keywords = ['XFLEX', 'XSNAKE', 'XMAGIS', 'ZIGZAG', 'ZIG_ZAG', 'MG13X12', 'MG12X17', 'SNK']
+                    or_conditions = []
+                    for keyword in special_keywords:
+                        or_conditions.extend([f"nome_commerciale.ilike.%{keyword}%", f"id.ilike.%{keyword}%"])
+                    query = query.or_(','.join(or_conditions))
+            else:
+                # Per tipologie normali (COB, SMD)
+                query = query.eq('tipo', tipologia)
+        
+        strips = query.execute().data
+        logging.info(f"Strip trovate: {len(strips)}")
+        
+        if not strips:
+            return jsonify({'success': True, 'tensioni': []})
+        
+        # Estrai tensioni uniche
+        tensioni_uniche = list(set([s['tensione'] for s in strips if s['tensione']]))
+        
+        # Ordina le tensioni numericamente
+        def get_tensione_order(tensione):
+            try:
+                return int(tensione.replace('V', ''))
+            except:
+                return 999
+        
+        tensioni_ordinate = sorted(tensioni_uniche, key=get_tensione_order)
+        
+        logging.info(f"Tensioni disponibili nel DB: {tensioni_ordinate}")
+        
+        return jsonify({'success': True, 'tensioni': tensioni_ordinate})
+    except Exception as e:
+        logging.error(f"Errore in get_opzioni_strip_standalone: {str(e)}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_opzioni_ip_standalone', methods=['POST'])
 def get_opzioni_ip_standalone():
@@ -974,6 +1190,7 @@ def get_opzioni_potenza_standalone():
             return jsonify({'success': True, 'potenze': []})
         
         strip_ids = [s['id'] for s in strips]
+        print(strip_ids)
         
         # Filtra per temperatura se specificata
         if temperatura:
@@ -996,7 +1213,7 @@ def get_opzioni_potenza_standalone():
         
         # Rimuovi duplicati e ordina
         potenze_uniche = sorted(list(set([p['potenza'] for p in potenze_data])), 
-                               key=lambda x: float(x.replace('W/m', '').replace(',', '.')))
+                               key=lambda x: (x.replace('W/m', '').replace(',', '.')))
         
         potenze = [{'id': p, 'nome': p} for p in potenze_uniche]
         
@@ -1005,32 +1222,6 @@ def get_opzioni_potenza_standalone():
     except Exception as e:
         logging.error(f"Errore in get_opzioni_potenza_standalone: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
-
-
-@app.route('/get_strip_compatibile_standalone', methods=['POST'])
-def get_strip_compatibile_standalone():
-    data = request.json
-    
-    tipologia = data.get('tipologia')
-    tensione = data.get('tensione')
-    ip = data.get('ip')
-    special = data.get('special')
-    
-    # Genera l'ID corretto in base alla tipologia
-    if tipologia == 'SPECIAL' and special:
-        strip_id = f"STRIP_{tensione}_{ip}_{special}"
-        nome_commerciale = f"Strip {special} {tensione} {ip}"
-    else:
-        strip_id = f"STRIP_{tensione}_{tipologia}_{ip}"
-        nome_commerciale = f"Strip {tipologia} {tensione} {ip}"
-    
-    return jsonify({
-        'success': True,
-        'strip_led': {
-            'id': strip_id,
-            'nomeCommerciale': nome_commerciale
-        }
-    })
 
 @app.route('/get_strip_led_filtrate_standalone', methods=['POST'])
 def get_strip_led_filtrate_standalone():

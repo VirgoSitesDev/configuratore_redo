@@ -99,90 +99,45 @@
     </div>
   </div>
 
-    <div class="step-section" id="step2b-tipologia-strip">
-      <div class="row">
-        <div class="col-12">
-          <h2 class="text-center mb-3">Seleziona la tipologia di strip LED</h2>
-          <p class="text-center mb-4 text-muted">
-            <small>Scegli la tipologia di strip LED da configurare</small>
-          </p>
-        </div>
+  <div class="step-section" id="step2b-tipologia-strip">
+    <div class="row">
+      <div class="col-12">
+        <h2 class="text-center mb-3">Seleziona la tipologia di strip LED</h2>
+        <p class="text-center mb-4 text-muted">
+          <small>Scegli la tipologia di strip LED da configurare</small>
+        </p>
       </div>
-      
-      <div class="container mb-5">
-        <h3 class="mb-3">Tipologia Strip LED</h3>
-        <div class="row" id="step2b-tipologia-container">
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-tipologia-card" data-tipologia="COB">
-              <img src="/static/img/strip-cob.jpg" class="card-img-top" alt="Strip COB" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
-              <div class="card-body text-center">
-                <h5 class="card-title">COB</h5>
-                <p class="card-text small text-muted">Strip LED con tecnologia Chip On Board</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-tipologia-card" data-tipologia="SMD">
-              <img src="/static/img/strip-smd.jpg" class="card-img-top" alt="Strip SMD" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
-              <div class="card-body text-center">
-                <h5 class="card-title">SMD</h5>
-                <p class="card-text small text-muted">Strip LED con tecnologia Surface Mount Device</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-tipologia-card" data-tipologia="SPECIAL">
-              <img src="/static/img/strip-special.jpg" class="card-img-top" alt="Special Strip" style="height: 180px; object-fit: cover;" onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
-              <div class="card-body text-center">
-                <h5 class="card-title">SPECIAL STRIP</h5>
-                <p class="card-text small text-muted">Strip LED con caratteristiche speciali</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
     
-      <div class="container mb-5" id="step2b-special-container" style="display: none;">
-        <h3 class="mb-3">Tipo di Special Strip</h3>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-special-card" data-special="XFLEX">
-              <div class="card-body text-center">
-                <h5 class="card-title">XFLEX</h5>
-                <p class="card-text small text-muted">Strip LED flessibile</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-special-card" data-special="XSNAKE">
-              <div class="card-body text-center">
-                <h5 class="card-title">XSNAKE</h5>
-                <p class="card-text small text-muted">Strip LED con design a serpente</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-3">
-            <div class="card option-card step2b-special-card" data-special="XMAGIS">
-              <div class="card-body text-center">
-                <h5 class="card-title">XMAGIS</h5>
-                <p class="card-text small text-muted">Strip LED premium</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="row mt-4">
+    <div class="container mb-5">
+      <h3 class="mb-3">Tipologia Strip LED</h3>
+      <!-- Container vuoto che verrà popolato dinamicamente dal JavaScript -->
+      <div class="row" id="step2b-tipologia-container">
         <div class="col-12 text-center">
-          <button class="btn btn-secondary" id="btn-torna-step0-da-tipologia">Indietro</button>
-          <button class="btn btn-primary ms-2" id="btn-continua-tipologia-step2b" disabled>Continua</button>
+          <div class="spinner-border" role="status"></div>
+          <p class="mt-3">Caricamento tipologie dal database...</p>
         </div>
       </div>
     </div>
+
+    <div class="container mb-5" id="step2b-special-container" style="display: none;">
+      <h3 class="mb-3">Tipo di Special Strip</h3>
+      <!-- Container vuoto che verrà popolato dinamicamente dal JavaScript -->
+      <div class="row">
+        <div class="col-12 text-center">
+          <div class="spinner-border" role="status"></div>
+          <p class="mt-3">Caricamento special strip dal database...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-4">
+      <div class="col-12 text-center">
+        <button class="btn btn-secondary" id="btn-torna-step0-da-tipologia">Indietro</button>
+        <button class="btn btn-primary ms-2" id="btn-continua-tipologia-step2b" disabled>Continua</button>
+      </div>
+    </div>
+  </div>
     
     <div class="step-section" id="step2b-parametri">
       <div class="row">

@@ -30,30 +30,8 @@ export function initStep0Listeners() {
 }
 
 function initStep2bTipologiaListeners() {
-  $('.step2b-tipologia-card').on('click', function() {
-    $('.step2b-tipologia-card').removeClass('selected');
-    $(this).addClass('selected');
-    
-    configurazione.tipologiaStripSelezionata = $(this).data('tipologia');
-    
-    if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
-      $('#step2b-special-container').show();
-      configurazione.specialStripSelezionata = null;
-      $('#btn-continua-tipologia-step2b').prop('disabled', true);
-    } else {
-      $('#step2b-special-container').hide();
-      configurazione.specialStripSelezionata = null;
-      $('#btn-continua-tipologia-step2b').prop('disabled', false);
-    }
-  });
-
-  $('.step2b-special-card').on('click', function() {
-    $('.step2b-special-card').removeClass('selected');
-    $(this).addClass('selected');
-    
-    configurazione.specialStripSelezionata = $(this).data('special');
-    $('#btn-continua-tipologia-step2b').prop('disabled', false);
-  });
+  // Prima carica le tipologie dal database
+  caricaTipologieDalDatabase();
 
   $('#btn-torna-step0-da-tipologia').on('click', function(e) {
     e.preventDefault();
@@ -71,6 +49,187 @@ function initStep2bTipologiaListeners() {
       initStep2bParametriListeners();
     });
   });
+}
+
+function caricaTipologieDalDatabase() {
+  console.log('🔍 Caricamento tipologie dal database...');
+  
+  // Mostra loading
+  $('#step2b-tipologia-container').html('<div class="text-center"><div class="spinner-border"></div><p>Caricamento tipologie...</p></div>');
+  
+  $.ajax({
+    url: '/get_tipologie_strip_disponibili',
+    method: 'GET',
+    success: function(data) {
+      if (data.success && data.tipologie) {
+        console.log('✅ Tipologie caricate dal database:', data.tipologie);
+        renderTipologie(data.tipologie);
+      } else {
+        console.error('❌ Errore nel caricamento tipologie:', data.message);
+        renderTipologieDefault();
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('❌ Errore AJAX tipologie:', error);
+      renderTipologieDefault();
+    }
+  });
+}
+
+function renderTipologie(tipologie) {
+  const tipologieContainer = $('#step2b-tipologia-container');
+  tipologieContainer.empty();
+  
+  // Mappatura per le immagini e descrizioni
+  const tipologieInfo = {
+    'COB': {
+      img: '/static/img/strip-cob.jpg',
+      nome: 'COB',
+      descrizione: 'Strip LED con tecnologia Chip On Board'
+    },
+    'SMD': {
+      img: '/static/img/strip-smd.jpg',
+      nome: 'SMD', 
+      descrizione: 'Strip LED con tecnologia Surface Mount Device'
+    },
+    'SPECIAL': {
+      img: '/static/img/strip-special.jpg',
+      nome: 'SPECIAL STRIP',
+      descrizione: 'Strip LED con caratteristiche speciali'
+    }
+  };
+  
+  tipologie.forEach(function(tipologia) {
+    const info = tipologieInfo[tipologia] || {
+      img: '/static/img/placeholder_logo.jpg',
+      nome: tipologia,
+      descrizione: `Strip LED ${tipologia}`
+    };
+    
+    tipologieContainer.append(`
+      <div class="col-md-4 mb-3">
+        <div class="card option-card step2b-tipologia-card" data-tipologia="${tipologia}">
+          <img src="${info.img}" class="card-img-top" alt="${info.nome}" 
+               style="height: 180px; object-fit: cover;" 
+               onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px'">
+          <div class="card-body text-center">
+            <h5 class="card-title">${info.nome}</h5>
+            <p class="card-text small text-muted">${info.descrizione}</p>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  $('.step2b-tipologia-card').on('click', function() {
+    $('.step2b-tipologia-card').removeClass('selected');
+    $(this).addClass('selected');
+    
+    configurazione.tipologiaStripSelezionata = $(this).data('tipologia');
+    
+    if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
+      caricaSpecialStripDalDatabase();
+      $('#btn-continua-tipologia-step2b').prop('disabled', true);
+    } else {
+      $('#step2b-special-container').hide();
+      configurazione.specialStripSelezionata = null;
+      $('#btn-continua-tipologia-step2b').prop('disabled', false);
+    }
+  });
+}
+
+function renderTipologieDefault() {
+  console.log('⚠️ Usando tipologie default come fallback');
+  renderTipologie(['COB', 'SMD', 'SPECIAL']);
+}
+
+function caricaSpecialStripDalDatabase() {
+  console.log('🔍 Caricamento special strip dal database...');
+  
+  // Mostra il container e loading
+  $('#step2b-special-container').show();
+  $('#step2b-special-container .row').html('<div class="col-12 text-center"><div class="spinner-border"></div><p>Caricamento special strip...</p></div>');
+  
+  $.ajax({
+    url: '/get_special_strip_disponibili',
+    method: 'GET',
+    success: function(data) {
+      if (data.success && data.special_strips) {
+        console.log('✅ Special strip caricate dal database:', data.special_strips);
+        renderSpecialStrip(data.special_strips);
+      } else {
+        console.error('❌ Errore nel caricamento special strip:', data.message);
+        renderSpecialStripDefault();
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('❌ Errore AJAX special strip:', error);
+      renderSpecialStripDefault();
+    }
+  });
+}
+
+function renderSpecialStrip(specialStrips) {
+  const specialContainer = $('#step2b-special-container .row');
+  specialContainer.empty();
+  
+  // Mappatura per le descrizioni
+  const specialInfo = {
+    'XFLEX': {
+      nome: 'XFLEX',
+      descrizione: 'Strip LED flessibile'
+    },
+    'XSNAKE': {
+      nome: 'XSNAKE',
+      descrizione: 'Strip LED con design a serpente'
+    },
+    'XMAGIS': {
+      nome: 'XMAGIS',
+      descrizione: 'Strip LED premium'
+    },
+    'ZIG_ZAG': {
+      nome: 'ZIG ZAG',
+      descrizione: 'Strip LED con configurazione a zig zag'
+    }
+  };
+  
+  specialStrips.forEach(function(special) {
+    const info = specialInfo[special] || {
+      nome: special,
+      descrizione: `Strip LED ${special}`
+    };
+    
+    specialContainer.append(`
+      <div class="col-md-4 mb-3">
+        <div class="card option-card step2b-special-card" data-special="${special}">
+          <div class="card-body text-center">
+            <h5 class="card-title">${info.nome}</h5>
+            <p class="card-text small text-muted">${info.descrizione}</p>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  $('.step2b-special-card').on('click', function() {
+    $('.step2b-special-card').removeClass('selected');
+    $(this).addClass('selected');
+    
+    configurazione.specialStripSelezionata = $(this).data('special');
+    $('#btn-continua-tipologia-step2b').prop('disabled', false);
+  });
+  
+  // Se c'è solo una special strip, selezionala automaticamente
+  if (specialStrips.length === 1) {
+    setTimeout(() => {
+      $('.step2b-special-card').first().click();
+    }, 100);
+  }
+}
+
+function renderSpecialStripDefault() {
+  console.log('⚠️ Usando special strip default come fallback');
+  renderSpecialStrip(['XFLEX', 'XSNAKE', 'XMAGIS', 'ZIG_ZAG']);
 }
 
 function initStep2bParametriListeners() {
@@ -150,28 +309,10 @@ function caricaOpzioniStep2b() {
   
   $('#btn-continua-parametri-step2b').prop('disabled', true);
   
-  // Per il flusso solo strip, applichiamo gli stessi filtri per categoria
-  if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
-    console.log('🔍 Applicazione filtri special strip per categoria:', configurazione.categoriaSelezionata);
-    
-    // Se è stata impostata una categoria (es. da precedente selezione), applica filtri
-    if (configurazione.categoriaSelezionata === 'esterni') {
-      // Per esterni, solo XSNAKE e XMAGIS
-      $('.step2b-special-card').parent().hide();
-      $('.step2b-special-card[data-special="XSNAKE"]').parent().show();
-      $('.step2b-special-card[data-special="XMAGIS"]').parent().show();
-      console.log('✅ Filtro esterni applicato: XSNAKE, XMAGIS disponibili');
-    } else if (configurazione.categoriaSelezionata === 'wall_washer_ext') {
-      // Per wall washer esterni, solo XFLEX
-      $('.step2b-special-card').parent().hide();
-      $('.step2b-special-card[data-special="XFLEX"]').parent().show();
-      console.log('✅ Filtro wall washer esterni applicato: solo XFLEX disponibile');
-    } else {
-      // Per altre categorie o senza categoria, mostra tutte
-      $('.step2b-special-card').parent().show();
-      console.log('✅ Nessun filtro applicato: tutte le special strip disponibili');
-    }
-  }
+  console.log('🔍 Caricamento tensioni dal database per:', {
+    tipologia: configurazione.tipologiaStripSelezionata,
+    special: configurazione.specialStripSelezionata
+  });
   
   $.ajax({
     url: '/get_opzioni_strip_standalone',
@@ -183,14 +324,15 @@ function caricaOpzioniStep2b() {
     }),
     success: function(data) {
       if (data.success) {
+        console.log('✅ Tensioni caricate dal database:', data.tensioni);
         renderOpzioniTensione(data.tensioni);
       } else {
-        console.error('Errore nella risposta tensioni:', data);
+        console.error('❌ Errore nella risposta tensioni:', data);
         $('#step2b-tensione-options').html('<p class="text-danger">Errore nel caricamento delle opzioni.</p>');
       }
     },
     error: function(xhr, status, error) {
-      console.error('Errore AJAX tensioni:', xhr.responseText);
+      console.error('❌ Errore AJAX tensioni:', xhr.responseText);
       $('#step2b-tensione-options').html('<p class="text-danger">Errore nel caricamento delle opzioni.</p>');
     }
   });
