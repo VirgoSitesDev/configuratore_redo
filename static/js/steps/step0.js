@@ -93,7 +93,11 @@ function renderTipologie(tipologie) {
     }
   };
   
-  tipologie.forEach(function(tipologia) {
+  // ✅ CORREZIONE: Ordina sempre le tipologie nell'ordine corretto
+  const ordineDesiderato = ['COB', 'SMD', 'SPECIAL'];
+  const tipologieOrdinate = ordineDesiderato.filter(tip => tipologie.includes(tip));
+  
+  tipologieOrdinate.forEach(function(tipologia) {
     const info = tipologieInfo[tipologia] || {
       img: '/static/img/placeholder_logo.jpg',
       nome: tipologia,
