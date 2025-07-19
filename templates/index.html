@@ -180,7 +180,7 @@
         <div class="col-12">
           <h2 class="text-center mb-3">Potenza e lunghezza strip LED</h2>
           <p class="text-center mb-4 text-muted">
-            <small>Seleziona la potenza e specifica la lunghezza</small>
+            <small>Seleziona la potenza, specifica la lunghezza e scegli il modello di strip LED</small>
           </p>
         </div>
       </div>
@@ -197,6 +197,16 @@
           <label for="step2b-lunghezza-strip">Lunghezza richiesta (metri):</label>
           <input type="number" class="form-control" id="step2b-lunghezza-strip" placeholder="Inserisci la lunghezza in metri" min="1" step="0.1">
           <small class="form-text text-muted">Inserisci la lunghezza totale della strip LED richiesta</small>
+        </div>
+      </div>
+
+      <!-- NUOVA SEZIONE per selezione strip LED -->
+      <div class="container mb-4" id="step2b-strip-selection" style="display: none;">
+        <h3 class="mb-3">Modello Strip LED</h3>
+        <div class="alert alert-info mb-3">
+          <p>Seleziona il modello specifico di strip LED compatibile con i parametri selezionati.</p>
+        </div>
+        <div class="row" id="step2b-strip-led-container">
         </div>
       </div>
       

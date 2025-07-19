@@ -257,13 +257,47 @@ function initStep2bParametriListeners() {
 }
 
 function initStep2bPotenzaListeners() {
+  console.log('🔧 Inizializzazione listeners per step2b potenza');
+  
   caricaOpzioniPotenzaStep2b();
 
+  // Listener per input lunghezza
   $('#step2b-lunghezza-strip').on('input', function() {
     configurazione.lunghezzaRichiestaMetri = parseFloat($(this).val()) || null;
     if (configurazione.lunghezzaRichiestaMetri) {
       configurazione.lunghezzaRichiesta = configurazione.lunghezzaRichiestaMetri * 1000;
     }
+    checkStep2bPotenzaCompletion();
+  });
+
+  // ✅ EVENT DELEGATION per potenze (elementi dinamici)
+  $(document).off('click', '.potenza-card').on('click', '.potenza-card', function() {
+    console.log('🎯 Click su potenza card');
+    $('.potenza-card').removeClass('selected');
+    $(this).addClass('selected');
+    configurazione.potenzaSelezionata = $(this).data('potenza');
+    
+    console.log('Potenza selezionata:', configurazione.potenzaSelezionata);
+    
+    // Carica strip LED appena selezionata la potenza
+    caricaStripLedPerSoloStrip();
+    checkStep2bPotenzaCompletion();
+  });
+
+  // ✅ EVENT DELEGATION per strip LED (elementi dinamici)
+  $(document).off('click', '.step2b-strip-led-card').on('click', '.step2b-strip-led-card', function() {
+    console.log('🎯 Click su strip LED card');
+    $('.step2b-strip-led-card').removeClass('selected');
+    $(this).addClass('selected');
+    
+    const stripId = $(this).data('strip-id');
+    const nomeCommerciale = $(this).data('nome-commerciale') || '';
+
+    configurazione.stripLedSceltaFinale = stripId;
+    configurazione.nomeCommercialeStripLed = nomeCommerciale;
+    configurazione.stripLedSelezionata = stripId;
+    
+    console.log('Strip LED selezionata nel flusso solo strip:', stripId);
     checkStep2bPotenzaCompletion();
   });
 
@@ -573,6 +607,7 @@ function caricaOpzioniPotenzaStep2b() {
 }
 
 function renderOpzioniPotenza(potenze) {
+  console.log('🔧 Rendering opzioni potenza:', potenze);
   $('#step2b-potenza-options').empty();
   
   potenze.forEach(function(potenza) {
@@ -590,22 +625,17 @@ function renderOpzioniPotenza(potenze) {
     `);
   });
 
+  // Se c'è una sola potenza, selezionala automaticamente
   if (potenze.length === 1) {
     setTimeout(() => {
       $('.potenza-card').addClass('selected');
       const potenzaId = potenze[0].id || potenze[0];
       configurazione.potenzaSelezionata = potenzaId;
-      checkStep2bPotenzaCompletion();
+      console.log('Potenza selezionata automaticamente:', potenzaId);
+      // Carica automaticamente strip LED se c'è una sola potenza
+      caricaStripLedPerSoloStrip();
     }, 100);
   }
-  
-  $('.potenza-card').on('click', function() {
-    $('.potenza-card').removeClass('selected');
-    $(this).addClass('selected');
-    configurazione.potenzaSelezionata = $(this).data('potenza');
-    
-    checkStep2bPotenzaCompletion();
-  });
 }
 
 function checkStep2bParametriCompletion() {
@@ -617,14 +647,118 @@ function checkStep2bParametriCompletion() {
 }
 
 function checkStep2bPotenzaCompletion() {
-  const isComplete = configurazione.potenzaSelezionata && configurazione.lunghezzaRichiestaMetri;
+  const isComplete = configurazione.potenzaSelezionata && 
+                    configurazione.lunghezzaRichiestaMetri && 
+                    configurazione.stripLedSceltaFinale;
+                    
+  console.log('🔍 Check completion:', {
+    potenza: configurazione.potenzaSelezionata,
+    lunghezza: configurazione.lunghezzaRichiestaMetri,
+    strip: configurazione.stripLedSceltaFinale,
+    isComplete: isComplete
+  });
+  
   $('#btn-continua-potenza-step2b').prop('disabled', !isComplete);
+  return isComplete;
+}
 
-  if (isComplete) {
-    selezionaStripCompatibile();
+function caricaStripLedPerSoloStrip() {
+  console.log('🔍 Caricamento strip LED per flusso solo strip...');
+  
+  if (!configurazione.potenzaSelezionata) {
+    console.warn('⚠️ Potenza non selezionata, salto caricamento strip');
+    return;
   }
   
-  return isComplete;
+  // Mostra la sezione delle strip LED
+  $('#step2b-strip-selection').show();
+  $('#step2b-strip-led-container').html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento modelli strip LED...</p></div>');
+  
+  // Reset selezione strip
+  configurazione.stripLedSceltaFinale = null;
+  
+  const requestData = {
+    tipologia: configurazione.tipologiaStripSelezionata,
+    special: configurazione.specialStripSelezionata,
+    tensione: configurazione.tensioneSelezionato,
+    ip: configurazione.ipSelezionato,
+    temperatura: configurazione.temperaturaSelezionata,
+    potenza: configurazione.potenzaSelezionata
+  };
+  
+  console.log('📤 Parametri richiesta strip LED:', requestData);
+  
+  $.ajax({
+    url: '/get_strip_led_filtrate_standalone',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify(requestData),
+    success: function(data) {
+      console.log('✅ Risposta ricevuta:', data);
+      
+      if (data.success && data.strip_led && data.strip_led.length > 0) {
+        let stripHtml = '<div class="row">';
+        
+        data.strip_led.forEach(function(strip) {
+          const nomeVisualizzato = strip.nomeCommerciale || strip.nome;
+          const imgPath = `/static/img/strip/${strip.id}.jpg`;
+          
+          stripHtml += `
+            <div class="col-md-4 mb-3">
+              <div class="card option-card step2b-strip-led-card" 
+                  data-strip-id="${strip.id}" 
+                  data-nome-commerciale="${strip.nomeCommerciale || ''}">
+                <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}" 
+                    style="height: 180px; object-fit: cover;" 
+                    onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px';">
+                <div class="card-body">
+                  <h5 class="card-title">${nomeVisualizzato}</h5>
+                  <p class="card-text small">
+                    Tensione: ${strip.tensione}, IP: ${strip.ip}, Temperatura: ${strip.temperatura}
+                  </p>
+                  <p class="card-text small">Potenza: ${configurazione.potenzaSelezionata}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        stripHtml += '</div>';
+        $('#step2b-strip-led-container').html(stripHtml);
+
+        // Se c'è una sola strip, selezionala automaticamente
+        if (data.strip_led.length === 1) {
+          setTimeout(() => {
+            $('.step2b-strip-led-card').addClass('selected');
+            const stripSelezionata = data.strip_led[0];
+            configurazione.stripLedSceltaFinale = stripSelezionata.id;
+            configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
+            configurazione.stripLedSelezionata = stripSelezionata.id;
+            
+            console.log('🎯 Strip selezionata automaticamente:', stripSelezionata.id);
+            checkStep2bPotenzaCompletion();
+          }, 100);
+        }
+      } else {
+        console.error("❌ Nessuna strip trovata:", data);
+        $('#step2b-strip-led-container').html(
+          '<div class="alert alert-warning">Nessuna strip LED trovata per questa configurazione. Controlla i parametri selezionati.</div>'
+        );
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error("❌ Errore AJAX:", {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        responseText: xhr.responseText,
+        error: error
+      });
+      
+      $('#step2b-strip-led-container').html(
+        '<div class="alert alert-danger">Errore nel caricamento delle strip LED. Riprova più tardi.</div>'
+      );
+    }
+  });
 }
 
 function selezionaStripCompatibile() {
