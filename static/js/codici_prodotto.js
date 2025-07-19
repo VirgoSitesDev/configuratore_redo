@@ -157,33 +157,26 @@ export function calcolaCodiceAlimentatore() {
   if (!configurazione.tipologiaAlimentatoreSelezionata || !configurazione.alimentazioneSelezionata) {
     return '';
   }
-
-  let dettagliAlimentatori = null;
   
+  let codiceAlimentatore = '';
+
   $.ajax({
-    url: '/static/data/configurazioni.json',
+    url: `/get_dettagli_alimentatore/${configurazione.tipologiaAlimentatoreSelezionata}`,
     method: 'GET',
     async: false,
     success: function(response) {
-      dettagliAlimentatori = response.dettagliAlimentatori;
+      if (response.success && response.alimentatore && response.alimentatore.codici) {
+        const potenzaStr = configurazione.potenzaAlimentatoreSelezionata.toString();
+        codiceAlimentatore = response.alimentatore.codici[potenzaStr] || '';
+      }
     },
     error: function(error) {
-      console.error('Errore nel caricamento dei dettagli alimentatori:', error);
+      console.warn('Impossibile ottenere il codice alimentatore:', error);
     }
   });
 
-  if (!dettagliAlimentatori) return '';
-
-  const alimentatore = dettagliAlimentatori[configurazione.tipologiaAlimentatoreSelezionata];
-  
-  if (!alimentatore || !alimentatore.codici) return '';
-
-  const potenzaStr = configurazione.potenzaAlimentatoreSelezionata.toString();
-  const codice = alimentatore.codici[potenzaStr];
-
-  return codice || '';
-}
-  
+  return codiceAlimentatore;
+}  
 
 export function calcolaCodiceDimmer() {
   if (!configurazione.dimmerSelezionato || configurazione.dimmerSelezionato === 'NESSUN_DIMMER') {

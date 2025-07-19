@@ -23,8 +23,7 @@ export function initStep2EsterniListeners() {
                     if ($('.tipologia-card').length === 1 && $('.tipologia-card').data('id') === 'taglio_misura') {
                         $('.tipologia-card').click();
                         configurazione.tipologiaSelezionata = 'taglio_misura';
-                        
-                        // Nascondi completamente la sezione modello prima di andare alla personalizzazione
+
                         $("#step2-modello").hide();
                         
                         import('./step2.js').then(module => {
@@ -33,14 +32,12 @@ export function initStep2EsterniListeners() {
                     } else {
                         $("#step2-modello").fadeIn(300);
                         updateProgressBar(4);
-                        
-                        // Aggiungi listener per la selezione della tipologia nel flusso esterni
+
                         $('.tipologia-card').off('click.esterni').on('click.esterni', function() {
                             $('.tipologia-card').removeClass('selected');
                             $(this).addClass('selected');
                             configurazione.tipologiaSelezionata = $(this).data('id');
-                            
-                            // Nascondi la sezione modello e vai alla personalizzazione
+
                             $("#step2-modello").fadeOut(300, function() {
                                 import('./step2.js').then(module => {
                                     module.vaiAllaPersonalizzazione();
@@ -55,13 +52,6 @@ export function initStep2EsterniListeners() {
 }
 
 export function vaiAllaSelezioneProfiliPerEsterni() {
-    console.log('=== DEBUG: vaiAllaSelezioneProfiliPerEsterni chiamata ===');
-    console.log('Categoria selezionata:', configurazione.categoriaSelezionata);
-    console.log('Strip LED selezionata:', configurazione.stripLedSelezionata);
-    console.log('Nome commerciale strip:', configurazione.nomeCommercialeStripLed);
-    console.log('Strip LED scelta finale:', configurazione.stripLedSceltaFinale);
-
-    // Assicurati che il flusso esterni sia ancora attivo
     if (!configurazione.isFlussoProfiliEsterni) {
         console.warn('ATTENZIONE: flusso profili esterni non attivo!');
         configurazione.isFlussoProfiliEsterni = true;
@@ -77,33 +67,20 @@ export function vaiAllaSelezioneProfiliPerEsterni() {
     $('#strip-configurata-esterni').text(
         configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata || 'Strip LED configurata'
     );
-
-    console.log('Chiamata caricaProfiliCompatibiliConStrip...');
     caricaProfiliCompatibiliConStrip();
 }
 
 export function caricaProfiliCompatibiliConStrip() {
-    console.log('=== DEBUG: caricaProfiliCompatibiliConStrip ===');
-    console.log('Categoria:', configurazione.categoriaSelezionata);
-    console.log('Strip LED per filtro:', configurazione.stripLedSelezionata);
-
     $('#profili-esterni-container').empty().html(
         '<div class="text-center mt-5"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento profili compatibili...</p></div>'
     );
 
-    // Rimuovi tutti i listener precedenti per evitare conflitti
     $(document).off('click', '.profilo-card-esterni');
 
     $.ajax({
         url: `/get_profili/${configurazione.categoriaSelezionata}`,
         method: 'GET',
         success: function(data) {
-            console.log('Profili ricevuti dal server:', data.length);
-            console.log('Lista completa profili ricevuti:');
-            data.forEach((profilo, index) => {
-                console.log(`${index}: ${profilo.id || profilo.nome} - Strip compatibili:`, profilo.stripLedCompatibili);
-            });
-            
             $('#profili-esterni-container').empty();
             
             if (!data || data.length === 0) {
@@ -114,7 +91,6 @@ export function caricaProfiliCompatibiliConStrip() {
             }
 
             const profiliCompatibili = filtraProfiliPerStripSelezionata(data);
-            console.log('Profili compatibili dopo filtro:', profiliCompatibili.length);
             
             if (profiliCompatibili.length === 0) {
                 $('#profili-esterni-container').html(
@@ -123,7 +99,6 @@ export function caricaProfiliCompatibiliConStrip() {
                 return;
             }
 
-            // Mostra i profili compatibili
             let grid = $('<div class="row"></div>');
             $('#profili-esterni-container').append(grid);
             
@@ -151,7 +126,6 @@ export function caricaProfiliCompatibiliConStrip() {
                 grid.append(profiloCard);
             });
 
-            // Aggiungi il listener per la selezione del profilo
             $(document).on('click', '.profilo-card-esterni', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -159,8 +133,6 @@ export function caricaProfiliCompatibiliConStrip() {
                 const $card = $(this);
                 const id = $card.data('id');
                 const nome = $card.data('nome');
-
-                console.log('Profilo selezionato:', id, nome);
 
                 $('.profilo-card-esterni').removeClass('selected');
                 $card.addClass('selected');
@@ -170,7 +142,6 @@ export function caricaProfiliCompatibiliConStrip() {
                 $('#btn-continua-step2-esterni').prop('disabled', false);
             });
 
-            // Se c'è solo un profilo compatibile, selezionalo automaticamente
             if (profiliCompatibili.length === 1) {
                 setTimeout(() => {
                     $('.profilo-card-esterni').first().click();
@@ -188,39 +159,17 @@ export function caricaProfiliCompatibiliConStrip() {
 
 function filtraProfiliPerStripSelezionata(profili) {
     const stripSelezionata = configurazione.stripLedSelezionata || configurazione.stripLedSceltaFinale;
-    
-    console.log('Filtro profili per strip:', stripSelezionata);
-    console.log('=== ANALISI DETTAGLIATA COMPATIBILITÀ ===');
 
     if (!stripSelezionata || stripSelezionata === 'NO_STRIP') {
-        console.log('Nessuna strip selezionata, ritorno tutti i profili');
         return profili;
     }
     
     const profiliCompatibili = profili.filter((profilo, index) => {
-        console.log(`\nProfilo ${index}: ${profilo.nome || profilo.id}`);
-        console.log('Strip compatibili (array completo):', profilo.stripLedCompatibili);
-        
         if (!profilo.stripLedCompatibili || profilo.stripLedCompatibili.length === 0) {
-            console.log(`❌ Profilo ${profilo.nome}: nessuna strip compatibile definita`);
             return false;
         }
-        
-        // Debug ogni elemento dell'array
-        profilo.stripLedCompatibili.forEach((strip, i) => {
-            console.log(`  [${i}]: "${strip}" ${strip === stripSelezionata ? '✅ MATCH!' : ''}`);
-        });
-        
-        // Verifica se la strip selezionata è nell'array
         const isCompatibile = profilo.stripLedCompatibili.includes(stripSelezionata);
-        console.log(`Risultato compatibilità per ${profilo.nome}: ${isCompatibile ? '✅' : '❌'}`);
-        
         return isCompatibile;
     });
-    
-    console.log('\n=== RISULTATO FINALE ===');
-    console.log('Profili compatibili trovati:', profiliCompatibili.length);
-    console.log('Profili compatibili:', profiliCompatibili.map(p => p.nome || p.id));
-    
     return profiliCompatibili;
 }

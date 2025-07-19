@@ -17,16 +17,9 @@ export function initStep3Listeners() {
   
   $('#btn-continua-step3').on('click', function(e) {
     e.preventDefault();
-    
-    console.log('=== DEBUG STEP 3 CONTINUA ===');
-    console.log('Potenza selezionata:', configurazione.potenzaSelezionata);
-    console.log('Strip LED scelta finale:', configurazione.stripLedSceltaFinale);
-    console.log('Flusso profili esterni:', configurazione.isFlussoProfiliEsterni);
-    console.log('Categoria selezionata:', configurazione.categoriaSelezionata);
-    
+ 
     if (configurazione.potenzaSelezionata && configurazione.stripLedSceltaFinale) {
       if (configurazione.isFlussoProfiliEsterni) {
-        console.log('Vai alla selezione profili per esterni');
         $("#step3-temperatura-potenza").fadeOut(300, function() {
           vaiAllaSelezioneProfiliPerEsterni();
         });
@@ -191,8 +184,7 @@ function caricaStripLedFiltrate() {
             configurazione.stripLedSceltaFinale = stripSelezionata.id;
             configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
             configurazione.stripLedSelezionata = stripSelezionata.id;
-            
-            console.log('Strip selezionata automaticamente:', stripSelezionata.id);
+
             $('#btn-continua-step3').prop('disabled', false);
           }, 100);
         }
@@ -249,8 +241,6 @@ export function initPotenzaListener() {
     configurazione.potenzaSelezionata = $(this).data('potenza');
     configurazione.codicePotenza = $(this).data('codice');
 
-    console.log('Potenza selezionata:', configurazione.potenzaSelezionata);
-
     if (configurazione.isFlussoProfiliEsterni) {
       caricaStripLedFiltrate();
     } else {
@@ -268,7 +258,6 @@ export function initPotenzaListener() {
     $('#btn-continua-step3').prop('disabled', true);
   });
 
-  // LISTENER UNICO PER LE STRIP LED COMPATIBILI - RIMUOVO DUPLICATO
   $(document).off('click', '.strip-led-compatibile-card').on('click', '.strip-led-compatibile-card', function() {
     $('.strip-led-compatibile-card').removeClass('selected');
     $(this).addClass('selected');
@@ -279,11 +268,7 @@ export function initPotenzaListener() {
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
-    
-    console.log('Strip LED selezionata manualmente:', stripId);
-    console.log('Nome commerciale:', nomeCommerciale);
-    console.log('Flusso esterni:', configurazione.isFlussoProfiliEsterni);
-    
+ 
     $('#btn-continua-step3').prop('disabled', false);
   });
 }

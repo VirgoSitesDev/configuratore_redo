@@ -680,11 +680,24 @@ def finalizza_configurazione():
     
     potenza_totale = potenza_per_metro * lunghezza_in_metri
     
-    profilo = configurazione.get('profiloSelezionato', '')
-    strip = configurazione.get('stripLedSelezionata', '')
-    temperatura = configurazione.get('temperaturaColoreSelezionata', '')
+    # ✅ CORREZIONE: Gestisci il codice prodotto in base alla modalità
+    modalita = configurazione.get('modalitaConfigurazione', '')
     
-    codice_prodotto = profilo
+    if modalita == 'solo_strip':
+        # Per il flusso solo strip, usa il codice della strip LED
+        strip_led = configurazione.get('stripLedSelezionata', '')
+        nome_commerciale = configurazione.get('nomeCommercialeStripLed', '')
+        
+        if nome_commerciale:
+            codice_prodotto = nome_commerciale
+        elif strip_led:
+            codice_prodotto = strip_led
+        else:
+            codice_prodotto = 'Strip LED'
+    else:
+        # Per il flusso normale, usa il profilo
+        profilo = configurazione.get('profiloSelezionato', '')
+        codice_prodotto = profilo if profilo else 'Configurazione'
     
     return jsonify({
         'success': True,

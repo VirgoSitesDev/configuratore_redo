@@ -770,12 +770,10 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
 
 export function caricaOpzioniAlimentatore(tipoAlimentazione) {
 
-  // ✅ Fix per flusso solo strip
   let tensioneStripLed = configurazione.tensioneSelezionato;
 
   if (configurazione.modalitaConfigurazione === 'solo_strip' && !tensioneStripLed) {
-    console.error("❌ Tensione mancante nel flusso solo strip!");
-    tensioneStripLed = configurazione.tensione || '24V'; // fallback
+    tensioneStripLed = configurazione.tensione || '24V';
     configurazione.tensioneSelezionato = tensioneStripLed;
   }
 
@@ -786,8 +784,6 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
   }[tipoAlimentazione] || tipoAlimentazione;
 
   const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
-
-  console.log("🔍 URL chiamata:", `/get_opzioni_alimentatore/${tipoAlimentazioneBackend}/${tensioneStripLed}/${potenzaConsigliata}`);
     
   $('#alimentatore-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni alimentatore...</p></div>');
 
@@ -795,10 +791,7 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
     url: `/get_opzioni_alimentatore/${tipoAlimentazioneBackend}/${tensioneStripLed}/${potenzaConsigliata}`,
     method: 'GET',
     success: function(data) {
-      
-      // ✅ DEBUG: Log della risposta completa
-      console.log("📥 Risposta API alimentatori:", data);
-      
+
       $('#alimentatore-container').empty();
       
       if (!data.success) {
@@ -808,15 +801,12 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
       }
       
       const alimentatori = data.alimentatori;
-      console.log("🔍 Alimentatori nella risposta:", alimentatori);
       
       if (!alimentatori || alimentatori.length === 0) {
         console.warn("⚠️ Nessun alimentatore trovato nella risposta");
         $('#alimentatore-container').html('<div class="col-12 text-center"><p>Nessun alimentatore disponibile per questo tipo di alimentazione e tensione strip LED.</p></div>');
         return;
       }
-
-      console.log("✅ Alimentatori trovati:", alimentatori.length);
 
       if (configurazione.potenzaConsigliataAlimentatore) {
         $('#potenza-consigliata').text(configurazione.potenzaConsigliataAlimentatore);

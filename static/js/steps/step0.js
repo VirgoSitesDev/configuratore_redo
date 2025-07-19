@@ -30,7 +30,6 @@ export function initStep0Listeners() {
 }
 
 function initStep2bTipologiaListeners() {
-  // Prima carica le tipologie dal database
   caricaTipologieDalDatabase();
 
   $('#btn-torna-step0-da-tipologia').on('click', function(e) {
@@ -52,9 +51,6 @@ function initStep2bTipologiaListeners() {
 }
 
 function caricaTipologieDalDatabase() {
-  console.log('🔍 Caricamento tipologie dal database...');
-  
-  // Mostra loading
   $('#step2b-tipologia-container').html('<div class="text-center"><div class="spinner-border"></div><p>Caricamento tipologie...</p></div>');
   
   $.ajax({
@@ -62,7 +58,6 @@ function caricaTipologieDalDatabase() {
     method: 'GET',
     success: function(data) {
       if (data.success && data.tipologie) {
-        console.log('✅ Tipologie caricate dal database:', data.tipologie);
         renderTipologie(data.tipologie);
       } else {
         console.error('❌ Errore nel caricamento tipologie:', data.message);
@@ -79,8 +74,7 @@ function caricaTipologieDalDatabase() {
 function renderTipologie(tipologie) {
   const tipologieContainer = $('#step2b-tipologia-container');
   tipologieContainer.empty();
-  
-  // Mappatura per le immagini e descrizioni
+
   const tipologieInfo = {
     'COB': {
       img: '/static/img/strip-cob.jpg',
@@ -139,14 +133,10 @@ function renderTipologie(tipologie) {
 }
 
 function renderTipologieDefault() {
-  console.log('⚠️ Usando tipologie default come fallback');
   renderTipologie(['COB', 'SMD', 'SPECIAL']);
 }
 
 function caricaSpecialStripDalDatabase() {
-  console.log('🔍 Caricamento special strip dal database...');
-  
-  // Mostra il container e loading
   $('#step2b-special-container').show();
   $('#step2b-special-container .row').html('<div class="col-12 text-center"><div class="spinner-border"></div><p>Caricamento special strip...</p></div>');
   
@@ -155,7 +145,6 @@ function caricaSpecialStripDalDatabase() {
     method: 'GET',
     success: function(data) {
       if (data.success && data.special_strips) {
-        console.log('✅ Special strip caricate dal database:', data.special_strips);
         renderSpecialStrip(data.special_strips);
       } else {
         console.error('❌ Errore nel caricamento special strip:', data.message);
@@ -172,8 +161,7 @@ function caricaSpecialStripDalDatabase() {
 function renderSpecialStrip(specialStrips) {
   const specialContainer = $('#step2b-special-container .row');
   specialContainer.empty();
-  
-  // Mappatura per le descrizioni
+
   const specialInfo = {
     'XFLEX': {
       nome: 'XFLEX',
@@ -218,8 +206,7 @@ function renderSpecialStrip(specialStrips) {
     configurazione.specialStripSelezionata = $(this).data('special');
     $('#btn-continua-tipologia-step2b').prop('disabled', false);
   });
-  
-  // Se c'è solo una special strip, selezionala automaticamente
+
   if (specialStrips.length === 1) {
     setTimeout(() => {
       $('.step2b-special-card').first().click();
@@ -228,7 +215,6 @@ function renderSpecialStrip(specialStrips) {
 }
 
 function renderSpecialStripDefault() {
-  console.log('⚠️ Usando special strip default come fallback');
   renderSpecialStrip(['XFLEX', 'XSNAKE', 'XMAGIS', 'ZIG_ZAG']);
 }
 
@@ -257,11 +243,9 @@ function initStep2bParametriListeners() {
 }
 
 function initStep2bPotenzaListeners() {
-  console.log('🔧 Inizializzazione listeners per step2b potenza');
   
   caricaOpzioniPotenzaStep2b();
 
-  // Listener per input lunghezza
   $('#step2b-lunghezza-strip').on('input', function() {
     configurazione.lunghezzaRichiestaMetri = parseFloat($(this).val()) / 1000 || null;
     if (configurazione.lunghezzaRichiestaMetri) {
@@ -270,23 +254,16 @@ function initStep2bPotenzaListeners() {
     checkStep2bPotenzaCompletion();
   });
 
-  // ✅ EVENT DELEGATION per potenze (elementi dinamici)
   $(document).off('click', '.potenza-card').on('click', '.potenza-card', function() {
-    console.log('🎯 Click su potenza card');
     $('.potenza-card').removeClass('selected');
     $(this).addClass('selected');
     configurazione.potenzaSelezionata = $(this).data('potenza');
-    
-    console.log('Potenza selezionata:', configurazione.potenzaSelezionata);
-    
-    // Carica strip LED appena selezionata la potenza
+
     caricaStripLedPerSoloStrip();
     checkStep2bPotenzaCompletion();
   });
 
-  // ✅ EVENT DELEGATION per strip LED (elementi dinamici)
   $(document).off('click', '.step2b-strip-led-card').on('click', '.step2b-strip-led-card', function() {
-    console.log('🎯 Click su strip LED card');
     $('.step2b-strip-led-card').removeClass('selected');
     $(this).addClass('selected');
     
@@ -296,8 +273,7 @@ function initStep2bPotenzaListeners() {
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
-    
-    console.log('Strip LED selezionata nel flusso solo strip:', stripId);
+
     checkStep2bPotenzaCompletion();
   });
 
@@ -342,12 +318,7 @@ function caricaOpzioniStep2b() {
   configurazione.temperaturaSelezionata = null;
   
   $('#btn-continua-parametri-step2b').prop('disabled', true);
-  
-  console.log('🔍 Caricamento tensioni dal database per:', {
-    tipologia: configurazione.tipologiaStripSelezionata,
-    special: configurazione.specialStripSelezionata
-  });
-  
+
   $.ajax({
     url: '/get_opzioni_strip_standalone',
     method: 'POST',
@@ -358,7 +329,6 @@ function caricaOpzioniStep2b() {
     }),
     success: function(data) {
       if (data.success) {
-        console.log('✅ Tensioni caricate dal database:', data.tensioni);
         renderOpzioniTensione(data.tensioni);
       } else {
         console.error('❌ Errore nella risposta tensioni:', data);
@@ -376,9 +346,9 @@ function renderOpzioniTensione(tensioni) {
   $('#step2b-tensione-options').empty();
   
   const mappaTensione = {
-    '24V': '24V DC',
-    '48V': '48V DC', 
-    '220V': '220V AC'
+    '24V': '24V',
+    '48V': '48V', 
+    '220V': '220V'
   };
   
   tensioni.forEach(function(tensione) {
@@ -507,7 +477,7 @@ function caricaOpzioniTemperatura() {
       tensione: configurazione.tensioneSelezionato,
       ip: configurazione.ipSelezionato,
       special: configurazione.specialStripSelezionata,
-      categoria: 'solo_strip'  // Identifica che è flusso solo strip
+      categoria: 'solo_strip'
     }),
     success: function(data) {
       if (data.success) {
@@ -607,10 +577,19 @@ function caricaOpzioniPotenzaStep2b() {
 }
 
 function renderOpzioniPotenza(potenze) {
-  console.log('🔧 Rendering opzioni potenza:', potenze);
   $('#step2b-potenza-options').empty();
+
+  const potenzeOrdinate = [...potenze].sort((a, b) => {
+    const potenzaA = (a.id || a.nome || a).toString();
+    const potenzaB = (b.id || b.nome || b).toString();
+    
+    const numA = parseInt(potenzaA.match(/\d+/)[0]);
+    const numB = parseInt(potenzaB.match(/\d+/)[0]);
+    
+    return numA - numB;
+  });
   
-  potenze.forEach(function(potenza) {
+  potenzeOrdinate.forEach(function(potenza) {
     const potenzaId = potenza.id || potenza;
     const potenzaNome = potenza.nome || potenza;
     
@@ -625,14 +604,11 @@ function renderOpzioniPotenza(potenze) {
     `);
   });
 
-  // Se c'è una sola potenza, selezionala automaticamente
-  if (potenze.length === 1) {
+  if (potenzeOrdinate.length === 1) {
     setTimeout(() => {
       $('.potenza-card').addClass('selected');
-      const potenzaId = potenze[0].id || potenze[0];
+      const potenzaId = potenzeOrdinate[0].id || potenzeOrdinate[0];
       configurazione.potenzaSelezionata = potenzaId;
-      console.log('Potenza selezionata automaticamente:', potenzaId);
-      // Carica automaticamente strip LED se c'è una sola potenza
       caricaStripLedPerSoloStrip();
     }, 100);
   }
@@ -650,31 +626,21 @@ function checkStep2bPotenzaCompletion() {
   const isComplete = configurazione.potenzaSelezionata && 
                     configurazione.lunghezzaRichiestaMetri && 
                     configurazione.stripLedSceltaFinale;
-                    
-  console.log('🔍 Check completion:', {
-    potenza: configurazione.potenzaSelezionata,
-    lunghezza: configurazione.lunghezzaRichiestaMetri,
-    strip: configurazione.stripLedSceltaFinale,
-    isComplete: isComplete
-  });
-  
+ 
   $('#btn-continua-potenza-step2b').prop('disabled', !isComplete);
   return isComplete;
 }
 
 function caricaStripLedPerSoloStrip() {
-  console.log('🔍 Caricamento strip LED per flusso solo strip...');
   
   if (!configurazione.potenzaSelezionata) {
     console.warn('⚠️ Potenza non selezionata, salto caricamento strip');
     return;
   }
-  
-  // Mostra la sezione delle strip LED
+
   $('#step2b-strip-selection').show();
   $('#step2b-strip-led-container').html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento modelli strip LED...</p></div>');
-  
-  // Reset selezione strip
+
   configurazione.stripLedSceltaFinale = null;
   
   const requestData = {
@@ -686,15 +652,12 @@ function caricaStripLedPerSoloStrip() {
     potenza: configurazione.potenzaSelezionata
   };
   
-  console.log('📤 Parametri richiesta strip LED:', requestData);
-  
   $.ajax({
     url: '/get_strip_led_filtrate_standalone',
     method: 'POST',
     contentType: 'application/json',
     data: JSON.stringify(requestData),
     success: function(data) {
-      console.log('✅ Risposta ricevuta:', data);
       
       if (data.success && data.strip_led && data.strip_led.length > 0) {
         let stripHtml = '<div class="row">';
@@ -726,7 +689,6 @@ function caricaStripLedPerSoloStrip() {
         stripHtml += '</div>';
         $('#step2b-strip-led-container').html(stripHtml);
 
-        // Se c'è una sola strip, selezionala automaticamente
         if (data.strip_led.length === 1) {
           setTimeout(() => {
             $('.step2b-strip-led-card').addClass('selected');
@@ -734,8 +696,7 @@ function caricaStripLedPerSoloStrip() {
             configurazione.stripLedSceltaFinale = stripSelezionata.id;
             configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
             configurazione.stripLedSelezionata = stripSelezionata.id;
-            
-            console.log('🎯 Strip selezionata automaticamente:', stripSelezionata.id);
+
             checkStep2bPotenzaCompletion();
           }, 100);
         }

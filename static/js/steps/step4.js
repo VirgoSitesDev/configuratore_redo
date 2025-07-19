@@ -102,16 +102,7 @@ function calcolaPotenzaAlimentatoreConsigliata() {
   }
 }
 
-// In static/js/steps/step4.js - nella funzione vaiAllAlimentazione()
-// Sostituisci la sezione del calcolo della potenza consigliata con questo:
-
-export function vaiAllAlimentazione() {
-  console.log("🔍 === DEBUG vaiAllAlimentazione ===");
-  console.log("Modalità configurazione:", configurazione.modalitaConfigurazione);
-  console.log("Tensione selezionata:", configurazione.tensioneSelezionato);
-  console.log("Strip LED selezionata:", configurazione.stripLedSelezionata);
-  console.log("Configurazione completa:", configurazione);
-  
+export function vaiAllAlimentazione() { 
   $(".step-section").hide();
   
   if (configurazione.modalitaConfigurazione === 'solo_strip') {
@@ -168,37 +159,19 @@ export function vaiAllAlimentazione() {
 
   prepareAlimentazioneListeners();
 
-  // ✅ FIX: Calcolo corretto della potenza per il flusso solo strip
   if (configurazione.modalitaConfigurazione === 'solo_strip' && 
       configurazione.potenzaSelezionata && 
       configurazione.lunghezzaRichiestaMetri) {
-    
-    console.log("🔧 Calcolo potenza per flusso solo strip");
-    console.log("Potenza selezionata:", configurazione.potenzaSelezionata);
-    console.log("Lunghezza in metri:", configurazione.lunghezzaRichiestaMetri);
-    
-    // Estrai il valore numerico dalla stringa potenza (es: "12W/m" -> 12)
+
     const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(?:\.\d+)?)/);
     if (potenzaMatch) {
       const potenzaPerMetro = parseFloat(potenzaMatch[1]);
       const lunghezzaMetri = configurazione.lunghezzaRichiestaMetri;
-      
-      // Calcolo: potenza_per_metro * lunghezza_metri * 1.2 (fattore sicurezza)
       const potenzaTotale = potenzaPerMetro * lunghezzaMetri * 1.2;
-      
-      // Arrotonda al multiplo di 5 superiore (minimo 20W)
       const potenzaConsigliata = Math.max(20, Math.ceil(potenzaTotale / 5) * 5);
       
-      console.log("✅ Potenza calcolata:", {
-        potenzaPerMetro,
-        lunghezzaMetri,
-        potenzaTotale,
-        potenzaConsigliata
-      });
-      
       configurazione.potenzaConsigliataAlimentatore = potenzaConsigliata;
-      
-      // Mostra la sezione potenza consigliata
+
       $('#potenza-consigliata').text(potenzaConsigliata);
       $('#potenza-consigliata-section').show();
     }
@@ -207,7 +180,6 @@ export function vaiAllAlimentazione() {
              !configurazione.potenzaSelezionata) {
     $('#potenza-consigliata-section').hide();
   } else {
-    // Flusso normale (non solo strip)
     calcolaPotenzaAlimentatoreConsigliata();
   }
 }

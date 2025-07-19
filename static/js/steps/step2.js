@@ -145,8 +145,6 @@ $('#btn-continua-step2-option').on('click', function(e) {
 });
 }
 
-
-// Modifica la funzione vaiAllaTipologiaStrip per applicare il filtro agli esterni
 export function vaiAllaTipologiaStrip() {
   configurazione.tipologiaStripSelezionata = null;
   configurazione.specialStripSelezionata = null;
@@ -179,7 +177,6 @@ export function vaiAllaTipologiaStrip() {
   if (configurazione.isFlussoProfiliEsterni) {
     $("#step1-tipologia").fadeOut(300, function() {
       $("#step2-tipologia-strip").fadeIn(300);
-      // APPLICA IL FILTRO PER ESTERNI SUBITO DOPO IL FADE IN
       applicaFiltroTipologieEsterni();
     });
   } else {
@@ -191,24 +188,17 @@ export function vaiAllaTipologiaStrip() {
 }
 
 function applicaFiltroTipologieEsterni() {
-  // Nascondi tutte le tipologie
   $('.tipologia-strip-card').parent().hide();
-  
-  // Per gli esterni mostra solo SPECIAL
+
   $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').parent().show();
-  
-  // Seleziona automaticamente SPECIAL
+
   setTimeout(() => {
     $('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').addClass('selected');
     configurazione.tipologiaStripSelezionata = 'SPECIAL';
     $('#special-strip-container').fadeIn(300);
-    
-    // Filtra le special strip per gli esterni
     filtraSpecialStripPerEsterniFiltrate();
-    
     $('#btn-continua-tipologia-strip').prop('disabled', true);
-    
-    // Prepara i listener
+
     prepareTipologiaStripListeners();
   }, 100);
 }
@@ -216,26 +206,17 @@ function applicaFiltroTipologieEsterni() {
 function filtraSpecialStripPerEsterniFiltrate() {
   $('.special-strip-card').parent().hide();
 
-  // Per gli esterni NON è disponibile XFLEX (è solo per wall washer)
-  // Sono disponibili solo XSNAKE e XMAGIS
   const specialStripEsterni = ['XSNAKE', 'XMAGIS'];
-  
-  console.log('🔍 Filtraggio special strip per esterni:', specialStripEsterni);
   
   specialStripEsterni.forEach(specialType => {
     const $card = $(`.special-strip-card[data-special-strip="${specialType}"]`);
     if ($card.length > 0) {
       $card.parent().show();
-      console.log(`✅ Mostro special strip: ${specialType}`);
-    } else {
-      console.log(`❌ Card non trovata per: ${specialType}`);
     }
   });
 
-  // Nascondi esplicitamente XFLEX per esterni
   $(`.special-strip-card[data-special-strip="XFLEX"]`).parent().hide();
 
-  // Se c'è solo una opzione disponibile, selezionala automaticamente
   if (specialStripEsterni.length === 1) {
     const $unica = $(`.special-strip-card[data-special-strip="${specialStripEsterni[0]}"]`);
     setTimeout(() => {
@@ -243,11 +224,8 @@ function filtraSpecialStripPerEsterniFiltrate() {
         $unica.addClass('selected');
         configurazione.specialStripSelezionata = specialStripEsterni[0];
         $('#btn-continua-tipologia-strip').prop('disabled', false);
-        console.log(`✅ Selezione automatica: ${specialStripEsterni[0]}`);
       }
     }, 100);
-  } else {
-    console.log(`🔄 Più opzioni disponibili (${specialStripEsterni.length}), richiesta selezione manuale`);
   }
 }
 
@@ -360,7 +338,6 @@ function analizzaEMostraTipologieCompatibili() {
 function filtraSpecialStripCompatibili(stripCompatibili) {
   $('.special-strip-card').parent().hide();
 
-  // Rimuove solo RUNNING (inventata), mantiene ZIG_ZAG per interni
   const specialStripMap = {
     'XFLEX': ['XFLEX', 'FLEX'],
     'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
@@ -399,10 +376,9 @@ function filtraSpecialStripCompatibili(stripCompatibili) {
 }
 
 export function prepareTipologiaStripListeners() {
-  // Se è un flusso per gli esterni e non è già stato applicato il filtro, applicalo
   if (configurazione.isFlussoProfiliEsterni && !$('.tipologia-strip-card[data-tipologia-strip="SPECIAL"]').hasClass('selected')) {
     applicaFiltroTipologieEsterni();
-    return; // Uscire qui perché applicaFiltroTipologieEsterni() gestisce tutto
+    return;
   }
 
   $('.tipologia-strip-card').off('click').on('click', function() {
@@ -436,7 +412,6 @@ export function prepareTipologiaStripListeners() {
           }
         });
       } else {
-        // Per gli esterni, filtra le special strip disponibili
         filtraSpecialStripPerEsterniFiltrate();
       }
     }
@@ -1126,7 +1101,6 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
   
   $('#temperatura-iniziale-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento temperature...</p>');
 
-  // Usa sempre la funzione standalone unificata (sia per esterni che normali)
   $.ajax({
       url: '/get_opzioni_temperatura_standalone',
       method: 'POST',
@@ -1136,7 +1110,7 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
           tensione: tensione,
           ip: ip,
           special: specialStrip,
-          categoria: configurazione.categoriaSelezionata  // Aggiungi categoria per un miglior filtro
+          categoria: configurazione.categoriaSelezionata
       }),
       success: function(data) {
           $('#temperatura-iniziale-options').empty();
