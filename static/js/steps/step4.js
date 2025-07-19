@@ -9,7 +9,7 @@ export function initStep4Listeners() {
     
     if (configurazione.modalitaConfigurazione === 'solo_strip') {
       $("#step4-alimentazione").fadeOut(300, function() {
-        $("#step2b-configurazione-strip").fadeIn(300);
+        $("#step2b-potenza-lunghezza").fadeIn(300);
         updateProgressBar(2);
       });
     } else if (configurazione.isFlussoProfiliEsterni) {
