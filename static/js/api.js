@@ -769,15 +769,15 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
 }
 
 export function caricaOpzioniAlimentatore(tipoAlimentazione) {
-  
-  $('#alimentatore-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni alimentatore...</p></div>');
-  
-  $('#btn-continua-step4').prop('disabled', true);
-  
-  configurazione.tipologiaAlimentatoreSelezionata = null;
-  configurazione.potenzaAlimentatoreSelezionata = null;
 
-  $('#potenza-alimentatore-section').hide();
+  // ✅ Fix per flusso solo strip
+  let tensioneStripLed = configurazione.tensioneSelezionato;
+
+  if (configurazione.modalitaConfigurazione === 'solo_strip' && !tensioneStripLed) {
+    console.error("❌ Tensione mancante nel flusso solo strip!");
+    tensioneStripLed = configurazione.tensione || '24V'; // fallback
+    configurazione.tensioneSelezionato = tensioneStripLed;
+  }
 
   const tipoAlimentazioneBackend = {
     'ON-OFF': 'ON-OFF',
@@ -786,8 +786,11 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
   }[tipoAlimentazione] || tipoAlimentazione;
 
   const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
-  const tensioneStripLed = configurazione.tensioneSelezionato;
-  
+
+  console.log("🔍 URL chiamata:", `/get_opzioni_alimentatore/${tipoAlimentazioneBackend}/${tensioneStripLed}/${potenzaConsigliata}`);
+    
+  $('#alimentatore-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni alimentatore...</p></div>');
+
   $.ajax({
     url: `/get_opzioni_alimentatore/${tipoAlimentazioneBackend}/${tensioneStripLed}/${potenzaConsigliata}`,
     method: 'GET',

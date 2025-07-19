@@ -103,6 +103,12 @@ function calcolaPotenzaAlimentatoreConsigliata() {
 }
 
 export function vaiAllAlimentazione() {
+  // ✅ DEBUG per capire il problema
+  console.log("🔍 === DEBUG vaiAllAlimentazione ===");
+  console.log("Modalità configurazione:", configurazione.modalitaConfigurazione);
+  console.log("Tensione selezionata:", configurazione.tensioneSelezionato);
+  console.log("Strip LED selezionata:", configurazione.stripLedSelezionata);
+  console.log("Configurazione completa:", configurazione);
   $(".step-section").hide();
   if (configurazione.modalitaConfigurazione === 'solo_strip') {
     $('#profilo-nome-step4').parent().hide();
