@@ -60,10 +60,8 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
   };
   
   let stripData = null;
-  
-  // ✅ CORREZIONE: Controlla se siamo in modalità solo strip
+
   if (configurazione.modalitaConfigurazione === 'solo_strip' || !configurazione.profiloSelezionato) {
-      // Usa l'endpoint standalone per le configurazioni senza profilo
       const requestData = {
           tipologia: configurazione.tipologiaStripSelezionata,
           special: configurazione.specialStripSelezionata,
@@ -81,10 +79,8 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
           async: false,
           success: function(response) {
               if (response.success && response.strip_led && response.strip_led.length > 0) {
-                  // Cerca la strip che corrisponde a quella selezionata
                   stripData = response.strip_led.find(s => s.id === configurazione.stripLedSelezionata || s.id === configurazione.stripLedSceltaFinale);
-                  
-                  // Se non trova una corrispondenza esatta, prende la prima
+
                   if (!stripData && response.strip_led.length > 0) {
                       stripData = response.strip_led[0];
                   }
@@ -97,7 +93,6 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
           }
       });
   } else {
-      // Usa l'endpoint normale con profilo per le configurazioni complete
       const profiloId = configurazione.profiloSelezionato;
       const tensioneParam = configurazione.tensioneSelezionato;
       const ipParam = configurazione.ipSelezionato;

@@ -92,8 +92,7 @@ function renderTipologie(tipologie) {
       descrizione: 'Strip LED con caratteristiche speciali'
     }
   };
-  
-  // ✅ CORREZIONE: Ordina sempre le tipologie nell'ordine corretto
+
   const ordineDesiderato = ['COB', 'SMD', 'SPECIAL'];
   const tipologieOrdinate = ordineDesiderato.filter(tip => tipologie.includes(tip));
   
