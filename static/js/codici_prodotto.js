@@ -39,18 +39,15 @@ export function calcolaCodiceProfilo() {
   return codiceProfilo;
 }
 
-  export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, potenza, modello) {
+export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, potenza, modello) {
     
-    if (!configurazione.profiloSelezionato || !configurazione.tensioneSelezionato
-      || !configurazione.ipSelezionato || !configurazione.temperaturaColoreSelezionata
-      || !configurazione.tipologiaStripSelezionata || !configurazione.potenzaSelezionata) return '';
-    const profiloId = configurazione.profiloSelezionato;
-    const tensioneParam = configurazione.tensioneSelezionato;
-    const ipParam = configurazione.ipSelezionato;
-    const temperaturaParam = configurazione.temperaturaColoreSelezionata;
-    const tipologiaParam = configurazione.tipologiaStripSelezionata;
+  if (!configurazione.tensioneSelezionato || !configurazione.ipSelezionato || 
+      !configurazione.temperaturaColoreSelezionata || !configurazione.tipologiaStripSelezionata || 
+      !configurazione.potenzaSelezionata) {
+      return '';
+  }
 
-    const mappaTemperaturaSuffisso = {
+  const mappaTemperaturaSuffisso = {
       '2700K': 'UWW',
       '3000K': 'WW',
       '4000K': 'NW',
@@ -61,96 +58,138 @@ export function calcolaCodiceProfilo() {
       'RGBW': 'RGB+WW',
       'CCT': 'CCT'
   };
-    
-    const potenzaParam = configurazione.potenzaSelezionata
-        .replace(' ', '-')
-        .replace('/', '_');
-    
-    const apiUrl = `/get_strip_led_filtrate/${profiloId}/${tensioneParam}/${ipParam}/${temperaturaParam}/${potenzaParam}/${tipologiaParam}`;
-    
-    let stripData = null;
-    
-    $.ajax({
-        url: apiUrl,
-        method: 'GET',
-        async: false,
-        success: function(response) {
-            if (response.success && response.strip_led) {
-                stripData = response.strip_led.find(s => s.id === configurazione.stripLedSelezionata);
-            } else {
-                console.error('Risposta API non valida:', response);
-            }
-        },
-        error: function(error) {
-            console.error('Errore nel caricamento dati strip:', error);
-        }
-    });
-    
-    if (!stripData) {
-        console.error('stripData è null o undefined');
-        return '';
-    }
-    
-    if (!stripData.potenzeDisponibili || !stripData.codiciProdotto) {
-        console.error('Arrays mancanti:', {
-            potenzeDisponibili: stripData.potenzeDisponibili,
-            codiciProdotto: stripData.codiciProdotto
-        });
-        return '';
-    }
-    
-    if (stripData.potenzeDisponibili.length !== stripData.codiciProdotto.length) {
-        console.warn('Arrays di lunghezza diversa:', {
-            potenzeLength: stripData.potenzeDisponibili.length,
-            codiciLength: stripData.codiciProdotto.length
-        });
-    }
-    
-    const indicePotenza = stripData.potenzeDisponibili.indexOf(configurazione.potenzaSelezionata);
+  
+  let stripData = null;
+  
+  // ✅ CORREZIONE: Controlla se siamo in modalità solo strip
+  if (configurazione.modalitaConfigurazione === 'solo_strip' || !configurazione.profiloSelezionato) {
+      // Usa l'endpoint standalone per le configurazioni senza profilo
+      const requestData = {
+          tipologia: configurazione.tipologiaStripSelezionata,
+          special: configurazione.specialStripSelezionata,
+          tensione: configurazione.tensioneSelezionato,
+          ip: configurazione.ipSelezionato,
+          temperatura: configurazione.temperaturaColoreSelezionata,
+          potenza: configurazione.potenzaSelezionata
+      };
+      
+      $.ajax({
+          url: '/get_strip_led_filtrate_standalone',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(requestData),
+          async: false,
+          success: function(response) {
+              if (response.success && response.strip_led && response.strip_led.length > 0) {
+                  // Cerca la strip che corrisponde a quella selezionata
+                  stripData = response.strip_led.find(s => s.id === configurazione.stripLedSelezionata || s.id === configurazione.stripLedSceltaFinale);
+                  
+                  // Se non trova una corrispondenza esatta, prende la prima
+                  if (!stripData && response.strip_led.length > 0) {
+                      stripData = response.strip_led[0];
+                  }
+              } else {
+                  console.error('Risposta API standalone non valida:', response);
+              }
+          },
+          error: function(error) {
+              console.error('Errore nel caricamento dati strip standalone:', error);
+          }
+      });
+  } else {
+      // Usa l'endpoint normale con profilo per le configurazioni complete
+      const profiloId = configurazione.profiloSelezionato;
+      const tensioneParam = configurazione.tensioneSelezionato;
+      const ipParam = configurazione.ipSelezionato;
+      const temperaturaParam = configurazione.temperaturaColoreSelezionata;
+      const tipologiaParam = configurazione.tipologiaStripSelezionata;
+      const potenzaParam = configurazione.potenzaSelezionata
+          .replace(' ', '-')
+          .replace('/', '_');
+      
+      const apiUrl = `/get_strip_led_filtrate/${profiloId}/${tensioneParam}/${ipParam}/${temperaturaParam}/${potenzaParam}/${tipologiaParam}`;
+      
+      $.ajax({
+          url: apiUrl,
+          method: 'GET',
+          async: false,
+          success: function(response) {
+              if (response.success && response.strip_led) {
+                  stripData = response.strip_led.find(s => s.id === configurazione.stripLedSelezionata);
+              } else {
+                  console.error('Risposta API non valida:', response);
+              }
+          },
+          error: function(error) {
+              console.error('Errore nel caricamento dati strip:', error);
+          }
+      });
+  }
+  
+  if (!stripData) {
+      console.error('stripData è null o undefined');
+      return '';
+  }
+  
+  if (!stripData.potenzeDisponibili || !stripData.codiciProdotto) {
+      console.error('Arrays mancanti:', {
+          potenzeDisponibili: stripData.potenzeDisponibili,
+          codiciProdotto: stripData.codiciProdotto
+      });
+      return '';
+  }
+  
+  if (stripData.potenzeDisponibili.length !== stripData.codiciProdotto.length) {
+      console.warn('Arrays di lunghezza diversa:', {
+          potenzeLength: stripData.potenzeDisponibili.length,
+          codiciLength: stripData.codiciProdotto.length
+      });
+  }
+  
+  let indicePotenza = stripData.potenzeDisponibili.indexOf(configurazione.potenzaSelezionata);
 
-    if (indicePotenza === -1) {
-        for (let i = 0; i < stripData.potenzeDisponibili.length; i++) {
-            if (stripData.potenzeDisponibili[i].toLowerCase().replace(/\s/g, '') === 
-                configurazione.potenzaSelezionata.toLowerCase().replace(/\s/g, '')) {
-                indicePotenza = i;
-                break;
-            }
-        }
-        
-        if (indicePotenza === -1) {
-            return '';
-        }
-    }
-    
-    let codiceCompleto = '';
-    
-    if (indicePotenza < stripData.codiciProdotto.length) {
-        codiceCompleto = stripData.codiciProdotto[indicePotenza];
-    } else {
-        console.error('Indice potenza fuori range per codiciProdotto');
-        return '';
-    }
-    
-    if (!codiceCompleto) {
-        console.error('Codice completo è vuoto');
-        return '';
-    }
-    
-    
-    configurazione.codiceProdottoCompleto = codiceCompleto;
-    
-    const suffissoTemp = mappaTemperaturaSuffisso[configurazione.temperaturaColoreSelezionata]
-    codiceCompleto = codiceCompleto + suffissoTemp;
+  if (indicePotenza === -1) {
+      for (let i = 0; i < stripData.potenzeDisponibili.length; i++) {
+          if (stripData.potenzeDisponibili[i].toLowerCase().replace(/\s/g, '') === 
+              configurazione.potenzaSelezionata.toLowerCase().replace(/\s/g, '')) {
+              indicePotenza = i;
+              break;
+          }
+      }
+      
+      if (indicePotenza === -1) {
+          return '';
+      }
+  }
+  
+  let codiceCompleto = '';
+  
+  if (indicePotenza < stripData.codiciProdotto.length) {
+      codiceCompleto = stripData.codiciProdotto[indicePotenza];
+  } else {
+      console.error('Indice potenza fuori range per codiciProdotto');
+      return '';
+  }
+  
+  if (!codiceCompleto) {
+      console.error('Codice completo è vuoto');
+      return '';
+  }
+  
+  configurazione.codiceProdottoCompleto = codiceCompleto;
+  
+  const suffissoTemp = mappaTemperaturaSuffisso[configurazione.temperaturaColoreSelezionata];
+  codiceCompleto = codiceCompleto + suffissoTemp;
 
-    if (configurazione.potenzaSelezionata.includes('CRI90')) codiceCompleto = codiceCompleto + 'CRI90';
-    if (configurazione.ipSelezionato == 'IP65' && configurazione.codiceProdottoCompleto.includes('XTP') && !codiceCompleto.includes('65')) codiceCompleto = codiceCompleto + '65';
-    if (configurazione.ipSelezionato == 'IP67' && !codiceCompleto.includes('67') && !configurazione.codiceProdottoCompleto.includes('MG') && !configurazione.codiceProdottoCompleto.includes('SNK')) codiceCompleto = codiceCompleto + '67';
-    if (configurazione.nomeCommercialeStripLed.includes('FROST')) codiceCompleto = codiceCompleto + 'FR';
-    if (configurazione.nomeCommercialeStripLed.includes('CLEAR')) codiceCompleto = codiceCompleto + 'CL';
-    if (configurazione.tensioneSelezionato == '48V') codiceCompleto = codiceCompleto + '48';
-    if (configurazione.tensioneSelezionato == '220V') codiceCompleto = codiceCompleto + '220';
+  if (configurazione.potenzaSelezionata.includes('CRI90')) codiceCompleto = codiceCompleto + 'CRI90';
+  if (configurazione.ipSelezionato == 'IP65' && configurazione.codiceProdottoCompleto.includes('XTP') && !codiceCompleto.includes('65')) codiceCompleto = codiceCompleto + '65';
+  if (configurazione.ipSelezionato == 'IP67' && !codiceCompleto.includes('67') && !configurazione.codiceProdottoCompleto.includes('MG') && !configurazione.codiceProdottoCompleto.includes('SNK')) codiceCompleto = codiceCompleto + '67';
+  if (configurazione.nomeCommercialeStripLed && configurazione.nomeCommercialeStripLed.includes('FROST')) codiceCompleto = codiceCompleto + 'FR';
+  if (configurazione.nomeCommercialeStripLed && configurazione.nomeCommercialeStripLed.includes('CLEAR')) codiceCompleto = codiceCompleto + 'CL';
+  if (configurazione.tensioneSelezionato == '48V') codiceCompleto = codiceCompleto + '48';
+  if (configurazione.tensioneSelezionato == '220V') codiceCompleto = codiceCompleto + '220';
 
-    return codiceCompleto;
+  return codiceCompleto;
 }
 
 export function calcolaCodiceAlimentatore() {
