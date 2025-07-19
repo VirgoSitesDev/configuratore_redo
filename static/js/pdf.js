@@ -109,8 +109,7 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 	  if (configurazione.categoriaSelezionata) {
 		datiTabella.push(['Categoria', getNomeVisualizzabile(configurazione.categoriaSelezionata)]);
 	  }
-  
-	  // ✅ MODIFICA: Includere quantità nel modello
+
 	  let modelloText = (configurazione.nomeModello || codiceProdotto);
 	  if (configurazione.quantitaProfilo > 1) {
 		modelloText = `${configurazione.quantitaProfilo}x ${modelloText} (${configurazione.lunghezzaMassimaProfilo}mm cad.)`;
@@ -130,10 +129,9 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 	  }
   
 	  if (configurazione.stripLedSelezionata && configurazione.stripLedSelezionata !== 'NO_STRIP' && configurazione.includeStripLed !== false) {
-		// ✅ MODIFICA: Includere quantità nella strip LED
 		let stripText = (configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata);
 		if (configurazione.quantitaStripLed > 1) {
-		  stripText = `${configurazione.quantitaStripLed}x ${stripText} (${configurazione.lunghezzaMassimaStripLed}mm cad.)`;
+		  stripText = `${configurazione.quantitaStripLed}x ${stripText} (${configurazione.lunghezzaMassimaStripLed * 1000}mm cad.)`;
 		}
 		if (tuttiCodici && tuttiCodici.stripLed) {
 		  stripText += ' - ' + tuttiCodici.stripLed;
@@ -225,8 +223,7 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		  datiTabella.push([etichetta, `${valore}mm`]);
 		});
 	  }
-  
-	  // ✅ NUOVO: Aggiungere informazioni sulle quantità totali
+
 	  if (configurazione.lunghezzaTotale > 0) {
 		datiTabella.push(['Lunghezza totale', `${configurazione.lunghezzaTotale}mm`]);
 	  }

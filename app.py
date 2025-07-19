@@ -733,7 +733,7 @@ def finalizza_configurazione():
                 
                 # Calcola quantità strip LED
                 if lunghezza_totale > 0:
-                    quantita_strip_led = math.ceil(lunghezza_totale / lunghezza_massima_strip)
+                    quantita_strip_led = math.ceil(lunghezza_totale / (lunghezza_massima_strip * 1000))
         except Exception as e:
             logging.error(f"Errore nel recupero lunghezza strip: {str(e)}")
     

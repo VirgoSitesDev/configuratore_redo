@@ -2,6 +2,7 @@ import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzaz
 import { formatTemperatura, getTemperaturaColor, checkParametriCompletion, checkStep2Completion, updateProgressBar, checkPersonalizzazioneCompletion } from './utils.js';
 import { initRiepilogoOperationsListeners } from './steps/step7.js';
 import { calcolaCodiceProdottoCompleto } from './codici_prodotto.js';
+import { renderizzaOpzioniPotenza } from './steps/step3.js'
 
 export function caricaProfili(categoria) {
   
@@ -43,8 +44,6 @@ export function caricaProfili(categoria) {
         $(this).addClass('selected');
         configurazione.profiloSelezionato = $(this).data('id');
         configurazione.nomeModello = $(this).data('nome');
-        
-        // ✅ NUOVO: Memorizzare lunghezza massima profilo
         configurazione.lunghezzaMassimaProfilo = $(this).data('lunghezza-massima') || 3000;
         
         configurazione.lunghezzaRichiesta = null;
@@ -758,15 +757,12 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
         configurazione.stripLedSceltaFinale = stripId;
         configurazione.nomeCommercialeStripLed = nomeCommerciale;
         configurazione.stripLedSelezionata = stripId;
-        
-        // ✅ NUOVO: Memorizzare lunghezza massima strip
         configurazione.lunghezzaMassimaStripLed = lunghezzaMassima;
         
         $('.strip-led-compatibile-card').addClass('selected');
         $('#btn-continua-step3').prop('disabled', false);
       }
 
-      // ✅ NUOVO: Aggiungere listener per memorizzare lunghezza massima quando selezionata
       $('.strip-led-compatibile-card').on('click', function() {
         $('.strip-led-compatibile-card').removeClass('selected');
         $(this).addClass('selected');
@@ -778,8 +774,6 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
         configurazione.stripLedSceltaFinale = stripId;
         configurazione.nomeCommercialeStripLed = nomeCommerciale;
         configurazione.stripLedSelezionata = stripId;
-        
-        // ✅ NUOVO: Memorizzare lunghezza massima strip
         configurazione.lunghezzaMassimaStripLed = lunghezzaMassima;
 
         $('#btn-continua-step3').prop('disabled', false);
@@ -1106,8 +1100,7 @@ export function finalizzaConfigurazione() {
         const riepilogo = data.riepilogo;
         const potenzaTotale = data.potenzaTotale;
         const codiceProdotto = data.codiceProdotto;
-        
-        // ✅ NUOVO: Memorizzare le quantità dalla risposta del server
+
         configurazione.quantitaProfilo = data.quantitaProfilo || 1;
         configurazione.quantitaStripLed = data.quantitaStripLed || 1;
         configurazione.lunghezzaMassimaProfilo = data.lunghezzaMassimaProfilo || 3000;
@@ -1130,7 +1123,7 @@ export function finalizzaConfigurazione() {
                       <tbody>
                         <tr>
                           <th scope="row">Strip LED</th>
-                          <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed}mm cad.)` : ''} - ${tuttiCodici.stripLed}</td>
+                          <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed * 1000}mm cad.)` : ''} - ${tuttiCodici.stripLed}</td>
                         </tr>
                         <tr>
                           <th scope="row">Lunghezza</th>
@@ -1265,7 +1258,7 @@ export function finalizzaConfigurazione() {
           riepilogoHtml += `
                       <tr>
                         <th scope="row">Strip LED</th>
-                        <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${nomeStripLed}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed}mm cad.)` : ''} - ${tuttiCodici["stripLed"]}</td>
+                        <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${nomeStripLed}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed * 1000}mm cad.)` : ''} - ${tuttiCodici["stripLed"]}</td>
                       </tr>
           `;
 

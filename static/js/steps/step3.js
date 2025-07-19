@@ -92,10 +92,20 @@ export function vaiAllaTemperaturaEPotenza() {
   $('#btn-continua-step3').prop('disabled', true);
 }
 
-function renderizzaOpzioniPotenza(potenze) {
+export function renderizzaOpzioniPotenza(potenze) {
   $('#potenza-container').empty();
+
+  const potenzeOrdinate = [...potenze].sort((a, b) => {
+    const potenzaA = (a.id || a.nome || a).toString();
+    const potenzaB = (b.id || b.nome || b).toString();
+    
+    const numA = parseInt(potenzaA.match(/\d+/)[0]);
+    const numB = parseInt(potenzaB.match(/\d+/)[0]);
+    
+    return numA - numB;
+  });
   
-  potenze.forEach(function(potenza) {
+  potenzeOrdinate.forEach(function(potenza) {
     $('#potenza-container').append(`
       <div class="col-md-4 mb-3">
         <div class="card option-card potenza-card" data-potenza="${potenza.id || potenza}">
@@ -107,10 +117,10 @@ function renderizzaOpzioniPotenza(potenze) {
     `);
   });
 
-  if (potenze.length === 1) {
+  if (potenzeOrdinate.length === 1) {
     setTimeout(() => {
       $('.potenza-card').addClass('selected');
-      configurazione.potenzaSelezionata = potenze[0].id || potenze[0];
+      configurazione.potenzaSelezionata = potenzeOrdinate[0].id || potenzeOrdinate[0];
       $('#strip-led-model-section').show();
       
       if (configurazione.isFlussoProfiliEsterni) {
