@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import logging
+import math
 
 app = Flask(__name__)
 CORS(app)
@@ -680,6 +681,64 @@ def finalizza_configurazione():
     
     potenza_totale = potenza_per_metro * lunghezza_in_metri
     
+    # ✅ NUOVO: Calcolo delle quantità necessarie
+    quantita_profilo = 1
+    quantita_strip_led = 1
+    lunghezza_massima_profilo = 3000  # default
+    lunghezza_massima_strip = 5000    # default
+    
+    # Calcolare la lunghezza totale richiesta
+    lunghezza_totale = 0
+    if 'lunghezzeMultiple' in configurazione and configurazione['lunghezzeMultiple']:
+        # Forme complesse: somma di tutti i lati
+        lunghezza_totale = sum(v for v in configurazione['lunghezzeMultiple'].values() if v and v > 0)
+    elif 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
+        # Forme semplici
+        lunghezza_totale = float(configurazione['lunghezzaRichiesta'])
+    
+    logging.info(f"Lunghezza totale calcolata: {lunghezza_totale}mm")
+    
+    # Recuperare lunghezza massima del profilo dal database
+    if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
+        try:
+            # Recupera le lunghezze disponibili per il profilo
+            lunghezze_profilo = db.supabase.table('profili_lunghezze')\
+                .select('lunghezza')\
+                .eq('profilo_id', configurazione['profiloSelezionato'])\
+                .execute().data
+            
+            if lunghezze_profilo:
+                lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
+                lunghezza_massima_profilo = max(lunghezze_list)
+                logging.info(f"Lunghezza massima profilo: {lunghezza_massima_profilo}mm")
+                
+                # Calcola quantità profilo
+                if lunghezza_totale > 0:
+                    quantita_profilo = math.ceil(lunghezza_totale / lunghezza_massima_profilo)
+        except Exception as e:
+            logging.error(f"Errore nel recupero lunghezza profilo: {str(e)}")
+    
+    # Recuperare lunghezza massima della strip LED dal database
+    if 'stripLedSelezionata' in configurazione and configurazione['stripLedSelezionata'] and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
+        try:
+            strip_data = db.supabase.table('strip_led')\
+                .select('lunghezza')\
+                .eq('id', configurazione['stripLedSelezionata'])\
+                .single()\
+                .execute()
+            
+            if strip_data.data and strip_data.data.get('lunghezza'):
+                lunghezza_massima_strip = strip_data.data['lunghezza']
+                logging.info(f"Lunghezza massima strip: {lunghezza_massima_strip}mm")
+                
+                # Calcola quantità strip LED
+                if lunghezza_totale > 0:
+                    quantita_strip_led = math.ceil(lunghezza_totale / lunghezza_massima_strip)
+        except Exception as e:
+            logging.error(f"Errore nel recupero lunghezza strip: {str(e)}")
+    
+    logging.info(f"Quantità calcolate - Profilo: {quantita_profilo}, Strip LED: {quantita_strip_led}")
+    
     # ✅ CORREZIONE: Gestisci il codice prodotto in base alla modalità
     modalita = configurazione.get('modalitaConfigurazione', '')
     
@@ -703,7 +762,13 @@ def finalizza_configurazione():
         'success': True,
         'riepilogo': configurazione,
         'potenzaTotale': round(potenza_totale, 2),
-        'codiceProdotto': codice_prodotto
+        'codiceProdotto': codice_prodotto,
+        # ✅ NUOVO: Aggiungere le quantità alla risposta
+        'quantitaProfilo': quantita_profilo,
+        'quantitaStripLed': quantita_strip_led,
+        'lunghezzaMassimaProfilo': lunghezza_massima_profilo,
+        'lunghezzaMassimaStripLed': lunghezza_massima_strip,
+        'lunghezzaTotale': lunghezza_totale
     })
 
 @app.route('/salva_configurazione', methods=['POST'])

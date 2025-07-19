@@ -41,7 +41,11 @@ const configurazione = {
 	spazioProduzione: 5,
 	lunghezzaSelezionata: null,
 	propostePerLato: null,
-	combinazioni: null
+	combinazioni: null,
+	lunghezzaMassimaStripLed: null,
+	quantitaProfilo: 1,
+	quantitaStripLed: 1,
+	lunghezzaTotale: 0
 };
 
   const mappaCategorieVisualizzazione = {

@@ -18,7 +18,9 @@ export function generaPDF(codiceProdotto, configurazione) {
 	}
   }
 
-  function generaPDFContenuto(codiceProdotto, configurazione) {
+// Modifiche alla funzione generaPDFContenuto in pdf.js per includere le quantità
+
+function generaPDFContenuto(codiceProdotto, configurazione) {
 	try {
 	  const tuttiCodici = calcolaCodiceProdottoCompleto();
 	  const { jsPDF } = window.jspdf;
@@ -27,11 +29,11 @@ export function generaPDF(codiceProdotto, configurazione) {
 		unit: 'mm',
 		format: 'a4'
 	  });
-
+  
 	  doc.setFont('helvetica', 'bold');
 	  doc.setFontSize(20);
 	  doc.text('Riepilogo della configurazione', 105, 20, { align: 'center' });
-
+  
 	  try {
 		const logoImg = new Image();
 		logoImg.src = '/static/img/logo-redo-nero.png';
@@ -39,14 +41,14 @@ export function generaPDF(codiceProdotto, configurazione) {
 	  } catch (e) {
 		console.warn('Logo non disponibile');
 	  }
-
+  
 	  doc.setFontSize(14);
 	  doc.text(`Codice prodotto: ${codiceProdotto}`, 15, 35);
-
+  
 	  const dataOggi = new Date().toLocaleDateString('it-IT');
 	  doc.setFontSize(10);
 	  doc.text(`Data: ${dataOggi}`, 195, 20, { align: 'right' });
-
+  
 	  const mappaNomi = {
 		// Categorie
 		'nanoprofili': 'Nanoprofili',
@@ -97,31 +99,48 @@ export function generaPDF(codiceProdotto, configurazione) {
 		'LATERALE_SX': 'Laterale sinistra',
 		'RETRO': 'Retro'
 	  };
-
+  
 	  const getNomeVisualizzabile = (codice) => {
 		return mappaNomi[codice] || codice;
 	  };
-
+  
 	  const datiTabella = [];
-
+  
 	  if (configurazione.categoriaSelezionata) {
 		datiTabella.push(['Categoria', getNomeVisualizzabile(configurazione.categoriaSelezionata)]);
 	  }
-
-	  datiTabella.push(['Modello', (configurazione.nomeModello || codiceProdotto) + 
-	  (tuttiCodici && tuttiCodici.profilo ? ' - ' + tuttiCodici.profilo : '')]);
-
+  
+	  // ✅ MODIFICA: Includere quantità nel modello
+	  let modelloText = (configurazione.nomeModello || codiceProdotto);
+	  if (configurazione.quantitaProfilo > 1) {
+		modelloText = `${configurazione.quantitaProfilo}x ${modelloText} (${configurazione.lunghezzaMassimaProfilo}mm cad.)`;
+	  }
+	  if (tuttiCodici && tuttiCodici.profilo) {
+		modelloText += ' - ' + tuttiCodici.profilo;
+	  }
+	  
+	  datiTabella.push(['Modello', modelloText]);
+  
 	  if (configurazione.tipologiaSelezionata) {
 		datiTabella.push(['Tipologia', getNomeVisualizzabile(configurazione.tipologiaSelezionata)]);
 	  }
-
+  
 	  if (configurazione.lunghezzaRichiesta) {
 		datiTabella.push(['Lunghezza richiesta', `${configurazione.lunghezzaRichiesta}mm`]);
 	  }
-
+  
 	  if (configurazione.stripLedSelezionata && configurazione.stripLedSelezionata !== 'NO_STRIP' && configurazione.includeStripLed !== false) {
-		datiTabella.push(['Strip LED', (configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata) + 
-		(tuttiCodici && tuttiCodici.stripLed ? ' - ' + tuttiCodici.stripLed : '')]);
+		// ✅ MODIFICA: Includere quantità nella strip LED
+		let stripText = (configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata);
+		if (configurazione.quantitaStripLed > 1) {
+		  stripText = `${configurazione.quantitaStripLed}x ${stripText} (${configurazione.lunghezzaMassimaStripLed}mm cad.)`;
+		}
+		if (tuttiCodici && tuttiCodici.stripLed) {
+		  stripText += ' - ' + tuttiCodici.stripLed;
+		}
+		
+		datiTabella.push(['Strip LED', stripText]);
+		
 		if (configurazione.tipologiaStripSelezionata) {
 		  let tipologiaText = configurazione.tipologiaStripSelezionata;
 		  if (configurazione.tipologiaStripSelezionata === 'COB') {
@@ -131,31 +150,31 @@ export function generaPDF(codiceProdotto, configurazione) {
 		  }
 		  datiTabella.push(['Tipologia Strip', tipologiaText]);
 		}
-
+  
 		if (configurazione.potenzaSelezionata) {
 		  datiTabella.push(['Potenza', configurazione.potenzaSelezionata]);
 		}
 	  } else {
 		datiTabella.push(['Strip LED', 'Senza Strip LED']);
 	  }
-
+  
 	  if (configurazione.tensioneSelezionato === '220V') {
 		datiTabella.push(['Alimentazione', 'Strip 220V (no alimentatore)']);
 	  } else if (configurazione.alimentazioneSelezionata) {
 		datiTabella.push(['Alimentazione', getNomeVisualizzabile(configurazione.alimentazioneSelezionata), tuttiCodici.alimentatore]);
 	  }
-
+  
 	  if (configurazione.tipologiaAlimentatoreSelezionata && 
 		  configurazione.alimentazioneSelezionata !== 'SENZA_ALIMENTATORE' &&
 		  configurazione.tensioneSelezionato !== '220V') {
 		datiTabella.push(['Alimentatore', configurazione.tipologiaAlimentatoreSelezionata, tuttiCodici.alimentatore]);
 	  }
-
+  
 	  if (configurazione.potenzaConsigliataAlimentatore && 
 		  configurazione.tensioneSelezionato !== '220V') {
 		datiTabella.push(['Potenza consigliata', `${configurazione.potenzaConsigliataAlimentatore}W`]);
 	  }
-
+  
 	  if (configurazione.dimmerSelezionato) {
 		if (configurazione.tensioneSelezionato === '220V' && configurazione.dimmerSelezionato === 'DIMMER_A_PULSANTE_SEMPLICE') {
 		  datiTabella.push(['Dimmer', 'CTR130 - Dimmerabile TRIAC tramite pulsante e sistema TUYA']);
@@ -163,31 +182,31 @@ export function generaPDF(codiceProdotto, configurazione) {
 		  datiTabella.push(['Dimmer', getNomeVisualizzabile(configurazione.dimmerSelezionato).replace(/_/g, ' '), tuttiCodici.dimmer]);
 		}
 	  }
-
+  
 	  if (configurazione.tipoAlimentazioneCavo) {
 		datiTabella.push(['Alimentazione cavo', getNomeVisualizzabile(configurazione.tipoAlimentazioneCavo)]);
 	  }
-
+  
 	  if (configurazione.lunghezzaCavoIngresso) {
 		datiTabella.push(['Lunghezza cavo ingresso', `${configurazione.lunghezzaCavoIngresso}mm`]);
 	  }
-
+  
 	  if (configurazione.tipoAlimentazioneCavo === 'ALIMENTAZIONE_DOPPIA' && configurazione.lunghezzaCavoUscita) {
 		datiTabella.push(['Lunghezza cavo uscita', `${configurazione.lunghezzaCavoUscita}mm`]);
 	  }
-
+  
 	  if (configurazione.uscitaCavoSelezionata && configurazione.categoriaSelezionata != "esterni" && configurazione.categoriaSelezionata != "wall_washer_ext") {
 		datiTabella.push(['Uscita cavo', getNomeVisualizzabile(configurazione.uscitaCavoSelezionata)]);
 	  }
-
+  
 	  if (configurazione.formaDiTaglioSelezionata) {
 		datiTabella.push(['Forma di taglio', getNomeVisualizzabile(configurazione.formaDiTaglioSelezionata)]);
 	  }
-
+  
 	  if (configurazione.finituraSelezionata) {
 		datiTabella.push(['Finitura', getNomeVisualizzabile(configurazione.finituraSelezionata)]);
 	  }
-
+  
 	  if (configurazione.lunghezzeMultiple && Object.keys(configurazione.lunghezzeMultiple).length > 0) {
 		Object.entries(configurazione.lunghezzeMultiple).forEach(([lato, valore]) => {
 		  if (!valore) return;
@@ -206,11 +225,16 @@ export function generaPDF(codiceProdotto, configurazione) {
 		  datiTabella.push([etichetta, `${valore}mm`]);
 		});
 	  }
-
+  
+	  // ✅ NUOVO: Aggiungere informazioni sulle quantità totali
+	  if (configurazione.lunghezzaTotale > 0) {
+		datiTabella.push(['Lunghezza totale', `${configurazione.lunghezzaTotale}mm`]);
+	  }
+  
 	  if (configurazione.potenzaTotale) {
 		datiTabella.push(['Potenza totale', `${configurazione.potenzaTotale}W`]);
 	  }
-
+  
 	  doc.autoTable({
 		startY: 45,
 		head: [['Parametro', 'Valore']],
@@ -239,15 +263,15 @@ export function generaPDF(codiceProdotto, configurazione) {
 		},
 		margin: { top: 45, right: 15, bottom: 15, left: 15 }
 	  });
-
+  
 	  const finalY = doc.lastAutoTable.finalY + 10;
 	  doc.setFontSize(10);
 	  doc.setFont('helvetica', 'normal');
-
+  
 	  if (configurazione.categoriaSelezionata === 'esterni' || configurazione.categoriaSelezionata === 'wall_washer_ext') {
 	  doc.text('ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.', 15, finalY);
 	  }
-
+  
 	  doc.setFont('helvetica', 'bold');
 	  doc.setTextColor(194, 59, 34);
 	  doc.text('ATTENZIONE: eventuali staffe aggiuntive non incluse.', 15, finalY + 8);
@@ -256,7 +280,7 @@ export function generaPDF(codiceProdotto, configurazione) {
 	  
 	  doc.setFontSize(8);
 	  doc.text('REDO Srl - Configuratore Profili LED', 105, 285, { align: 'center' });
-
+  
 	  const filename = `configurazione_${codiceProdotto}_${Date.now()}.pdf`;
 	  doc.save(filename);
 	  

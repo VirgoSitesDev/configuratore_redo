@@ -79,7 +79,7 @@ class DatabaseManager:
         
         self._set_cache(cache_key, categorie)
         return categorie
-    
+
     def get_profili_by_categoria(self, categoria: str) -> List[Dict[str, Any]]:
         start_time = time.time()
         
@@ -153,12 +153,17 @@ class DatabaseManager:
             profilo['finitureDisponibili'] = finiture_map.get(pid, [])
             profilo['lunghezzeDisponibili'] = lunghezze_map.get(pid, [])
             profilo['stripLedCompatibili'] = strip_map.get(pid, [])
-            profilo['lunghezzaMassima'] = profilo.get('lunghezza_massima', 3000)
+            
+            # ✅ NUOVO: Aggiungere lunghezza massima del profilo
+            lunghezze_profilo = lunghezze_map.get(pid, [])
+            if lunghezze_profilo:
+                profilo['lunghezzaMassima'] = max(lunghezze_profilo)
+            else:
+                profilo['lunghezzaMassima'] = profilo.get('lunghezza_massima', 3000)  # fallback
         
         self._log_query_time(f"get_profili_by_categoria({categoria})", start_time)
         self._set_cache(cache_key, profili)
         return profili
-    
 
     def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str, 
                             temperatura: str, potenza: Optional[str] = None,
@@ -188,7 +193,8 @@ class DatabaseManager:
             logging.info(f"Primi 10 record della tabella compatibilità: {all_compat}")
             return []
 
-        query = self.supabase.table('strip_led').select('*')
+        # ✅ MODIFICA: Includere la lunghezza nel select
+        query = self.supabase.table('strip_led').select('*, lunghezza')
         query = query.eq('tensione', tensione).eq('ip', ip)
         
         if tipologia:
@@ -245,19 +251,23 @@ class DatabaseManager:
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
             
+            # ✅ NUOVO: Assicurare che lunghezzaMassima sia presente
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)  # fallback a 5000mm
+            
             result.append(strip)
         
         return result
-    
+
     def get_all_strip_led_filtrate(self, tensione: str, ip: str, 
-                                   temperatura: str, potenza: Optional[str] = None,
-                                   tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
+                                temperatura: str, potenza: Optional[str] = None,
+                                tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Ottiene tutte le strip LED filtrate per i parametri specificati,
         senza considerare la compatibilità con un profilo specifico.
         Usato per il flusso esterni.
         """
-        query = self.supabase.table('strip_led').select('*')
+        # ✅ MODIFICA: Includere la lunghezza nel select
+        query = self.supabase.table('strip_led').select('*, lunghezza')
         query = query.eq('tensione', tensione).eq('ip', ip)
         
         if tipologia:
@@ -314,10 +324,13 @@ class DatabaseManager:
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
             
+            # ✅ NUOVO: Assicurare che lunghezzaMassima sia presente
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)  # fallback a 5000mm
+            
             result.append(strip)
         
         return result
-    
+
     def get_alimentatori_by_tipo(self, tipo_alimentazione: str, 
                                   tensione: str = '24V') -> List[Dict[str, Any]]:
         alimentatori_map = {
