@@ -263,7 +263,7 @@ function initStep2bPotenzaListeners() {
 
   // Listener per input lunghezza
   $('#step2b-lunghezza-strip').on('input', function() {
-    configurazione.lunghezzaRichiestaMetri = parseFloat($(this).val()) || null;
+    configurazione.lunghezzaRichiestaMetri = parseFloat($(this).val()) / 1000 || null;
     if (configurazione.lunghezzaRichiestaMetri) {
       configurazione.lunghezzaRichiesta = configurazione.lunghezzaRichiestaMetri * 1000;
     }

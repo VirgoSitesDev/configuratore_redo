@@ -102,14 +102,18 @@ function calcolaPotenzaAlimentatoreConsigliata() {
   }
 }
 
+// In static/js/steps/step4.js - nella funzione vaiAllAlimentazione()
+// Sostituisci la sezione del calcolo della potenza consigliata con questo:
+
 export function vaiAllAlimentazione() {
-  // ✅ DEBUG per capire il problema
   console.log("🔍 === DEBUG vaiAllAlimentazione ===");
   console.log("Modalità configurazione:", configurazione.modalitaConfigurazione);
   console.log("Tensione selezionata:", configurazione.tensioneSelezionato);
   console.log("Strip LED selezionata:", configurazione.stripLedSelezionata);
   console.log("Configurazione completa:", configurazione);
+  
   $(".step-section").hide();
+  
   if (configurazione.modalitaConfigurazione === 'solo_strip') {
     $('#profilo-nome-step4').parent().hide();
     $('#tipologia-nome-step4').parent().hide();
@@ -117,7 +121,6 @@ export function vaiAllAlimentazione() {
     $('#profilo-nome-step4').text(configurazione.nomeModello);
     $('#tipologia-nome-step4').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
   }
-  $('#tipologia-nome-step4').text(mappaTipologieVisualizzazione[configurazione.tipologiaSelezionata] || configurazione.tipologiaSelezionata);
   
   if (configurazione.stripLedSelezionata !== 'senza_strip' && configurazione.stripLedSelezionata !== 'NO_STRIP') {
     const nomeStripLed = configurazione.nomeCommercialeStripLed || 
@@ -138,7 +141,6 @@ export function vaiAllAlimentazione() {
   }
   
   updateProgressBar(4);
-
   $("#step4-alimentazione").fadeIn(300);
 
   if (configurazione.tensioneSelezionato === '220V') {
@@ -166,16 +168,55 @@ export function vaiAllAlimentazione() {
 
   prepareAlimentazioneListeners();
 
-  if (configurazione.stripLedSelezionata === 'senza_strip' || 
-      configurazione.stripLedSelezionata === 'NO_STRIP' ||
-      !configurazione.potenzaSelezionata) {
+  // ✅ FIX: Calcolo corretto della potenza per il flusso solo strip
+  if (configurazione.modalitaConfigurazione === 'solo_strip' && 
+      configurazione.potenzaSelezionata && 
+      configurazione.lunghezzaRichiestaMetri) {
+    
+    console.log("🔧 Calcolo potenza per flusso solo strip");
+    console.log("Potenza selezionata:", configurazione.potenzaSelezionata);
+    console.log("Lunghezza in metri:", configurazione.lunghezzaRichiestaMetri);
+    
+    // Estrai il valore numerico dalla stringa potenza (es: "12W/m" -> 12)
+    const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(?:\.\d+)?)/);
+    if (potenzaMatch) {
+      const potenzaPerMetro = parseFloat(potenzaMatch[1]);
+      const lunghezzaMetri = configurazione.lunghezzaRichiestaMetri;
+      
+      // Calcolo: potenza_per_metro * lunghezza_metri * 1.2 (fattore sicurezza)
+      const potenzaTotale = potenzaPerMetro * lunghezzaMetri * 1.2;
+      
+      // Arrotonda al multiplo di 5 superiore (minimo 20W)
+      const potenzaConsigliata = Math.max(20, Math.ceil(potenzaTotale / 5) * 5);
+      
+      console.log("✅ Potenza calcolata:", {
+        potenzaPerMetro,
+        lunghezzaMetri,
+        potenzaTotale,
+        potenzaConsigliata
+      });
+      
+      configurazione.potenzaConsigliataAlimentatore = potenzaConsigliata;
+      
+      // Mostra la sezione potenza consigliata
+      $('#potenza-consigliata').text(potenzaConsigliata);
+      $('#potenza-consigliata-section').show();
+    }
+  } else if (configurazione.stripLedSelezionata === 'senza_strip' || 
+             configurazione.stripLedSelezionata === 'NO_STRIP' ||
+             !configurazione.potenzaSelezionata) {
     $('#potenza-consigliata-section').hide();
   } else {
+    // Flusso normale (non solo strip)
     calcolaPotenzaAlimentatoreConsigliata();
   }
 }
 
 export function prepareAlimentazioneListeners() {
+
+  $(document).off('click', '.alimentazione-card');
+  $(document).off('click', '.alimentatore-card');  
+  $(document).off('click', '.potenza-alimentatore-card');
 
   configurazione.alimentazioneSelezionata = null;
   configurazione.tipologiaAlimentatoreSelezionata = null;

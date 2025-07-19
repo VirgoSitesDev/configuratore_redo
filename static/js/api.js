@@ -796,19 +796,27 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
     method: 'GET',
     success: function(data) {
       
+      // ✅ DEBUG: Log della risposta completa
+      console.log("📥 Risposta API alimentatori:", data);
+      
       $('#alimentatore-container').empty();
       
       if (!data.success) {
+        console.error("❌ API ha ritornato success=false:", data.message || 'Nessun messaggio');
         $('#alimentatore-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni alimentatore.</p></div>');
         return;
       }
       
       const alimentatori = data.alimentatori;
+      console.log("🔍 Alimentatori nella risposta:", alimentatori);
       
       if (!alimentatori || alimentatori.length === 0) {
+        console.warn("⚠️ Nessun alimentatore trovato nella risposta");
         $('#alimentatore-container').html('<div class="col-12 text-center"><p>Nessun alimentatore disponibile per questo tipo di alimentazione e tensione strip LED.</p></div>');
         return;
       }
+
+      console.log("✅ Alimentatori trovati:", alimentatori.length);
 
       if (configurazione.potenzaConsigliataAlimentatore) {
         $('#potenza-consigliata').text(configurazione.potenzaConsigliataAlimentatore);
@@ -867,8 +875,13 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
         caricaPotenzeAlimentatore(alimentatoreId);
       });
     },
-    error: function(error) {
-      console.error("Errore nel caricamento delle opzioni alimentatore:", error);
+    error: function(xhr, status, error) {
+      console.error("❌ Errore AJAX alimentatori:", {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        responseText: xhr.responseText,
+        error: error
+      });
       $('#alimentatore-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle opzioni alimentatore. Riprova più tardi.</p></div>');
     }
   });
