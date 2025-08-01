@@ -31,7 +31,39 @@
       </div>
     </header>
 
-    <div class="step-progress mb-4">
+    <div class="step-section" id="homepage-main">
+      <div class="homepage-logo-top">
+        <img src="/static/img/logo-redo-nero.png" alt="Logo Redo" class="logo-top">
+        <span class="beta-tag-top">beta</span>
+      </div>
+      
+      <div class="container-fluid p-0">
+        <div class="row g-0 h-100">
+          <!-- INDOOR -->
+          <div class="col-4">
+            <div class="homepage-card indoor-card" data-type="indoor">
+              <img src="/static/img/indoor_redo.png" alt="Indoor" class="homepage-image">
+            </div>
+          </div>
+
+          <!-- OUTDOOR -->
+          <div class="col-4">
+            <div class="homepage-card outdoor-card" data-type="outdoor">
+              <img src="/static/img/outdoor_redo.png" alt="Outdoor" class="homepage-image">
+            </div>
+          </div>
+
+          <!-- STRIP LED -->
+          <div class="col-4">
+            <div class="homepage-card strip-card" data-type="strip">
+              <img src="/static/img/strip_home.png" alt="Strip LED" class="homepage-image">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-progress mb-4" id="progress-bar" style="display: none;">
       <div class="step-item active" id="progress-step1">
         <div class="step-number">1</div>
         <div class="step-title">Categoria</div>
@@ -54,51 +86,6 @@
       </div>
     </div>
 
-  <div class="step-section" id="step0-scelta-modalita">
-    <div class="row">
-      <div class="col-12">
-        <h2 class="text-center mb-3">Scegli la modalità di configurazione</h2>
-        <p class="text-center mb-4 text-muted">
-          <small>Seleziona cosa vuoi configurare</small>
-        </p>
-      </div>
-    </div>
-    
-    <div class="container mb-5">
-      <div class="row justify-content-center">
-        <div class="col-md-6 mb-3">
-          <div class="card option-card modalita-card" data-modalita="profilo_strip">
-            <img src="/static/img/profilo-con-strip.jpg" class="card-img-top" alt="Profilo con Strip" 
-                style="height: 200px; object-fit: cover;" 
-                onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='200px'">
-            <div class="card-body text-center">
-              <h5 class="card-title">Profilo + Strip LED</h5>
-              <p class="card-text">Configura un profilo completo con strip LED integrata</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-6 mb-3">
-          <div class="card option-card modalita-card" data-modalita="solo_strip">
-            <img src="/static/img/solo-strip.jpg" class="card-img-top" alt="Solo Strip" 
-                style="height: 200px; object-fit: cover;" 
-                onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='200px'">
-            <div class="card-body text-center">
-              <h5 class="card-title">Solo Strip LED</h5>
-              <p class="card-text">Configura solo la strip LED senza profilo</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="row mt-4">
-      <div class="col-12 text-center">
-        <button class="btn btn-primary btn-lg" id="btn-continua-scelta-modalita" disabled>Continua</button>
-      </div>
-    </div>
-  </div>
-
   <div class="step-section" id="step2b-tipologia-strip">
     <div class="row">
       <div class="col-12">
@@ -111,7 +98,6 @@
     
     <div class="container mb-5">
       <h3 class="mb-3">Tipologia Strip LED</h3>
-      <!-- Container vuoto che verrà popolato dinamicamente dal JavaScript -->
       <div class="row" id="step2b-tipologia-container">
         <div class="col-12 text-center">
           <div class="spinner-border" role="status"></div>
@@ -1101,6 +1087,90 @@
   <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Gestione click delle card della homepage
+      document.querySelectorAll('.homepage-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const type = this.getAttribute('data-type');
+          
+          // Nascondi homepage
+          document.getElementById('homepage-main').style.display = 'none';
+          
+          // Mostra progress bar
+          document.getElementById('progress-bar').style.display = 'flex';
+          
+          // Remove homepage class from body
+          document.body.classList.remove('on-homepage');
+          
+          if (type === 'indoor') {
+            // Vai alla selezione categorie indoor
+            document.getElementById('step1-tipologia').style.display = 'block';
+            
+            // Nascondi le categorie outdoor
+            document.querySelectorAll('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]')
+              .forEach(el => el.style.display = 'none');
+              
+          } else if (type === 'outdoor') {
+            // Vai alla selezione categorie outdoor  
+            document.getElementById('step1-tipologia').style.display = 'block';
+            
+            // Nascondi le categorie indoor
+            document.querySelectorAll('[data-categoria]:not([data-categoria="esterni"]):not([data-categoria="wall_washer_ext"])')
+              .forEach(el => el.style.display = 'none');
+              
+          } else if (type === 'strip') {
+            // Vai direttamente alla configurazione solo strip
+            document.getElementById('step2b-tipologia-strip').style.display = 'block';
+            
+            // Set modalità configurazione
+            if (window.configurazione) {
+              window.configurazione.modalitaConfigurazione = 'solo_strip';
+            }
+          }
+          
+          // Scroll to top
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+      
+      // Set homepage class on body initially
+      document.body.classList.add('on-homepage');
+      
+      // Funzione per tornare alla homepage
+      window.goToHomepage = function() {
+        // Nascondi tutti gli step
+        document.querySelectorAll('.step-section').forEach(section => {
+          section.style.display = 'none';
+        });
+        
+        // Mostra homepage
+        document.getElementById('homepage-main').style.display = 'block';
+        
+        // Nascondi progress bar
+        document.getElementById('progress-bar').style.display = 'none';
+        
+        // Add homepage class to body
+        document.body.classList.add('on-homepage');
+        
+        // Reset configurazione
+        if (window.configurazione) {
+          Object.keys(window.configurazione).forEach(key => {
+            window.configurazione[key] = null;
+          });
+        }
+        
+        // Mostra tutte le categorie
+        document.querySelectorAll('[data-categoria]').forEach(el => {
+          el.style.display = 'block';
+        });
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+    });
+  </script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {

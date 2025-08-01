@@ -35,8 +35,67 @@ $(document).ready(function() {
   window.updateAlertDialogsVisibility = updateAlertDialogsVisibility;
 
   $(".step-section").hide();
-  $("#step0-scelta-modalita").show();
+  $("#homepage-main").show();
+  $('body').addClass('on-homepage');
 
+  $(".step-progress").hide();
+
+  function initHomepageListeners() {
+    $('.homepage-card').on('click', function() {
+      const type = $(this).data('type');
+      
+      $('#homepage-main').fadeOut(300, function() {
+        $('.step-progress').show();
+        $('body').removeClass('on-homepage');
+        
+        if (type === 'indoor') {
+          $('.hotspot[data-categoria="esterni"], .hotspot[data-categoria="wall_washer_ext"]').hide();
+          $('.hotspot').not('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]').show();
+          
+          $("#step1-tipologia").fadeIn(300);
+          updateProgressBar(1);
+          
+        } else if (type === 'outdoor') {
+          $('.hotspot').not('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]').hide();
+          $('.hotspot[data-categoria="esterni"], .hotspot[data-categoria="wall_washer_ext"]').show();
+          
+          $("#step1-tipologia").fadeIn(300);
+          updateProgressBar(1);
+          
+        } else if (type === 'strip') {
+          configurazione.modalitaConfigurazione = 'solo_strip';
+          
+          $("#step2b-tipologia-strip").fadeIn(300);
+          updateProgressBar(2);
+        }
+      });
+    });
+  }
+
+  window.goToHomepage = function() {
+    $(".step-section").fadeOut(300, function() {
+      $('#homepage-main').fadeIn(300);
+      $('.step-progress').hide();
+      $('body').addClass('on-homepage');
+      
+      Object.keys(configurazione).forEach(key => {
+        if (typeof configurazione[key] !== 'function') {
+          configurazione[key] = null;
+        }
+      });
+      
+      $('.hotspot').show();
+      
+      updateProgressBar(0);
+    });
+  };
+
+  $('a[href="javascript:location.reload(true)"]').attr('href', 'javascript:void(0)').on('click', function(e) {
+    e.preventDefault();
+    goToHomepage();
+  });
+
+  initHomepageListeners();
   initStep0Listeners();
   initStep1Listeners();
   initStep2Listeners();
@@ -127,9 +186,5 @@ $(document).ready(function() {
     $("#step2-modello-esterni").fadeOut(300, function() {
         $("#step3-temperatura-potenza").fadeIn(300);
     });
-  });
-
-  $('a[href="javascript:location.reload(true)"]').on('click', function() {
-    updateAlertDialogsVisibility(null);
   });
 });
