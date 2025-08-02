@@ -734,6 +734,10 @@ body.categoria-wall_washer_ext .alert-dialog {
   text-transform: uppercase;
 }
 
+body.on-homepage {
+  padding-bottom: 0;
+}
+
 /* Nascondere header nella homepage */
 body.on-homepage header {
   display: none !important;
@@ -882,5 +886,102 @@ body.on-homepage .step-progress {
   
   #homepage-main .col-4:hover .homepage-image {
     filter: brightness(1);
+  }
+}
+
+/* CSS aggiuntivo per le nuove pagine Indoor/Outdoor separate */
+
+/* Assicuriamoci che le nuove sezioni siano nascoste di default */
+#step1-tipologia-indoor,
+#step1-tipologia-outdoor {
+  display: none;
+  transition: opacity 0.5s ease;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Stili specifici per i pulsanti "Torna alla Home" */
+.btn-torna-homepage {
+  background-color: transparent !important;
+  border: 1px solid #333 !important;
+  color: #333 !important;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-torna-homepage:hover {
+  border-color: #e83f34 !important;
+  background-color: transparent !important;
+  color: #333 !important;
+}
+
+.btn-torna-homepage:active,
+.btn-torna-homepage:focus {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Assicuriamoci che gli hotspot funzionino su entrambe le pagine */
+#step1-tipologia-indoor .hotspot,
+#step1-tipologia-outdoor .hotspot {
+  position: absolute;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+/* Assicuriamoci che le luci SVG funzionino su entrambe le pagine */
+#step1-tipologia-indoor .svg-lights-container,
+#step1-tipologia-outdoor .svg-lights-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+#step1-tipologia-indoor .svg-light,
+#step1-tipologia-outdoor .svg-light {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+/* Effetti hover per gli hotspot su entrambe le pagine */
+#step1-tipologia-indoor .hotspot:hover ~ .svg-lights-container .svg-light.parete,
+#step1-tipologia-indoor .hotspot[data-categoria="parete"]:hover ~ .svg-lights-container .svg-light.parete,
+#step1-tipologia-indoor .hotspot[data-categoria="incasso"]:hover ~ .svg-lights-container .svg-light.incasso,
+#step1-tipologia-indoor .hotspot[data-categoria="plafone"]:hover ~ .svg-lights-container .svg-light.plafone,
+#step1-tipologia-indoor .hotspot[data-categoria="scalino"]:hover ~ .svg-lights-container .svg-light.scalino,
+#step1-tipologia-indoor .hotspot[data-categoria="sospensione"]:hover ~ .svg-lights-container .svg-light.sospeso,
+#step1-tipologia-indoor .hotspot[data-categoria="battiscopa"]:hover ~ .svg-lights-container .svg-light.battiscopa,
+#step1-tipologia-indoor .hotspot[data-categoria="nanoprofili"]:hover ~ .svg-lights-container .svg-light.nanoprofili,
+#step1-tipologia-indoor .hotspot[data-categoria="particolari"]:hover ~ .svg-lights-container .svg-light.particolari,
+#step1-tipologia-indoor .hotspot[data-categoria="wall_washer"]:hover ~ .svg-lights-container .svg-light.wall_washer {
+  opacity: 1;
+}
+
+#step1-tipologia-outdoor .hotspot[data-categoria="esterni"]:hover ~ .svg-lights-container .svg-light.esterni,
+#step1-tipologia-outdoor .hotspot[data-categoria="wall_washer_ext"]:hover ~ .svg-lights-container .svg-light.wall_washer_ext {
+  opacity: 1;
+}
+
+/* Responsive per le nuove pagine */
+@media (max-width: 768px) {
+  #step1-tipologia-indoor .hotspot-container,
+  #step1-tipologia-outdoor .hotspot-container {
+    margin: 0 auto;
+    max-width: 100%;
+  }
+  
+  #step1-tipologia-indoor .hotspot-container img,
+  #step1-tipologia-outdoor .hotspot-container img {
+    width: 100%;
+    height: auto;
   }
 }

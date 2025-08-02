@@ -222,10 +222,11 @@
       </div>
     </div>
 
-    <div class="step-section" id="step1-tipologia">
+    <!-- NUOVA PAGINA INDOOR SEPARATA -->
+    <div class="step-section" id="step1-tipologia-indoor">
       <div class="row">
         <div class="col-12">
-          <h2 class="text-center mb-2">Seleziona la tipologia del profilo</h2>
+          <h2 class="text-center mb-2">Seleziona la tipologia del profilo Indoor</h2>
         </div>
       </div>
 
@@ -233,13 +234,10 @@
         <p class="small text-muted">Passa con il mouse sulle aree per visualizzare il tipo di illuminazione</p>
       </div>
       
-      <div class="justify-content-center mb-0 mt-4">
-        <p class="text-center mb-4">Indoor</p>
-      </div>
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
           <div class="hotspot-container">
-            <img src="/static/img/mappa.jpg" alt="Mappa dei LED" class="mappa-bg img-fluid">
+            <img src="/static/img/mappa.jpg" alt="Mappa dei LED Indoor" class="mappa-bg img-fluid">
 
             <div class="hotspots">
               <div class="hotspot" data-categoria="nanoprofili" style="top:50%; left:30%;">
@@ -293,14 +291,30 @@
           </div>
         </div>
       </div>
-      
-      <div class="justify-content-center mb-0 mt-5">
-        <p class="text-center mb-4">Outdoor</p>
+
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary btn-torna-homepage">Torna alla Home</button>
+        </div>
       </div>
+    </div>
+
+    <!-- NUOVA PAGINA OUTDOOR SEPARATA -->
+    <div class="step-section" id="step1-tipologia-outdoor">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="text-center mb-2">Seleziona la tipologia del profilo Outdoor</h2>
+        </div>
+      </div>
+
+      <div class="text-center mt-2">
+        <p class="small text-muted">Passa con il mouse sulle aree per visualizzare il tipo di illuminazione</p>
+      </div>
+      
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
           <div class="hotspot-container">
-            <img src="/static/img/mappa_2.jpg" alt="Mappa dei LED 2" class="mappa-bg img-fluid">
+            <img src="/static/img/mappa_2.jpg" alt="Mappa dei LED Outdoor" class="mappa-bg img-fluid">
             
             <div class="hotspots">
               <div class="hotspot" data-categoria="esterni" style="top:70%; left:27%;">
@@ -317,6 +331,12 @@
               <img src="/static/img/svg_2/wall_washer_ext.svg" alt="Wall Washer 2" class="svg-light wall_washer_ext">
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col-12 text-center">
+          <button class="btn btn-secondary btn-torna-homepage">Torna alla Home</button>
         </div>
       </div>
     </div>
@@ -1124,19 +1144,11 @@
           
           if (type === 'indoor') {
             // Vai alla selezione categorie indoor
-            document.getElementById('step1-tipologia').style.display = 'block';
-            
-            // Nascondi le categorie outdoor
-            document.querySelectorAll('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]')
-              .forEach(el => el.style.display = 'none');
+            document.getElementById('step1-tipologia-indoor').style.display = 'block';
               
           } else if (type === 'outdoor') {
             // Vai alla selezione categorie outdoor  
-            document.getElementById('step1-tipologia').style.display = 'block';
-            
-            // Nascondi le categorie indoor
-            document.querySelectorAll('[data-categoria]:not([data-categoria="esterni"]):not([data-categoria="wall_washer_ext"])')
-              .forEach(el => el.style.display = 'none');
+            document.getElementById('step1-tipologia-outdoor').style.display = 'block';
               
           } else if (type === 'strip') {
             // Vai direttamente alla configurazione solo strip
@@ -1179,14 +1191,16 @@
           });
         }
         
-        // Mostra tutte le categorie
-        document.querySelectorAll('[data-categoria]').forEach(el => {
-          el.style.display = 'block';
-        });
-        
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
+
+      // Gestione pulsanti "Torna alla Home"
+      document.querySelectorAll('.btn-torna-homepage').forEach(button => {
+        button.addEventListener('click', function() {
+          goToHomepage();
+        });
+      });
     });
   </script>
 

@@ -49,17 +49,11 @@ $(document).ready(function() {
         $('body').removeClass('on-homepage');
         
         if (type === 'indoor') {
-          $('.hotspot[data-categoria="esterni"], .hotspot[data-categoria="wall_washer_ext"]').hide();
-          $('.hotspot').not('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]').show();
-          
-          $("#step1-tipologia").fadeIn(300);
+          $("#step1-tipologia-indoor").fadeIn(300);
           updateProgressBar(1);
           
         } else if (type === 'outdoor') {
-          $('.hotspot').not('[data-categoria="esterni"], [data-categoria="wall_washer_ext"]').hide();
-          $('.hotspot[data-categoria="esterni"], .hotspot[data-categoria="wall_washer_ext"]').show();
-          
-          $("#step1-tipologia").fadeIn(300);
+          $("#step1-tipologia-outdoor").fadeIn(300);
           updateProgressBar(1);
           
         } else if (type === 'strip') {
@@ -87,8 +81,6 @@ $(document).ready(function() {
           configurazione[key] = null;
         }
       });
-      
-      $('.hotspot').show();
       
       updateProgressBar(0);
     });
@@ -123,12 +115,13 @@ $(document).ready(function() {
     }
   }
 
-  $('.hotspot').on('mouseenter', function() {
+  // Gestione luci SVG per entrambe le pagine indoor e outdoor
+  $(document).on('mouseenter', '.hotspot', function() {
     const categoria = $(this).data('categoria');
     if (categoria) {
       activateLight(categoria);
     }
-  }).on('mouseleave', function() {
+  }).on('mouseleave', '.hotspot', function() {
     if (!lastActivatedLight) {
       $('.svg-light').css('opacity', 0);
     } else {
@@ -136,7 +129,7 @@ $(document).ready(function() {
     }
   });
 
-  $('.hotspot').on('click', function() {
+  $(document).on('click', '.hotspot', function() {
     const categoria = $(this).data('categoria');
     
     if (!categoria) {
@@ -153,7 +146,7 @@ $(document).ready(function() {
         
         $('.categoria-selezionata').text(`Categoria: ${mappaCategorieVisualizzazione[categoria] || categoria}`);
 
-        $("#step1-tipologia").fadeOut(300, function() {
+        $("#step1-tipologia-outdoor").fadeOut(300, function() {
             $("#step2-tipologia-strip").fadeIn(300);
             updateProgressBar(2);
 
@@ -168,7 +161,7 @@ $(document).ready(function() {
         
         updateProgressBar(2);
 
-        $("#step1-tipologia").fadeOut(300, function() {
+        $("#step1-tipologia-indoor").fadeOut(300, function() {
             $("#step2-modello").fadeIn(300);
             caricaProfili(categoria);
         });
