@@ -29,14 +29,13 @@ export function initStep0Listeners() {
   });
 }
 
-function initStep2bTipologiaListeners() {
+export function initStep2bTipologiaListeners() {
   caricaTipologieDalDatabase();
 
   $('#btn-torna-step0-da-tipologia').on('click', function(e) {
     e.preventDefault();
     $("#step2b-tipologia-strip").fadeOut(300, function() {
-      $("#step0-scelta-modalita").fadeIn(300);
-      updateProgressBar(0);
+      goToHomepage();
     });
   });
   
@@ -70,6 +69,8 @@ function caricaTipologieDalDatabase() {
     }
   });
 }
+
+export { caricaTipologieDalDatabase };
 
 function renderTipologie(tipologie) {
   const tipologieContainer = $('#step2b-tipologia-container');

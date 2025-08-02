@@ -1,6 +1,6 @@
 import { configurazione, mappaCategorieVisualizzazione } from './config.js';
 import { updateProgressBar } from './utils.js';
-import { initStep0Listeners } from './steps/step0.js';
+import { initStep0Listeners, caricaTipologieDalDatabase, initStep2bTipologiaListeners } from './steps/step0.js';
 import { initStep1Listeners } from './steps/step1.js';
 import { initStep2Listeners } from './steps/step2.js';
 import { initStep3Listeners, initPotenzaListener } from './steps/step3.js';
@@ -67,6 +67,10 @@ $(document).ready(function() {
           
           $("#step2b-tipologia-strip").fadeIn(300);
           updateProgressBar(2);
+          
+          // Chiama le funzioni che già esistono
+          initStep2bTipologiaListeners();
+          caricaTipologieDalDatabase();
         }
       });
     });

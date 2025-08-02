@@ -786,3 +786,101 @@ body.on-homepage .step-progress {
     left: 10px;
   }
 }
+
+.homepage-card-overlay {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: end;
+  justify-content: start;
+}
+
+.homepage-card-content {
+  text-align: start;
+  color: white;
+  padding: 2rem;
+  z-index: 2;
+}
+
+.homepage-card-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: 1.5px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.homepage-card-subtitle {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+/* Container principale homepage con flexbox */
+#homepage-main .row {
+  display: flex !important;
+  transition: all 0.5s ease;
+}
+
+/* Card homepage con transizione */
+#homepage-main .col-4 {
+  flex: 1;
+  transition: all 0.5s ease;
+  overflow: hidden;
+}
+
+/* Stato normale - tutte uguali (33.33% ciascuna) */
+#homepage-main .col-4 {
+  flex: 1;
+}
+
+/* Quando si fa hover su una card */
+#homepage-main .col-4:hover {
+  flex: 1.5; /* Diventa il doppio delle altre (50%) */
+}
+
+/* Quando una card è in hover, le altre diventano più piccole */
+#homepage-main:hover .col-4:not(:hover) {
+  flex: 0.75; /* Diventano la metà (25% ciascuna) */
+}
+
+/* Assicuriamoci che le immagini si adattino sempre */
+#homepage-main .homepage-image {
+  width: 100%;
+  height: 100vh;
+  object-fit: cover;
+  transition: all 0.5s ease;
+}
+
+/* Opzionale: leggero effetto di luminosità sulle card non in hover */
+#homepage-main:hover .col-4:not(:hover) .homepage-image {
+  filter: brightness(0.6);
+}
+
+#homepage-main .col-4:hover .homepage-image {
+  filter: brightness(1.1);
+}
+
+/* Responsive - su schermi piccoli disabilita l'effetto */
+@media (max-width: 768px) {
+  #homepage-main .col-4:hover {
+    flex: 1;
+  }
+  
+  #homepage-main:hover .col-4:not(:hover) {
+    flex: 1;
+  }
+  
+  #homepage-main:hover .col-4:not(:hover) .homepage-image {
+    filter: brightness(1);
+  }
+  
+  #homepage-main .col-4:hover .homepage-image {
+    filter: brightness(1);
+  }
+}
