@@ -82,7 +82,7 @@ function calcolaProposte(lunghezzaRichiesta) {
   return new Promise((resolve, reject) => {
     const requestData = {
       lunghezzaRichiesta: lunghezzaRichiesta,
-      stripLedSelezionata: configurazione.stripLedSelezionata,
+      stripLedSelezionata: configurazione.stripLedSelezionata || configurazione.stripLedSceltaFinale,
       potenzaSelezionata: configurazione.potenzaSelezionata,
       formaDiTaglioSelezionata: configurazione.formaDiTaglioSelezionata
     };

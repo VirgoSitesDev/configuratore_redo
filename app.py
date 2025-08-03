@@ -479,8 +479,6 @@ def get_strip_compatibile_standalone():
         return jsonify({'success': False, 'message': str(e)})
 
 
-# 2. Sostituisci calcola_lunghezze con questa versione COMPLETA:
-
 @app.route('/calcola_lunghezze', methods=['POST'])
 def calcola_lunghezze():
     data = request.json
@@ -490,25 +488,16 @@ def calcola_lunghezze():
     lunghezze_multiple = data.get('lunghezzeMultiple', {})
     forma_taglio = data.get('formaDiTaglioSelezionata', 'DRITTO_SEMPLICE')
     
-    logging.info(f"=== calcola_lunghezze ===")
-    logging.info(f"dim_richiesta={dim_richiesta}, strip_id={strip_id}, potenza={potenza_selezionata}")
-    
     taglio_minimo = 1
     spazio_produzione = 5
 
-    # ✅ PROTEZIONE: Gestisci il caso strip non trovata
     if strip_id and strip_id != 'NO_STRIP' and potenza_selezionata:
         try:
-            # Prova a cercare la strip nel database
             strip_data_result = db.supabase.table('strip_led').select('*').eq('id', strip_id).execute()
             
             if strip_data_result.data and len(strip_data_result.data) > 0:
-                # Strip trovata
-                strip_info = strip_data_result.data[0]  # Prendi il primo risultato
+                strip_info = strip_data_result.data[0]
                 tagli_minimi = strip_info.get('taglio_minimo', [])
-                logging.info(f"Strip trovata: {strip_id}, tagli_minimi: {tagli_minimi}")
-
-                # Continua con la logica esistente per il taglio minimo
                 potenze_data = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_id).order('indice').execute()
                 if potenze_data.data:
                     indice_potenza = -1
@@ -525,19 +514,14 @@ def calcola_lunghezze():
                             taglio_minimo_val = match.group(1).replace(',', '.')
                             try:
                                 taglio_minimo = float(taglio_minimo_val)
-                                logging.info(f"Taglio minimo calcolato: {taglio_minimo}")
                             except ValueError:
                                 logging.warning(f"Impossibile convertire taglio_minimo: {taglio_minimo_val}")
                                 pass
             else:
-                # Strip non trovata nel database
                 logging.warning(f"Strip non trovata nel database: {strip_id}")
-                logging.info("Usando taglio minimo default: 1")
                 
         except Exception as e:
-            # Errore nella ricerca della strip
             logging.error(f"Errore nella ricerca della strip {strip_id}: {str(e)}")
-            logging.info("Usando taglio minimo default: 1")
 
     def calcola_proposte_singole(lunghezza):
         if lunghezza > 0:
