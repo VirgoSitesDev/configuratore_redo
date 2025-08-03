@@ -18,7 +18,7 @@ export function initStep2EsterniListeners() {
 
             caricaOpzioniProfilo(configurazione.profiloSelezionato);
 
-            $("#step2-modello").fadeOut(300, function() {
+            $("#step2-modello-esterni").fadeOut(300, function() {
                 setTimeout(() => {
                     if ($('.tipologia-card').length === 1 && $('.tipologia-card').data('id') === 'taglio_misura') {
                         $('.tipologia-card').click();
