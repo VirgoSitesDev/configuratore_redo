@@ -15,7 +15,7 @@ export function initStep2EsterniListeners() {
         e.preventDefault();
         if (configurazione.profiloSelezionato) {
             $('#tipologie-options').empty().html('<div class="text-center mt-3"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni...</p></div>');
-
+            
             caricaOpzioniProfilo(configurazione.profiloSelezionato);
 
             $("#step2-modello-esterni").fadeOut(300, function() {
@@ -33,16 +33,26 @@ export function initStep2EsterniListeners() {
                         $("#step2-modello").fadeIn(300);
                         updateProgressBar(4);
 
+                        // ✅ CORREZIONE: Rimuovi l'avanzamento automatico
                         $('.tipologia-card').off('click.esterni').on('click.esterni', function() {
                             $('.tipologia-card').removeClass('selected');
                             $(this).addClass('selected');
                             configurazione.tipologiaSelezionata = $(this).data('id');
-
-                            $("#step2-modello").fadeOut(300, function() {
-                                import('./step2.js').then(module => {
-                                    module.vaiAllaPersonalizzazione();
+                            
+                            // ✅ Solo abilita il pulsante, non andare avanti automaticamente
+                            $('#btn-continua-step2').prop('disabled', false);
+                        });
+                        
+                        // ✅ Aggiungi il listener per il pulsante continua nel flusso esterni
+                        $('#btn-continua-step2').off('click.esterni').on('click.esterni', function(e) {
+                            e.preventDefault();
+                            if (configurazione.tipologiaSelezionata) {
+                                $("#step2-modello").fadeOut(300, function() {
+                                    import('./step2.js').then(module => {
+                                        module.vaiAllaPersonalizzazione();
+                                    });
                                 });
-                            });
+                            }
                         });
                     }
                 }, 500);
