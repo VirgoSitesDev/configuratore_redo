@@ -42,9 +42,19 @@ export function calcolaCodiceProfilo() {
 export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, potenza, modello) {
     
   if (!configurazione.tensioneSelezionato || !configurazione.ipSelezionato || 
-      !configurazione.temperaturaColoreSelezionata || !configurazione.tipologiaStripSelezionata || 
+      !configurazione.tipologiaStripSelezionata || 
       !configurazione.potenzaSelezionata) {
       return '';
+  }
+
+  // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia impostata
+  if (!configurazione.temperaturaColoreSelezionata && configurazione.temperaturaSelezionata) {
+    configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
+  }
+
+  if (!configurazione.temperaturaColoreSelezionata) {
+    console.warn('temperaturaColoreSelezionata non impostata');
+    return '';
   }
 
   const mappaTemperaturaSuffisso = {
@@ -61,7 +71,11 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
   
   let stripData = null;
 
-  if (configurazione.modalitaConfigurazione === 'solo_strip' || !configurazione.profiloSelezionato) {
+  // ✅ FIX: Per il flusso esterni o modalità solo strip, usa sempre l'API standalone
+  if (configurazione.modalitaConfigurazione === 'solo_strip' || 
+      !configurazione.profiloSelezionato || 
+      configurazione.isFlussoProfiliEsterni) {
+      
       const requestData = {
           tipologia: configurazione.tipologiaStripSelezionata,
           special: configurazione.specialStripSelezionata,
@@ -93,6 +107,7 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
           }
       });
   } else {
+      // Flusso normale per profili indoor con strip
       const profiloId = configurazione.profiloSelezionato;
       const tensioneParam = configurazione.tensioneSelezionato;
       const ipParam = configurazione.ipSelezionato;
@@ -122,7 +137,15 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
   }
   
   if (!stripData) {
-      console.error('stripData è null o undefined');
+      console.error('stripData è null o undefined - Parametri:', {
+          tipologia: configurazione.tipologiaStripSelezionata,
+          tensione: configurazione.tensioneSelezionato,
+          ip: configurazione.ipSelezionato,
+          temperatura: configurazione.temperaturaColoreSelezionata,
+          potenza: configurazione.potenzaSelezionata,
+          stripSelezionata: configurazione.stripLedSelezionata,
+          isEsterni: configurazione.isFlussoProfiliEsterni
+      });
       return '';
   }
   
@@ -153,6 +176,10 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
       }
       
       if (indicePotenza === -1) {
+          console.error('Potenza non trovata negli array:', {
+              potenzaSelezionata: configurazione.potenzaSelezionata,
+              potenzeDisponibili: stripData.potenzeDisponibili
+          });
           return '';
       }
   }

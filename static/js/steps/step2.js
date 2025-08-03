@@ -1152,23 +1152,31 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
           });
 
           if (data.temperature.length === 1) {
-              setTimeout(() => {
-                  const $unicaTemperatura = $('.temperatura-card');
-                  $unicaTemperatura.addClass('selected');
-                  configurazione.temperaturaSelezionata = data.temperature[0];
-                  isLoadingTemperatura = false;
-                  checkParametriCompletion();
-              }, 50);
+            setTimeout(() => {
+                const $unicaTemperatura = $('.temperatura-card');
+                $unicaTemperatura.addClass('selected');
+                configurazione.temperaturaSelezionata = data.temperature[0];
+                
+                // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia sempre impostata
+                configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
+                
+                isLoadingTemperatura = false;
+                checkParametriCompletion();
+            }, 50);
           } else {
               isLoadingTemperatura = false;
           }
 
           $('.temperatura-card').off('click').on('click', function() {
-              $('.temperatura-card').removeClass('selected');
-              $(this).addClass('selected');
-              configurazione.temperaturaSelezionata = $(this).data('temperatura');
-              checkParametriCompletion();
-          });
+            $('.temperatura-card').removeClass('selected');
+            $(this).addClass('selected');
+            configurazione.temperaturaSelezionata = $(this).data('temperatura');
+            
+            // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia sempre impostata
+            configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
+            
+            checkParametriCompletion();
+        });
       },
       error: function(xhr, status, error) {
           console.error("Errore nel caricamento delle temperature:", error);
