@@ -560,7 +560,7 @@ function renderOpzioniTemperatura(temperature) {
 
 function caricaOpzioniPotenzaStep2b() {
   $('#step2b-potenza-options').html('<div class="text-center"><div class="spinner-border"></div></div>');
-  
+
   $.ajax({
     url: '/get_opzioni_potenza_standalone',
     method: 'POST',
