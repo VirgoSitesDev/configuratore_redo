@@ -1,0 +1,216 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Cards delle statistiche -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Configurazioni Salvate
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.configurazioni or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-text fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Profili Totali
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.profili or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-collection fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Strip LED
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.strip_led or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-lightning fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Alimentatori
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.alimentatori or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-battery-charging fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Menu rapido -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-lightning-charge me-2"></i>Azioni Rapide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.profili') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-collection me-2"></i>Gestisci Profili
+                    </a>
+                    <a href="{{ url_for('admin.strip_led') }}" class="btn btn-outline-success">
+                        <i class="bi bi-lightning me-2"></i>Gestisci Strip LED
+                    </a>
+                    <a href="{{ url_for('admin.categorie') }}" class="btn btn-outline-info">
+                        <i class="bi bi-tags me-2"></i>Gestisci Categorie
+                    </a>
+                    <a href="{{ url_for('admin.configurazioni') }}" class="btn btn-outline-warning">
+                        <i class="bi bi-file-earmark-text me-2"></i>Vedi Configurazioni Utenti
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche aggiuntive -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-graph-up me-2"></i>Panoramica Sistema
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 text-center">
+                        <div class="border-right">
+                            <div class="text-lg font-weight-bold">{{ stats.dimmer or 0 }}</div>
+                            <div class="text-xs text-gray-500">Dimmer</div>
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div class="text-lg font-weight-bold">
+                            {{ (stats.profili or 0) + (stats.strip_led or 0) + (stats.alimentatori or 0) }}
+                        </div>
+                        <div class="text-xs text-gray-500">Prodotti Totali</div>
+                    </div>
+                </div>
+                
+                <hr class="my-3">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Avvisi e note -->
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5 class="alert-heading">
+                <i class="bi bi-info-circle me-2"></i>Benvenuto nell'area amministratore
+            </h5>
+            <p class="mb-0">
+                Da qui puoi gestire tutti i dati del configuratore: profili, strip LED, categorie e molto altro.
+                Utilizza il menu a sinistra per navigare tra le diverse sezioni.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid #e83f34 !important;
+    }
+    .border-left-success {
+        border-left: 0.25rem solid #28a745 !important;
+    }
+    .border-left-info {
+        border-left: 0.25rem solid #17a2b8 !important;
+    }
+    .border-left-warning {
+        border-left: 0.25rem solid #ffc107 !important;
+    }
+    .text-xs {
+        font-size: 0.7rem;
+    }
+    .text-lg {
+        font-size: 1.25rem;
+    }
+    .text-gray-300 {
+        color: #d1d3e2 !important;
+    }
+    .text-gray-500 {
+        color: #858796 !important;
+    }
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+    .fa-2x {
+        font-size: 2em;
+    }
+    .no-gutters {
+        margin-right: 0;
+        margin-left: 0;
+    }
+    .card .card-body .row.no-gutters > .col,
+    .card .card-body .row.no-gutters > [class*="col-"] {
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Aggiorna le statistiche ogni 30 secondi
+    setInterval(function() {
+        // Potresti implementare un endpoint AJAX per aggiornare le stats
+        console.log('Auto-refresh statistiche...');
+    }, 30000);
+</script>
+{% endblock %}

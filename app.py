@@ -10,9 +10,13 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import logging
 import math
+from admin import admin_bp
+
 
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(admin_bp)
+app.secret_key = os.environ.get('SECRET_KEY', 'ju16i_8nf&+o766zi79z0_dkk8l$2g!no7&dzfcrhcw_%&_4w4')
 
 db = DatabaseManager()
 @app.route('/')

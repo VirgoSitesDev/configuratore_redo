@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin - Configuratore LED{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: #e83f34;
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: none;
+        }
+        .btn-primary {
+            background-color: #e83f34;
+            border-color: #e83f34;
+        }
+        .btn-primary:hover {
+            background-color: #d63429;
+            border-color: #d63429;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+        }
+        .badge {
+            font-size: 0.7em;
+        }
+        .alert {
+            margin-bottom: 1rem;
+        }
+        .navbar-brand img {
+            height: 40px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/logo-redo-nero.png') }}" alt="REDO" class="img-fluid" style="max-width: 120px; filter: invert(1);">
+                        <div class="small text-muted mt-2">Admin Panel</div>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.categorie' %}active{% endif %}" href="{{ url_for('admin.categorie') }}">
+                                <i class="bi bi-tags"></i> Categorie
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.profili' %}active{% endif %}" href="{{ url_for('admin.profili') }}">
+                                <i class="bi bi-collection"></i> Profili
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.strip_led' %}active{% endif %}" href="{{ url_for('admin.strip_led') }}">
+                                <i class="bi bi-lightning"></i> Strip LED
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-battery-charging"></i> Alimentatori
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-sliders"></i> Dimmer
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.configurazioni' %}active{% endif %}" href="{{ url_for('admin.configurazioni') }}">
+                                <i class="bi bi-file-earmark-text"></i> Configurazioni
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <a class="nav-link text-danger" href="{{ url_for('admin.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Modali comuni -->
+    {% block modals %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Funzioni comuni per l'admin
+        function showAlert(message, type = 'success') {
+            const alertDiv = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('.main-content > .border-bottom').after(alertDiv);
+        }
+
+        function confirmDelete(message = 'Sei sicuro di voler eliminare questo elemento?') {
+            return confirm(message);
+        }
+
+        // Bulk selection
+        function toggleBulkActions() {
+            const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+            const bulkActions = document.querySelector('.bulk-actions');
+            if (bulkActions) {
+                bulkActions.style.display = checkedBoxes.length > 0 ? 'block' : 'none';
+            }
+        }
+
+        function selectAllItems(selectAllCheckbox) {
+            const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            toggleBulkActions();
+        }
+
+        // AJAX Error Handler
+        function handleAjaxError(xhr, status, error) {
+            console.error('AJAX Error:', error);
+            showAlert('Errore durante l\'operazione. Riprova più tardi.', 'danger');
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

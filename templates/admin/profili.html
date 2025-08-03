@@ -1,0 +1,374 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestione Profili - Admin{% endblock %}
+{% block page_title %}Gestione Profili{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuovo Profilo
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-collection me-2"></i>Elenco Profili ({{ profili|length }})
+        </h6>
+        <div class="bulk-actions" style="display: none;">
+            <button class="btn btn-danger btn-sm" onclick="bulkDelete('profili')">
+                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if profili %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" class="form-check-input" onchange="selectAllItems(this)">
+                        </th>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>Descrizione</th>
+                        <th>Immagine</th>
+                        <th>Attivo</th>
+                        <th width="120">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profilo in profili %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input item-checkbox" 
+                                   value="{{ profilo.id }}" onchange="toggleBulkActions()">
+                        </td>
+                        <td><code>{{ profilo.id }}</code></td>
+                        <td><strong>{{ profilo.nome or 'N/A' }}</strong></td>
+                        <td>
+                            <span class="badge bg-secondary">{{ profilo.categoria or 'N/A' }}</span>
+                        </td>
+                        <td>{{ (profilo.descrizione or '-')[:50] }}{% if profilo.descrizione and profilo.descrizione|length > 50 %}...{% endif %}</td>
+                        <td>
+                            {% if profilo.immagine %}
+                                <img src="{{ profilo.immagine }}" alt="Immagine profilo" 
+                                     class="img-thumbnail" style="max-width: 60px; max-height: 40px;">
+                            {% else %}
+                                <span class="text-muted">Nessuna</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if profilo.attivo %}
+                                <span class="badge bg-success">Attivo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inattivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" 
+                                        onclick="editProfilo('{{ profilo.id }}', '{{ profilo.nome }}', '{{ profilo.categoria }}', '{{ profilo.descrizione}}', '{{ profilo.immagine}}', 'true')"
+                                        data-bs-toggle="modal" data-bs-target="#editProfiloModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="deleteProfilo('{{ profilo.id }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Nessun profilo trovato</h4>
+            <p class="text-muted">Inizia aggiungendo il tuo primo profilo.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloModal">
+                <i class="bi bi-plus-circle me-2"></i>Aggiungi Profilo
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal Aggiungi Profilo -->
+<div class="modal fade" id="addProfiloModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Nuovo Profilo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addProfiloForm" onsubmit="addProfilo(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_profilo_id" class="form-label">ID Profilo *</label>
+                                <input type="text" class="form-control" id="add_profilo_id" name="id" required>
+                                <div class="form-text">Identificativo univoco del profilo</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_profilo_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="add_profilo_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_profilo_categoria" class="form-label">Categoria *</label>
+                                <select class="form-select" id="add_profilo_categoria" name="categoria" required>
+                                    <option value="">Seleziona categoria...</option>
+                                    {% for categoria in categorie %}
+                                        <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_profilo_attivo" class="form-label">Stato</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="add_profilo_attivo" name="attivo" checked>
+                                    <label class="form-check-label" for="add_profilo_attivo">Profilo attivo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add_profilo_descrizione" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="add_profilo_descrizione" name="descrizione" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add_profilo_immagine" class="form-label">URL Immagine</label>
+                        <input type="url" class="form-control" id="add_profilo_immagine" name="immagine">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Salva Profilo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Profilo -->
+<div class="modal fade" id="editProfiloModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Profilo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProfiloForm" onsubmit="updateProfilo(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_profilo_original_id" name="profilo_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_profilo_id" class="form-label">ID Profilo *</label>
+                                <input type="text" class="form-control" id="edit_profilo_id" name="id" readonly>
+                                <div class="form-text">L'ID non può essere modificato</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_profilo_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="edit_profilo_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_profilo_categoria" class="form-label">Categoria *</label>
+                                <select class="form-select" id="edit_profilo_categoria" name="categoria" required>
+                                    <option value="">Seleziona categoria...</option>
+                                    {% for categoria in categorie %}
+                                        <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_profilo_attivo" class="form-label">Stato</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="edit_profilo_attivo" name="attivo">
+                                    <label class="form-check-label" for="edit_profilo_attivo">Profilo attivo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_profilo_descrizione" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="edit_profilo_descrizione" name="descrizione" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_profilo_immagine" class="form-label">URL Immagine</label>
+                        <input type="url" class="form-control" id="edit_profilo_immagine" name="immagine">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Aggiorna Profilo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Aggiungi profilo
+function addProfilo(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Converti checkbox in boolean
+    data.attivo = !!document.getElementById('add_profilo_attivo').checked;
+    
+    $.ajax({
+        url: '{{ url_for("admin.add_profilo") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Profilo aggiunto con successo!', 'success');
+                $('#addProfiloModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+// Modifica profilo
+function editProfilo(id, nome, categoria, descrizione, immagine, attivo) {
+    $('#edit_profilo_original_id').val(id);
+    $('#edit_profilo_id').val(id);
+    $('#edit_profilo_nome').val(nome);
+    $('#edit_profilo_categoria').val(categoria);
+    $('#edit_profilo_descrizione').val(descrizione);
+    $('#edit_profilo_immagine').val(immagine);
+    $('#edit_profilo_attivo').prop('checked', attivo);
+}
+
+function updateProfilo(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    const profiloId = data.profilo_id;
+    delete data.profilo_id;
+    
+    // Converti checkbox in boolean
+    data.attivo = !!document.getElementById('edit_profilo_attivo').checked;
+    
+    $.ajax({
+        url: `{{ url_for("admin.update_profilo", profilo_id="") }}${profiloId}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Profilo aggiornato con successo!', 'success');
+                $('#editProfiloModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+// Elimina profilo singolo
+function deleteProfilo(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questo profilo?\nQuesta azione eliminerà anche tutte le relazioni associate.')) {
+        return;
+    }
+    
+    $.ajax({
+        url: `{{ url_for("admin.delete_profilo", profilo_id="") }}${id}`,
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Profilo eliminato con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+// Eliminazione in blocco
+function bulkDelete(table) {
+    const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+                            .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        showAlert('Nessun elemento selezionato', 'warning');
+        return;
+    }
+    
+    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} profili selezionati?\nQuesta azione non può essere annullata.`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{{ url_for("admin.bulk_delete") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: table,
+            ids: selectedIds
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`${response.deleted_count} profili eliminati con successo!`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+</script>
+{% endblock %}
