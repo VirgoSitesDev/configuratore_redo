@@ -1128,74 +1128,46 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Gestione click delle card della homepage
       document.querySelectorAll('.homepage-card').forEach(card => {
         card.addEventListener('click', function() {
           const type = this.getAttribute('data-type');
-          
-          // Nascondi homepage
           document.getElementById('homepage-main').style.display = 'none';
-          
-          // Mostra progress bar
           document.getElementById('progress-bar').style.display = 'flex';
-          
-          // Remove homepage class from body
           document.body.classList.remove('on-homepage');
           
           if (type === 'indoor') {
-            // Vai alla selezione categorie indoor
             document.getElementById('step1-tipologia-indoor').style.display = 'block';
               
           } else if (type === 'outdoor') {
-            // Vai alla selezione categorie outdoor  
             document.getElementById('step1-tipologia-outdoor').style.display = 'block';
               
           } else if (type === 'strip') {
-            // Vai direttamente alla configurazione solo strip
             document.getElementById('step2b-tipologia-strip').style.display = 'block';
-            
-            // Set modalità configurazione
+
             if (window.configurazione) {
               window.configurazione.modalitaConfigurazione = 'solo_strip';
             }
           }
-          
-          // Scroll to top
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
-      
-      // Set homepage class on body initially
       document.body.classList.add('on-homepage');
-      
-      // Funzione per tornare alla homepage
       window.goToHomepage = function() {
-        // Nascondi tutti gli step
         document.querySelectorAll('.step-section').forEach(section => {
           section.style.display = 'none';
         });
-        
-        // Mostra homepage
         document.getElementById('homepage-main').style.display = 'block';
-        
-        // Nascondi progress bar
         document.getElementById('progress-bar').style.display = 'none';
-        
-        // Add homepage class to body
         document.body.classList.add('on-homepage');
-        
-        // Reset configurazione
+
         if (window.configurazione) {
           Object.keys(window.configurazione).forEach(key => {
             window.configurazione[key] = null;
           });
         }
-        
-        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
-      // Gestione pulsanti "Torna alla Home"
       document.querySelectorAll('.btn-torna-homepage').forEach(button => {
         button.addEventListener('click', function() {
           goToHomepage();

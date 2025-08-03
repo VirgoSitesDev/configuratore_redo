@@ -47,7 +47,6 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
       return '';
   }
 
-  // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia impostata
   if (!configurazione.temperaturaColoreSelezionata && configurazione.temperaturaSelezionata) {
     configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
   }
@@ -71,7 +70,6 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
   
   let stripData = null;
 
-  // ✅ FIX: Per il flusso esterni o modalità solo strip, usa sempre l'API standalone
   if (configurazione.modalitaConfigurazione === 'solo_strip' || 
       !configurazione.profiloSelezionato || 
       configurazione.isFlussoProfiliEsterni) {
@@ -107,7 +105,6 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
           }
       });
   } else {
-      // Flusso normale per profili indoor con strip
       const profiloId = configurazione.profiloSelezionato;
       const tensioneParam = configurazione.tensioneSelezionato;
       const ipParam = configurazione.ipSelezionato;

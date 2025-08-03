@@ -61,8 +61,6 @@ $(document).ready(function() {
           
           $("#step2b-tipologia-strip").fadeIn(300);
           updateProgressBar(2);
-          
-          // Chiama le funzioni che già esistono
           initStep2bTipologiaListeners();
           caricaTipologieDalDatabase();
         }
@@ -115,7 +113,6 @@ $(document).ready(function() {
     }
   }
 
-  // Gestione luci SVG per entrambe le pagine indoor e outdoor
   $(document).on('mouseenter', '.hotspot', function() {
     const categoria = $(this).data('categoria');
     if (categoria) {

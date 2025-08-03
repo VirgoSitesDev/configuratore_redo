@@ -1156,8 +1156,6 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
                 const $unicaTemperatura = $('.temperatura-card');
                 $unicaTemperatura.addClass('selected');
                 configurazione.temperaturaSelezionata = data.temperature[0];
-                
-                // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia sempre impostata
                 configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
                 
                 isLoadingTemperatura = false;
@@ -1171,8 +1169,6 @@ function caricaOpzioniTemperaturaStandalone(tensione, ip, tipologiaStrip, specia
             $('.temperatura-card').removeClass('selected');
             $(this).addClass('selected');
             configurazione.temperaturaSelezionata = $(this).data('temperatura');
-            
-            // ✅ FIX: Assicurati che temperaturaColoreSelezionata sia sempre impostata
             configurazione.temperaturaColoreSelezionata = configurazione.temperaturaSelezionata;
             
             checkParametriCompletion();

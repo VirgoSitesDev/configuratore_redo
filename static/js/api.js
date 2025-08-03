@@ -68,7 +68,6 @@ export function caricaOpzioniProfilo(profiloId) {
   
   $('#tipologie-options').empty().html('<div class="text-center mt-3"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni...</p></div>');
   $('#btn-continua-step2').prop('disabled', true);
-  //ciao
   
   configurazione.tipologiaSelezionata = null;
   configurazione.stripLedSelezionata = null;

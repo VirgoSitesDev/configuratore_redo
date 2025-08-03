@@ -36,8 +36,7 @@ export function initStep1Listeners() {
         });
     }
 });
-  
-  // Gestione pulsante "Torna alla selezione tipologia" dallo step2-modello
+
   $('.btn-torna-indietro').on('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -45,14 +44,12 @@ export function initStep1Listeners() {
     const categoriaCorrente = configurazione.categoriaSelezionata;
     
     $("#step2-modello").fadeOut(300, function() {
-      // Determina se tornare alla pagina indoor o outdoor in base alla categoria corrente
       if (categoriaCorrente === 'esterni' || categoriaCorrente === 'wall_washer_ext') {
         $("#step1-tipologia-outdoor").fadeIn(300);
       } else {
         $("#step1-tipologia-indoor").fadeIn(300);
       }
-      
-      // Reset delle variabili di configurazione
+
       configurazione.categoriaSelezionata = null;
       configurazione.profiloSelezionato = null;
       configurazione.tipologiaSelezionata = null;

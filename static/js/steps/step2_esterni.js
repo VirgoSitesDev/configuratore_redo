@@ -32,18 +32,13 @@ export function initStep2EsterniListeners() {
                     } else {
                         $("#step2-modello").fadeIn(300);
                         updateProgressBar(4);
-
-                        // ✅ CORREZIONE: Rimuovi l'avanzamento automatico
                         $('.tipologia-card').off('click.esterni').on('click.esterni', function() {
                             $('.tipologia-card').removeClass('selected');
                             $(this).addClass('selected');
                             configurazione.tipologiaSelezionata = $(this).data('id');
-                            
-                            // ✅ Solo abilita il pulsante, non andare avanti automaticamente
                             $('#btn-continua-step2').prop('disabled', false);
                         });
-                        
-                        // ✅ Aggiungi il listener per il pulsante continua nel flusso esterni
+
                         $('#btn-continua-step2').off('click.esterni').on('click.esterni', function(e) {
                             e.preventDefault();
                             if (configurazione.tipologiaSelezionata) {
