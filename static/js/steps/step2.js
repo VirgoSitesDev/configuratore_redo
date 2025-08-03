@@ -24,7 +24,11 @@ export function initStep2Listeners() {
     e.preventDefault();
     
     $("#step2-personalizzazione").fadeOut(300, function() {
-      $("#step2-modello").fadeIn(300);
+      if (configurazione.isFlussoProfiliEsterni) {
+        $("#step2-modello-esterni").fadeIn(300);
+      } else {
+        $("#step2-modello").fadeIn(300);
+      }
     });
   });
 
