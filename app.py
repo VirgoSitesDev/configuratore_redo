@@ -648,6 +648,62 @@ def calcola_lunghezze():
             }
         })
 
+def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
+    """
+    Trova la combinazione ottimale di lunghezze standard per minimizzare lo spreco
+    """
+    if not lunghezze_disponibili or lunghezza_richiesta <= 0:
+        return [{'lunghezza': 3000, 'quantita': 1}]
+    
+    # Ordina per lunghezza decrescente e rimuovi duplicati
+    lunghezze = sorted(set(lunghezze_disponibili), reverse=True)
+    
+    migliore_combinazione = None
+    minimo_spreco = float('inf')
+    
+    # Prova diverse strategie di combinazione
+    for strategia in range(len(lunghezze)):
+        combinazione = []
+        rimanente = lunghezza_richiesta
+        
+        # Strategia: inizia con la lunghezza all'indice 'strategia'
+        lunghezze_ordinate = lunghezze[strategia:] + lunghezze[:strategia]
+        
+        for lunghezza in lunghezze_ordinate:
+            if rimanente <= 0:
+                break
+                
+            quantita = rimanente // lunghezza
+            if quantita > 0:
+                combinazione.append({'lunghezza': lunghezza, 'quantita': quantita})
+                rimanente -= quantita * lunghezza
+        
+        # Se c'è ancora rimanente, aggiungi un pezzo della lunghezza più piccola
+        if rimanente > 0:
+            lunghezza_min = min(lunghezze)
+            # Verifica se esiste già questa lunghezza nella combinazione
+            trovato = False
+            for item in combinazione:
+                if item['lunghezza'] == lunghezza_min:
+                    item['quantita'] += 1
+                    trovato = True
+                    break
+            if not trovato:
+                combinazione.append({'lunghezza': lunghezza_min, 'quantita': 1})
+        
+        # Calcola spreco totale
+        lunghezza_totale = sum(item['lunghezza'] * item['quantita'] for item in combinazione)
+        spreco = lunghezza_totale - lunghezza_richiesta
+        
+        # Preferisci combinazioni con meno spreco, a parità di spreco preferisci meno pezzi
+        peso_spreco = spreco * 1000 + sum(item['quantita'] for item in combinazione)
+        
+        if spreco >= 0 and peso_spreco < minimo_spreco:
+            minimo_spreco = peso_spreco
+            migliore_combinazione = combinazione[:]
+    
+    return migliore_combinazione or [{'lunghezza': max(lunghezze), 'quantita': math.ceil(lunghezza_richiesta / max(lunghezze))}]
+
 @app.route('/finalizza_configurazione', methods=['POST'])
 def finalizza_configurazione():
     configurazione = request.json
@@ -669,11 +725,12 @@ def finalizza_configurazione():
     
     potenza_totale = potenza_per_metro * lunghezza_in_metri
     
-    # ✅ NUOVO: Calcolo delle quantità necessarie
+    # ✅ NUOVO: Calcolo delle quantità necessarie con ottimizzazione
     quantita_profilo = 1
     quantita_strip_led = 1
     lunghezza_massima_profilo = 3000  # default
     lunghezza_massima_strip = 5000    # default
+    combinazione_ottimale = [{'lunghezza': 3000, 'quantita': 1}]  # default
     
     # Calcolare la lunghezza totale richiesta
     lunghezza_totale = 0
@@ -686,7 +743,7 @@ def finalizza_configurazione():
     
     logging.info(f"Lunghezza totale calcolata: {lunghezza_totale}mm")
     
-    # Recuperare lunghezza massima del profilo dal database
+    # Recuperare lunghezze disponibili del profilo e ottimizzare
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
             # Recupera le lunghezze disponibili per il profilo
@@ -695,16 +752,33 @@ def finalizza_configurazione():
                 .eq('profilo_id', configurazione['profiloSelezionato'])\
                 .execute().data
             
-            if lunghezze_profilo:
+            if lunghezze_profilo and lunghezza_totale > 0:
                 lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
                 lunghezza_massima_profilo = max(lunghezze_list)
-                logging.info(f"Lunghezza massima profilo: {lunghezza_massima_profilo}mm")
                 
-                # Calcola quantità profilo
-                if lunghezza_totale > 0:
-                    quantita_profilo = math.ceil(lunghezza_totale / lunghezza_massima_profilo)
+                # ✅ OTTIMIZZA le quantità usando tutte le lunghezze disponibili
+                combinazione_ottimale = ottimizza_quantita_profilo(lunghezza_totale, lunghezze_list)
+                
+                # Calcola quantità totale per compatibilità
+                quantita_profilo = sum(item['quantita'] for item in combinazione_ottimale)
+                
+                logging.info(f"Lunghezze disponibili: {lunghezze_list}")
+                logging.info(f"Combinazione ottimale: {combinazione_ottimale}")
+                logging.info(f"Quantità totale profilo: {quantita_profilo}")
+                
+            elif lunghezze_profilo:
+                # Fallback se non c'è lunghezza totale
+                lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
+                lunghezza_massima_profilo = max(lunghezze_list)
+                quantita_profilo = 1
+                combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': 1}]
+                
         except Exception as e:
-            logging.error(f"Errore nel recupero lunghezza profilo: {str(e)}")
+            logging.error(f"Errore nel calcolo ottimizzato quantità profilo: {str(e)}")
+            # Fallback al calcolo originale
+            if lunghezza_totale > 0:
+                quantita_profilo = math.ceil(lunghezza_totale / lunghezza_massima_profilo)
+            combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': quantita_profilo}]
     
     # Recuperare lunghezza massima della strip LED dal database
     if 'stripLedSelezionata' in configurazione and configurazione['stripLedSelezionata'] and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
@@ -756,7 +830,8 @@ def finalizza_configurazione():
         'quantitaStripLed': quantita_strip_led,
         'lunghezzaMassimaProfilo': lunghezza_massima_profilo,
         'lunghezzaMassimaStripLed': lunghezza_massima_strip,
-        'lunghezzaTotale': lunghezza_totale
+        'lunghezzaTotale': lunghezza_totale,
+        'combinazioneProfiloOttimale': combinazione_ottimale  # ✅ NUOVO
     })
 
 @app.route('/salva_configurazione', methods=['POST'])

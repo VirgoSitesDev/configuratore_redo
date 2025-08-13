@@ -1,7 +1,7 @@
 import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzazione, mappaIPVisualizzazione, mappaStripLedVisualizzazione, mappaFormeTaglio, mappaFiniture, mappaCategorieVisualizzazione, mappaTipologiaStripVisualizzazione, mappaSpecialStripVisualizzazione } from './config.js';
 import { formatTemperatura, getTemperaturaColor, checkParametriCompletion, checkStep2Completion, updateProgressBar, checkPersonalizzazioneCompletion } from './utils.js';
 import { initRiepilogoOperationsListeners } from './steps/step7.js';
-import { calcolaCodiceProdottoCompleto } from './codici_prodotto.js';
+import { calcolaCodiceProdottoCompleto, calcolaCodiceProfilo } from './codici_prodotto.js';
 import { renderizzaOpzioniPotenza } from './steps/step3.js'
 
 export function caricaProfili(categoria) {
@@ -1107,7 +1107,87 @@ export function finalizzaConfigurazione() {
         configurazione.lunghezzaMassimaStripLed = data.lunghezzaMassimaStripLed || 5000;
         configurazione.lunghezzaTotale = data.lunghezzaTotale || 0;
         
+        // ✅ NUOVO: gestisci la combinazione ottimale
+        configurazione.combinazioneProfiloOttimale = data.combinazioneProfiloOttimale || [
+          {lunghezza: configurazione.lunghezzaMassimaProfilo, quantita: configurazione.quantitaProfilo}
+        ];
+        
         const tuttiCodici = calcolaCodiceProdottoCompleto();
+        
+        // ✅ NUOVO: Funzione helper per generare il testo del modello ottimizzato
+        function generaTestoModelloOttimizzato() {
+          if (!configurazione.combinazioneProfiloOttimale || configurazione.combinazioneProfiloOttimale.length === 0) {
+            return `${riepilogo.nomeModello} - ${tuttiCodici.profilo}`;
+          }
+          
+          if (configurazione.combinazioneProfiloOttimale.length === 1) {
+            const combo = configurazione.combinazioneProfiloOttimale[0];
+            if (combo.quantita === 1) {
+              return `${riepilogo.nomeModello} - ${tuttiCodici.profilo}`;
+            } else {
+              return `${combo.quantita}x ${riepilogo.nomeModello} (${combo.lunghezza}mm cad.) - ${tuttiCodici.profilo}`;
+            }
+          }
+          
+          // Multiple lunghezze - genera codici specifici per ogni lunghezza
+          const parti = configurazione.combinazioneProfiloOttimale.map(combo => {
+            // Genera il codice specifico per questa lunghezza
+            let codiceProfilo = generaCodiceProfilo(combo.lunghezza);
+            
+            return `${combo.quantita}x ${riepilogo.nomeModello} (${combo.lunghezza}mm cad.) - ${codiceProfilo}`;
+          });
+          
+          return parti.join(' + ');
+        }
+        
+        // ✅ NUOVO: Funzione helper per generare codice profilo per una lunghezza specifica
+        function generaCodiceProfilo(lunghezza) {
+          const profiloBase = configurazione.profiloSelezionato;
+          
+          const isSabProfile = [
+            "PRF016_200SET",
+            "PRF011_300"
+          ].includes(profiloBase);
+
+          const isOpqProfile = [
+            "PRF120_300",
+            "PRF080_200"
+          ].includes(profiloBase);
+
+          const isSpecialProfile = [
+            "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
+          ].includes(profiloBase);
+
+          const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
+
+          let codiceProfilo;
+
+          if (isSpecialProfile) {
+            codiceProfilo = profiloBase.replace(/_/g, '/');
+          } else {
+            let colorCode = '';
+            if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';
+            else if (configurazione.finituraSelezionata == "BIANCO") colorCode = 'WH';
+            else if (configurazione.finituraSelezionata == "ALLUMINIO" && isAl) colorCode = 'AL';
+
+            if (isOpqProfile) colorCode = "M" + colorCode;
+            else if (isSabProfile) colorCode = "S" + colorCode;
+
+            // Modifica per includere la lunghezza specifica
+            const lunghezzaInCm = lunghezza / 10; // Converti mm in cm
+            let profiloConLunghezza = profiloBase.replace(/_/g, '/');
+            
+            // Sostituisci la lunghezza nel codice se presente un pattern numerico
+            profiloConLunghezza = profiloConLunghezza.replace(/\/\d+/, `/${lunghezzaInCm}`);
+            
+            if (colorCode) {
+              codiceProfilo = profiloConLunghezza + ' ' + colorCode;
+            } else {
+              codiceProfilo = profiloConLunghezza;
+            }
+          }
+          return codiceProfilo;
+        }
         
         if (configurazione.modalitaConfigurazione === 'solo_strip') {
           let riepilogoHtml = `
@@ -1164,6 +1244,9 @@ export function finalizzaConfigurazione() {
           return;
         }
 
+        // ✅ NUOVO: Per configurazione normale, usa il testo ottimizzato per il modello
+        const modelloTestoOttimizzato = generaTestoModelloOttimizzato();
+
         let riepilogoHtml = `
           <div class="card">
             <div class="card-header bg-primary text-white">
@@ -1181,7 +1264,7 @@ export function finalizzaConfigurazione() {
                       </tr>
                       <tr>
                         <th scope="row">Modello</th>
-                        <td>${configurazione.quantitaProfilo > 1 ? configurazione.quantitaProfilo + 'x ' : ''}${riepilogo.nomeModello}${configurazione.quantitaProfilo > 1 ? ` (${configurazione.lunghezzaMassimaProfilo}mm cad.)` : ''} - ${tuttiCodici.profilo}</td>
+                        <td>${modelloTestoOttimizzato}</td>
                       </tr>
                       <tr>
                         <th scope="row">Tipologia</th>
