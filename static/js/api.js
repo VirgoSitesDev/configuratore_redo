@@ -1532,16 +1532,80 @@ export function finalizzaConfigurazione() {
             </div>`;
         }
         
-        riepilogoHtml += `
+riepilogoHtml += `
             <div class="alert alert-warning mt-3">
               <strong>Attenzione:</strong> eventuali staffe aggiuntive non incluse.
             </div>
-            <button class="btn btn-success btn-lg" id="btn-salva-configurazione">Salva configurazione</button>
-            <!-- <button class="btn btn-primary btn-lg" id="btn-preventivo">Richiedi preventivo</button> -->
+            <div class="row mt-4">
+              <div class="col-md-6 text-center">
+                <button class="btn btn-success btn-lg w-100" id="btn-salva-configurazione">
+                  <i class="fas fa-download me-2"></i>Salva configurazione
+                </button>
+              </div>
+              <div class="col-md-6 text-center">
+                <button class="btn btn-primary btn-lg w-100" id="btn-preventivo">
+                  <i class="fas fa-envelope me-2"></i>Richiedi preventivo
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        </div>
         `;
+
+        riepilogoHtml += `
+          <!-- Modal Preventivo -->
+          <div class="modal fade" id="preventivoModal" tabindex="-1" aria-labelledby="preventivoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="preventivoModalLabel">Richiedi Preventivo</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form id="preventivoForm">
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="nomeAgente" class="form-label">Nome Agente *</label>
+                        <input type="text" class="form-control" id="nomeAgente" name="nomeAgente" required>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="emailAgente" class="form-label">Email Agente *</label>
+                        <input type="email" class="form-control" id="emailAgente" name="emailAgente" required>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="ragioneSociale" class="form-label">Ragione Sociale</label>
+                        <input type="text" class="form-control" id="ragioneSociale" name="ragioneSociale">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="riferimento" class="form-label">Riferimento *</label>
+                        <input type="text" class="form-control" id="riferimento" name="riferimento" required>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="note" class="form-label">Note aggiuntive</label>
+                      <textarea class="form-control" id="note" name="note" rows="3" placeholder="Inserisci eventuali note o richieste specifiche..."></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                      <strong>Riepilogo configurazione:</strong><br>
+                      Codice prodotto: ${codiceProdotto}<br>
+                      Il preventivo completo sarà inviato via email.
+                    </div>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                  <button type="button" class="btn btn-primary" id="btn-invia-preventivo">
+                    <span class="spinner-border spinner-border-sm d-none me-2" id="loading-spinner"></span>
+                    Invia Richiesta
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
         
         $('#riepilogo-container').html(riepilogoHtml);
         initRiepilogoOperationsListeners(codiceProdotto);
@@ -1555,5 +1619,71 @@ export function finalizzaConfigurazione() {
 }
 
 export function richiediPreventivo(codiceProdotto) {
-  alert(`La richiesta di preventivo per il prodotto ${codiceProdotto} è stata inviata al nostro team. Verrai contattato al più presto.`);
+  // Mostra il modal
+  const modal = new bootstrap.Modal(document.getElementById('preventivoModal'));
+  modal.show();
+
+  // Gestisci l'invio del form
+  $('#btn-invia-preventivo').off('click').on('click', function() {
+    const form = document.getElementById('preventivoForm');
+    
+    // Validazione del form
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    // Raccogli i dati del form
+    const formData = {
+      nomeAgente: $('#nomeAgente').val(),
+      emailAgente: $('#emailAgente').val(),
+      ragioneSociale: $('#ragioneSociale').val(),
+      riferimento: $('#riferimento').val(),
+      note: $('#note').val(),
+      configurazione: configurazione,
+      codiceProdotto: codiceProdotto
+    };
+
+    // Mostra loading
+    $('#loading-spinner').removeClass('d-none');
+    $('#btn-invia-preventivo').prop('disabled', true);
+
+    // Invia la richiesta al server
+    $.ajax({
+      url: '/richiedi_preventivo',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          modal.hide();
+          
+          // Mostra messaggio di successo
+          const alertHtml = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <strong>Preventivo inviato con successo!</strong> 
+              La richiesta è stata inviata al nostro team. Verrai contattato il prima possibile.
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          `;
+          
+          $('#riepilogo-container').prepend(alertHtml);
+          
+          // Reset del form
+          form.reset();
+        } else {
+          alert('Errore nell\'invio del preventivo: ' + (response.message || 'Errore sconosciuto'));
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Errore invio preventivo:', error);
+        alert('Errore nell\'invio del preventivo. Riprova più tardi.');
+      },
+      complete: function() {
+        // Nascondi loading
+        $('#loading-spinner').addClass('d-none');
+        $('#btn-invia-preventivo').prop('disabled', false);
+      }
+    });
+  });
 }

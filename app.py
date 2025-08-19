@@ -11,9 +11,21 @@ from openpyxl.utils import get_column_letter
 import logging
 import math
 from admin import admin_bp
-
+from flask_mail import Mail, Message
+from datetime import datetime
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+
+mail = Mail(app)
 CORS(app)
 app.register_blueprint(admin_bp)
 app.secret_key = os.environ.get('SECRET_KEY', 'ju16i_8nf&+o766zi79z0_dkk8l$2g!no7&dzfcrhcw_%&_4w4')
@@ -1550,6 +1562,353 @@ def get_strip_led_by_nome_commerciale(nome_commerciale):
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'database': 'supabase'})
+
+@app.route('/richiedi_preventivo', methods=['POST'])
+def richiedi_preventivo():
+    try:
+        data = request.json
+        
+        # Estrai i dati del form
+        nome_agente = data.get('nomeAgente', '')
+        email_agente = data.get('emailAgente', '')
+        ragione_sociale = data.get('ragioneSociale', '')
+        riferimento = data.get('riferimento', '')
+        note = data.get('note', '')
+        configurazione = data.get('configurazione', {})
+        codice_prodotto = data.get('codiceProdotto', '')
+        
+        # Valida i campi obbligatori
+        if not nome_agente or not email_agente or not riferimento:
+            return jsonify({
+                'success': False, 
+                'message': 'Nome agente, email agente e riferimento sono obbligatori'
+            }), 400
+
+        # Genera l'HTML dell'email
+        email_html = genera_email_preventivo(
+            nome_agente, email_agente, ragione_sociale, 
+            riferimento, note, configurazione, codice_prodotto
+        )
+        
+        # Invia l'email
+        success = invia_email_preventivo(
+            email_html, nome_agente, email_agente, 
+            ragione_sociale, riferimento, codice_prodotto
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Preventivo inviato con successo'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Errore nell\'invio dell\'email'
+            }), 500
+            
+    except Exception as e:
+        logging.error(f"Errore in richiedi_preventivo: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Errore interno del server'
+        }), 500
+
+def invia_email_preventivo(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto):
+    """Invia l'email del preventivo"""
+    try:
+        # Usa Flask-Mail se configurato
+        if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
+            return invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto)
+        else:
+            # Fallback: salva in un file di log per ora
+            return salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto)
+            
+    except Exception as e:
+        logging.error(f"Errore invio email: {str(e)}")
+        return False
+
+def invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto):
+    """Invia email usando Flask-Mail"""
+    try:
+        subject = f"Richiesta Preventivo REDO - {codice_prodotto} - {riferimento}"
+        
+        msg = Message(
+            subject=subject,
+            recipients=['furlaninicoletta@gmail.com'],
+            html=email_html,
+            sender=app.config['MAIL_DEFAULT_SENDER']
+        )
+        
+        mail.send(msg)
+        logging.info(f"Email preventivo inviata con successo per {nome_agente}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Errore Flask-Mail: {str(e)}")
+        return False
+
+def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto):
+    """Fallback: salva il preventivo in un file di log"""
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"preventivo_{timestamp}_{riferimento}.html"
+        filepath = os.path.join(os.path.dirname(__file__), 'preventivi_log', filename)
+        
+        # Crea la directory se non esiste
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(email_html)
+        
+        logging.info(f"Preventivo salvato in: {filepath}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Errore salvataggio log: {str(e)}")
+        return False
+
+def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
+    """Genera l'HTML dell'email del preventivo"""
+    
+    # Mappature per la visualizzazione (da config.js)
+    mappaCategorieVisualizzazione = {
+        'nanoprofili': 'Nanoprofili',
+        'incasso': 'Profili a Incasso',
+        'sospensione': 'Profili a Sospensione',
+        'plafone': 'Profili a Plafone',
+        'parete': 'Profili a Parete',
+        'particolari': 'Profili Particolari',
+        'scalino': 'Profili a Scalino',
+        'wall_washer': 'Profili Wallwasher',
+        'wall_washer_ext': 'Profili Wallwasher da Esterni',
+        'esterni': 'Profili per Strip LED da Esterni',
+    }
+    
+    mappaTipologieVisualizzazione = {
+        'taglio_misura': 'Taglio su misura',
+        'profilo_intero': 'Profilo intero'
+    }
+    
+    mappaStripLedVisualizzazione = {
+        'senza_strip': 'Senza Strip LED',
+        'STRIP_24V_SMD_IP20': 'STRIP 24V SMD (IP20)',
+        'STRIP_24V_COB_IP20_HIGH': 'STRIP 24V COB (IP20) HIGH POWER',
+        'STRIP_24V_SMD_IP66': 'STRIP 24V SMD (IP66)',
+        'STRIP_24V_COB_IP20': 'STRIP 24V COB (IP20)',
+        'STRIP_24V_COB_IP66': 'STRIP 24V COB (IP66)',
+        'STRIP_48V_SMD_IP20': 'STRIP 48V SMD (IP20)',
+        'STRIP_48V_SMD_IP66': 'STRIP 48V SMD (IP66)',
+        'STRIP_24V_RGB_SMD_IP20': 'STRIP 24V RGB SMD (IP20)',
+        'STRIP_24V_RGB_SMD_IP66': 'STRIP 24V RGB SMD (IP66)',
+        'STRIP_24V_RGB_COB_IP20': 'STRIP 24V RGB COB (IP20)',
+        'STRIP_24V_RGB_COB_IP66': 'STRIP 24V RGB COB (IP66)',
+        'STRIP_220V_COB_IP20': 'STRIP 220V COB (IP20)',
+        'STRIP_220V_COB_IP66': 'STRIP 220V COB (IP66)',
+    }
+    
+    mappaFormeTaglio = {
+        'DRITTO_SEMPLICE': 'Dritto semplice',
+        'FORMA_L_DX': 'Forma a L DX',
+        'FORMA_L_SX': 'Forma a L SX',
+        'FORMA_C': 'Forma a C',
+        'RETTANGOLO_QUADRATO': 'Rettangolo/Quadrato'
+    }
+    
+    mappaFiniture = {
+        'ALLUMINIO_ANODIZZATO': 'Alluminio anodizzato',
+        'BIANCO': 'Bianco',
+        'NERO': 'Nero',
+        'ALLUMINIO': 'Alluminio'
+    }
+    
+    data_corrente = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    # Funzione helper per ottenere nomi visualizzabili
+    def get_nome_visualizzabile(valore, mappa):
+        return mappa.get(valore, valore) if valore else 'N/A'
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Richiesta Preventivo REDO</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .header {{
+                background-color: #e83f34;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            .section {{
+                margin-bottom: 25px;
+                padding: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+            }}
+            .section h3 {{
+                color: #e83f34;
+                border-bottom: 2px solid #e83f34;
+                padding-bottom: 5px;
+                margin-top: 0;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f5f5f5;
+                font-weight: bold;
+            }}
+            .alert-warning {{
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                color: #856404;
+                padding: 10px;
+                border-radius: 5px;
+                margin-top: 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                color: #666;
+                font-size: 0.9em;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Richiesta Preventivo REDO</h1>
+            <h2>Codice Prodotto: {codice_prodotto}</h2>
+            <p>Data richiesta: {data_corrente}</p>
+        </div>
+
+        <div class="section">
+            <h3>Dati Agente</h3>
+            <table class="data-table">
+                <tr><th>Nome Agente</th><td>{nome_agente}</td></tr>
+                <tr><th>Email Agente</th><td>{email_agente}</td></tr>
+                <tr><th>Ragione Sociale</th><td>{ragione_sociale or 'Non specificata'}</td></tr>
+                <tr><th>Riferimento</th><td>{riferimento}</td></tr>
+                {f'<tr><th>Note</th><td>{note}</td></tr>' if note else ''}
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>Configurazione Prodotto</h3>
+            <table class="data-table">
+    """
+    
+    # Aggiungi i dettagli della configurazione
+    if configurazione.get('categoriaSelezionata'):
+        html += f"<tr><th>Categoria</th><td>{get_nome_visualizzabile(configurazione['categoriaSelezionata'], mappaCategorieVisualizzazione)}</td></tr>"
+    
+    if configurazione.get('nomeModello'):
+        html += f"<tr><th>Modello</th><td>{configurazione['nomeModello']}</td></tr>"
+    
+    if configurazione.get('tipologiaSelezionata'):
+        html += f"<tr><th>Tipologia</th><td>{get_nome_visualizzabile(configurazione['tipologiaSelezionata'], mappaTipologieVisualizzazione)}</td></tr>"
+    
+    if configurazione.get('lunghezzaRichiesta'):
+        html += f"<tr><th>Lunghezza richiesta</th><td>{configurazione['lunghezzaRichiesta']}mm</td></tr>"
+    
+    # Strip LED
+    if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
+        nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
+        html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
+        
+        if configurazione.get('potenzaSelezionata'):
+            html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
+    else:
+        html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
+    
+    # Alimentazione
+    if configurazione.get('tensioneSelezionato') == '220V':
+        html += f"<tr><th>Alimentazione</th><td>Strip 220V (no alimentatore)</td></tr>"
+    elif configurazione.get('alimentazioneSelezionata'):
+        alimentazione_text = 'ON/OFF' if configurazione['alimentazioneSelezionata'] == 'ON-OFF' else configurazione['alimentazioneSelezionata'].replace('_', ' ')
+        html += f"<tr><th>Alimentazione</th><td>{alimentazione_text}</td></tr>"
+    
+    # Dimmer
+    if configurazione.get('dimmerSelezionato'):
+        dimmer_text = 'Nessun dimmer' if configurazione['dimmerSelezionato'] == 'NESSUN_DIMMER' else configurazione['dimmerSelezionato'].replace('_', ' ')
+        html += f"<tr><th>Dimmer</th><td>{dimmer_text}</td></tr>"
+    
+    # Forma di taglio
+    if configurazione.get('formaDiTaglioSelezionata'):
+        html += f"<tr><th>Forma di taglio</th><td>{get_nome_visualizzabile(configurazione['formaDiTaglioSelezionata'], mappaFormeTaglio)}</td></tr>"
+    
+    # Finitura
+    if configurazione.get('finituraSelezionata'):
+        html += f"<tr><th>Finitura</th><td>{get_nome_visualizzabile(configurazione['finituraSelezionata'], mappaFiniture)}</td></tr>"
+    
+    # Lunghezze multiple per forme complesse
+    if configurazione.get('lunghezzeMultiple'):
+        etichette_lati = {
+            'FORMA_L_DX': {'lato1': 'Lato orizzontale', 'lato2': 'Lato verticale'},
+            'FORMA_L_SX': {'lato1': 'Lato orizzontale', 'lato2': 'Lato verticale'},
+            'FORMA_C': {'lato1': 'Lato orizzontale superiore', 'lato2': 'Lato verticale', 'lato3': 'Lato orizzontale inferiore'},
+            'RETTANGOLO_QUADRATO': {'lato1': 'Lunghezza', 'lato2': 'Larghezza'}
+        }
+        
+        etichette = etichette_lati.get(configurazione.get('formaDiTaglioSelezionata'), {})
+        
+        for lato, valore in configurazione['lunghezzeMultiple'].items():
+            if valore:
+                etichetta = etichette.get(lato, f"Lato {lato.replace('lato', '')}")
+                html += f"<tr><th>{etichetta}</th><td>{valore}mm</td></tr>"
+    
+    html += """
+            </table>
+        </div>
+    """
+    
+    # Note di attenzione
+    html += """
+        <div class="alert-warning">
+            <strong>Note importanti:</strong><br>
+            • Eventuali staffe aggiuntive non incluse<br>
+    """
+    
+    if configurazione.get('categoriaSelezionata') in ['esterni', 'wall_washer_ext']:
+        html += "• La lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto<br>"
+    else:
+        html += "• Verrà aggiunto automaticamente uno spazio di 5mm per i tappi e la saldatura<br>"
+    
+    if configurazione.get('formaDiTaglioSelezionata') and configurazione['formaDiTaglioSelezionata'] != 'DRITTO_SEMPLICE':
+        html += "• I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata<br>"
+    
+    html += """
+        </div>
+
+        <div class="footer">
+            <p><strong>REDO Srl</strong> - Configuratore Profili LED</p>
+            <p>Questa è una richiesta di preventivo generata automaticamente dal configuratore online.</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
