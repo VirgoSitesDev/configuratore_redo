@@ -1669,7 +1669,7 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
         return False
 
 def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
-    """Genera l'HTML dell'email del preventivo"""
+    """Genera l'HTML dell'email del preventivo con tutti i dati del riepilogo"""
     
     # Mappature per la visualizzazione (da config.js)
     mappaCategorieVisualizzazione = {
@@ -1722,11 +1722,59 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         'ALLUMINIO': 'Alluminio'
     }
     
+    mappaTipologiaStripVisualizzazione = {
+        'COB': 'COB (Chip On Board)',
+        'SMD': 'SMD (Surface Mount Device)',
+        'SPECIAL': 'Special Strip'
+    }
+    
+    mappaSpecialStripVisualizzazione = {
+        'XFLEX': 'XFLEX',
+        'ZIG_ZAG': 'ZIG ZAG',
+        'XSNAKE': 'XSNAKE',
+        'XMAGIS': 'XMAGIS'
+    }
+    
     data_corrente = datetime.now().strftime("%d/%m/%Y %H:%M")
     
     # Funzione helper per ottenere nomi visualizzabili
     def get_nome_visualizzabile(valore, mappa):
         return mappa.get(valore, valore) if valore else 'N/A'
+    
+    # Calcola i codici prodotto (simula la funzione JavaScript)
+    def calcola_codici_prodotto():
+        codici = {
+            'profilo': '',
+            'stripLed': '',
+            'alimentatore': '',
+            'dimmer': ''
+        }
+        
+        # Per i codici completi, questi dovrebbero essere già calcolati lato client
+        # e passati nella configurazione o calcolati qui se necessario
+        # Per ora usiamo i valori dalla configurazione se presenti
+        
+        if configurazione.get('codiceProfilo'):
+            codici['profilo'] = configurazione['codiceProfilo']
+        elif configurazione.get('profiloSelezionato'):
+            codici['profilo'] = configurazione['profiloSelezionato'].replace('_', '/')
+            
+        if configurazione.get('codiceStripLed'):
+            codici['stripLed'] = configurazione['codiceStripLed']
+            
+        if configurazione.get('codiceAlimentatore'):
+            codici['alimentatore'] = configurazione['codiceAlimentatore']
+            
+        if configurazione.get('codiceDimmer'):
+            codici['dimmer'] = configurazione['codiceDimmer']
+        elif configurazione.get('dimmerSelezionato') == 'NESSUN_DIMMER':
+            codici['dimmer'] = ''
+        elif configurazione.get('dimmerCodice'):
+            codici['dimmer'] = configurazione['dimmerCodice']
+            
+        return codici
+    
+    tuttiCodici = calcola_codici_prodotto()
     
     html = f"""
     <!DOCTYPE html>
@@ -1818,51 +1866,27 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             <table class="data-table">
     """
     
-    # Aggiungi i dettagli della configurazione
+    # Categoria
     if configurazione.get('categoriaSelezionata'):
         html += f"<tr><th>Categoria</th><td>{get_nome_visualizzabile(configurazione['categoriaSelezionata'], mappaCategorieVisualizzazione)}</td></tr>"
     
+    # Modello con codice
     if configurazione.get('nomeModello'):
-        html += f"<tr><th>Modello</th><td>{configurazione['nomeModello']}</td></tr>"
+        modello_text = configurazione['nomeModello']
+        if tuttiCodici['profilo']:
+            modello_text += f" - {tuttiCodici['profilo']}"
+        html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
     
+    # Tipologia
     if configurazione.get('tipologiaSelezionata'):
         html += f"<tr><th>Tipologia</th><td>{get_nome_visualizzabile(configurazione['tipologiaSelezionata'], mappaTipologieVisualizzazione)}</td></tr>"
     
+    # Lunghezza richiesta
     if configurazione.get('lunghezzaRichiesta'):
         html += f"<tr><th>Lunghezza richiesta</th><td>{configurazione['lunghezzaRichiesta']}mm</td></tr>"
     
-    # Strip LED
-    if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
-        nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
-        html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
-        
-        if configurazione.get('potenzaSelezionata'):
-            html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
-    else:
-        html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
-    
-    # Alimentazione
-    if configurazione.get('tensioneSelezionato') == '220V':
-        html += f"<tr><th>Alimentazione</th><td>Strip 220V (no alimentatore)</td></tr>"
-    elif configurazione.get('alimentazioneSelezionata'):
-        alimentazione_text = 'ON/OFF' if configurazione['alimentazioneSelezionata'] == 'ON-OFF' else configurazione['alimentazioneSelezionata'].replace('_', ' ')
-        html += f"<tr><th>Alimentazione</th><td>{alimentazione_text}</td></tr>"
-    
-    # Dimmer
-    if configurazione.get('dimmerSelezionato'):
-        dimmer_text = 'Nessun dimmer' if configurazione['dimmerSelezionato'] == 'NESSUN_DIMMER' else configurazione['dimmerSelezionato'].replace('_', ' ')
-        html += f"<tr><th>Dimmer</th><td>{dimmer_text}</td></tr>"
-    
-    # Forma di taglio
-    if configurazione.get('formaDiTaglioSelezionata'):
-        html += f"<tr><th>Forma di taglio</th><td>{get_nome_visualizzabile(configurazione['formaDiTaglioSelezionata'], mappaFormeTaglio)}</td></tr>"
-    
-    # Finitura
-    if configurazione.get('finituraSelezionata'):
-        html += f"<tr><th>Finitura</th><td>{get_nome_visualizzabile(configurazione['finituraSelezionata'], mappaFiniture)}</td></tr>"
-    
     # Lunghezze multiple per forme complesse
-    if configurazione.get('lunghezzeMultiple'):
+    if configurazione.get('lunghezzeMultiple') and configurazione.get('formaDiTaglioSelezionata') != 'DRITTO_SEMPLICE':
         etichette_lati = {
             'FORMA_L_DX': {'lato1': 'Lato orizzontale', 'lato2': 'Lato verticale'},
             'FORMA_L_SX': {'lato1': 'Lato orizzontale', 'lato2': 'Lato verticale'},
@@ -1876,6 +1900,98 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             if valore:
                 etichetta = etichette.get(lato, f"Lato {lato.replace('lato', '')}")
                 html += f"<tr><th>{etichetta}</th><td>{valore}mm</td></tr>"
+    
+    # Strip LED con codice
+    if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
+        nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
+        if tuttiCodici['stripLed']:
+            nome_strip += f" - {tuttiCodici['stripLed']}"
+        html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
+        
+        # Tipologia Strip
+        if configurazione.get('tipologiaStripSelezionata'):
+            tipologia_strip_text = get_nome_visualizzabile(configurazione['tipologiaStripSelezionata'], mappaTipologiaStripVisualizzazione)
+            if configurazione['tipologiaStripSelezionata'] == 'SPECIAL' and configurazione.get('specialStripSelezionata'):
+                tipologia_strip_text += f" - {get_nome_visualizzabile(configurazione['specialStripSelezionata'], mappaSpecialStripVisualizzazione)}"
+            html += f"<tr><th>Tipologia Strip</th><td>{tipologia_strip_text}</td></tr>"
+        
+        # Potenza
+        if configurazione.get('potenzaSelezionata'):
+            html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
+    else:
+        html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
+    
+    # Alimentazione
+    if configurazione.get('tensioneSelezionato') == '220V':
+        html += f"<tr><th>Alimentazione</th><td>Strip 220V (no alimentatore)</td></tr>"
+    elif configurazione.get('alimentazioneSelezionata'):
+        alimentazione_text = 'ON/OFF' if configurazione['alimentazioneSelezionata'] == 'ON-OFF' else configurazione['alimentazioneSelezionata'].replace('_', ' ')
+        html += f"<tr><th>Alimentazione</th><td>{alimentazione_text}</td></tr>"
+        
+        # Alimentatore con codice
+        if configurazione.get('tipologiaAlimentatoreSelezionata') and configurazione['alimentazioneSelezionata'] != 'SENZA_ALIMENTATORE':
+            alimentatore_text = configurazione['tipologiaAlimentatoreSelezionata']
+            if tuttiCodici['alimentatore']:
+                alimentatore_text += f" - {tuttiCodici['alimentatore']}"
+            html += f"<tr><th>Alimentatore</th><td>{alimentatore_text}</td></tr>"
+        
+        # Potenza consigliata
+        if configurazione.get('potenzaConsigliataAlimentatore') and configurazione.get('tensioneSelezionato') != '220V':
+            html += f"<tr><th>Potenza consigliata</th><td>{configurazione['potenzaConsigliataAlimentatore']}W</td></tr>"
+    
+    # Dimmer con codice
+    if configurazione.get('dimmerSelezionato'):
+        if configurazione.get('tensioneSelezionato') == '220V' and configurazione['dimmerSelezionato'] == 'DIMMER_A_PULSANTE_SEMPLICE':
+            dimmer_text = 'CTR130 - Dimmerabile TRIAC tramite pulsante e sistema TUYA'
+        else:
+            dimmer_text = 'Nessun dimmer' if configurazione['dimmerSelezionato'] == 'NESSUN_DIMMER' else configurazione['dimmerSelezionato'].replace('_', ' ')
+            if tuttiCodici['dimmer'] and configurazione['dimmerSelezionato'] != 'NESSUN_DIMMER':
+                dimmer_text += f" - {tuttiCodici['dimmer']}"
+        
+        html += f"<tr><th>Dimmer</th><td>{dimmer_text}</td></tr>"
+        
+        # Nota dimmer touch
+        if configurazione.get('dimmerSelezionato') and 'TOUCH_SU_PROFILO' in configurazione['dimmerSelezionato']:
+            html += f"<tr><th>Nota dimmer</th><td class='text-warning'>Spazio non illuminato di 50mm per touch su profilo</td></tr>"
+    
+    # Alimentazione cavo
+    if configurazione.get('tipoAlimentazioneCavo'):
+        alimentazione_cavo_text = 'Alimentazione unica' if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_UNICA' else 'Alimentazione doppia'
+        html += f"<tr><th>Alimentazione cavo</th><td>{alimentazione_cavo_text}</td></tr>"
+        
+        # Lunghezza cavo ingresso
+        if configurazione.get('lunghezzaCavoIngresso'):
+            html += f"<tr><th>Lunghezza cavo ingresso</th><td>{configurazione['lunghezzaCavoIngresso']}mm</td></tr>"
+        
+        # Lunghezza cavo uscita (solo per alimentazione doppia)
+        if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_DOPPIA' and configurazione.get('lunghezzaCavoUscita'):
+            html += f"<tr><th>Lunghezza cavo uscita</th><td>{configurazione['lunghezzaCavoUscita']}mm</td></tr>"
+    
+    # Uscita cavo
+    if configurazione.get('uscitaCavoSelezionata') and configurazione.get('categoriaSelezionata') not in ['esterni', 'wall_washer_ext']:
+        uscita_cavo_text = configurazione['uscitaCavoSelezionata']
+        if uscita_cavo_text == 'DRITTA':
+            uscita_cavo_text = 'Dritta'
+        elif uscita_cavo_text == 'LATERALE_DX':
+            uscita_cavo_text = 'Laterale destra'
+        elif uscita_cavo_text == 'LATERALE_SX':
+            uscita_cavo_text = 'Laterale sinistra'
+        elif uscita_cavo_text == 'RETRO':
+            uscita_cavo_text = 'Retro'
+        
+        html += f"<tr><th>Uscita cavo</th><td>{uscita_cavo_text}</td></tr>"
+    
+    # Forma di taglio
+    if configurazione.get('formaDiTaglioSelezionata'):
+        html += f"<tr><th>Forma di taglio</th><td>{get_nome_visualizzabile(configurazione['formaDiTaglioSelezionata'], mappaFormeTaglio)}</td></tr>"
+    
+    # Finitura
+    if configurazione.get('finituraSelezionata'):
+        html += f"<tr><th>Finitura</th><td>{get_nome_visualizzabile(configurazione['finituraSelezionata'], mappaFiniture)}</td></tr>"
+    
+    # Potenza totale
+    if configurazione.get('potenzaTotale'):
+        html += f"<tr><th>Potenza totale</th><td>{configurazione['potenzaTotale']}W</td></tr>"
     
     html += """
             </table>

@@ -1633,6 +1633,20 @@ export function richiediPreventivo(codiceProdotto) {
       return;
     }
 
+    // Calcola tutti i codici prodotto prima di inviare
+    const tuttiCodici = calcolaCodiceProdottoCompleto();
+    
+    // Arricchisci la configurazione con i codici calcolati
+    const configurazioneCompleta = {
+      ...configurazione,
+      codiceProfilo: tuttiCodici.profilo,
+      codiceStripLed: tuttiCodici.stripLed,
+      codiceAlimentatore: tuttiCodici.alimentatore,
+      codiceDimmer: tuttiCodici.dimmer,
+      // Aggiungi anche la potenza totale se disponibile
+      potenzaTotale: configurazione.potenzaTotale || calcolaPotenzaTotale()
+    };
+
     // Raccogli i dati del form
     const formData = {
       nomeAgente: $('#nomeAgente').val(),
@@ -1640,7 +1654,7 @@ export function richiediPreventivo(codiceProdotto) {
       ragioneSociale: $('#ragioneSociale').val(),
       riferimento: $('#riferimento').val(),
       note: $('#note').val(),
-      configurazione: configurazione,
+      configurazione: configurazioneCompleta,
       codiceProdotto: codiceProdotto
     };
 
@@ -1686,4 +1700,20 @@ export function richiediPreventivo(codiceProdotto) {
       }
     });
   });
+}
+
+// Funzione helper per calcolare la potenza totale
+function calcolaPotenzaTotale() {
+  if (!configurazione.potenzaSelezionata || !configurazione.lunghezzaRichiesta) {
+    return 0;
+  }
+  
+  // Estrai il valore numerico dalla potenza (es. "10W/m" -> 10)
+  const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(?:\.\d+)?)/);
+  if (!potenzaMatch) return 0;
+  
+  const potenzaPerMetro = parseFloat(potenzaMatch[1]);
+  const lunghezzaMetri = configurazione.lunghezzaRichiesta / 1000;
+  
+  return Math.round(potenzaPerMetro * lunghezzaMetri * 100) / 100; // Arrotonda a 2 decimali
 }
