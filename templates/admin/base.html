@@ -107,7 +107,6 @@
                 </div>
             </nav>
 
-            <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
@@ -116,7 +115,6 @@
                     </div>
                 </div>
 
-                <!-- Flash Messages -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -140,7 +138,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script>
-        // Funzioni comuni per l'admin
         function showAlert(message, type = 'success') {
             const alertDiv = `
                 <div class="alert alert-${type} alert-dismissible fade show" role="alert">
@@ -155,7 +152,6 @@
             return confirm(message);
         }
 
-        // Bulk selection
         function toggleBulkActions() {
             const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
             const bulkActions = document.querySelector('.bulk-actions');
@@ -172,7 +168,6 @@
             toggleBulkActions();
         }
 
-        // AJAX Error Handler
         function handleAjaxError(xhr, status, error) {
             console.error('AJAX Error:', error);
             showAlert('Errore durante l\'operazione. Riprova più tardi.', 'danger');

@@ -28,12 +28,10 @@ export function initStep7Listeners() {
 }
 
 export function initRiepilogoOperationsListeners(codiceProdotto) {
-  // Gestione salvataggio configurazione (PDF)
   $('#btn-salva-configurazione').off('click').on('click', function() {
     generaPDF(codiceProdotto, configurazione);
   });
-  
-  // Gestione richiesta preventivo
+
   $('#btn-preventivo').off('click').on('click', function() {
     richiediPreventivo(codiceProdotto);
   });

@@ -16,9 +16,211 @@ export function generaPDF(codiceProdotto, configurazione) {
 	} else {
 	  generaPDFContenuto(codiceProdotto, configurazione);
 	}
+}
+
+function disegnaVista2D(doc, configurazione, startY) {
+  const areaWidth = 120;
+  const areaHeight = 70;
+  const centerX = 105;
+  const startX = centerX - areaWidth / 2;
+
+  let lunghezze = {};
+  let maxDimension = 0;
+  
+  if (configurazione.formaDiTaglioSelezionata === 'DRITTO_SEMPLICE') {
+    lunghezze.lunghezza = configurazione.lunghezzaRichiesta || 0;
+    maxDimension = lunghezze.lunghezza;
+  } else if (configurazione.lunghezzeMultiple) {
+    lunghezze = { ...configurazione.lunghezzeMultiple };
+    const valoriValidi = Object.values(lunghezze).filter(v => v && v > 0);
+    maxDimension = Math.max(...valoriValidi);
+  }
+  
+  if (maxDimension === 0) return startY;
+
+  const scale = (Math.min(areaWidth, areaHeight) * 0.8) / maxDimension;
+
+  const drawCenterX = startX + areaWidth / 2;
+  const drawCenterY = startY + areaHeight / 2;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Vista dall\'alto - Proporzioni', centerX, startY - 5, { align: 'center' });
+
+  switch (configurazione.formaDiTaglioSelezionata) {
+    case 'DRITTO_SEMPLICE':
+      disegnaLinea(doc, drawCenterX, drawCenterY, lunghezze.lunghezza, scale);
+      break;
+    case 'FORMA_L_DX':
+      disegnaFormaL(doc, drawCenterX, drawCenterY, lunghezze, scale, 'dx');
+      break;
+    case 'FORMA_L_SX':
+      disegnaFormaL(doc, drawCenterX, drawCenterY, lunghezze, scale, 'sx');
+      break;
+    case 'FORMA_C':
+      disegnaFormaC(doc, drawCenterX, drawCenterY, lunghezze, scale);
+      break;
+    case 'RETTANGOLO_QUADRATO':
+      disegnaRettangolo(doc, drawCenterX, drawCenterY, lunghezze, scale);
+      break;
   }
 
-// Modifiche alla funzione generaPDFContenuto in pdf.js per includere le quantità
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.rect(startX, startY, areaWidth, areaHeight);
+  
+  return startY + areaHeight + 15;
+}
+
+function disegnaLinea(doc, centerX, centerY, lunghezza, scale) {
+  const scaledLength = lunghezza * scale;
+
+  const startX = centerX - scaledLength / 2;
+  const endX = centerX + scaledLength / 2;
+  
+  doc.setDrawColor(232, 63, 52);
+  doc.setLineWidth(1.5);
+  doc.line(startX, centerY, endX, centerY);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`${lunghezza}mm`, centerX, centerY - 3, { align: 'center' });
+  doc.setDrawColor(100, 100, 100);
+  doc.setLineWidth(0.3);
+  doc.line(startX, centerY - 2, startX, centerY + 2);
+  doc.line(endX, centerY - 2, endX, centerY + 2);
+}
+
+function disegnaFormaL(doc, centerX, centerY, lunghezze, scale, direzione) {
+  const lato1 = lunghezze.lato1 || 0;
+  const lato2 = lunghezze.lato2 || 0;
+  
+  const scaledLato1 = lato1 * scale;
+  const scaledLato2 = lato2 * scale;
+
+  let startX, startY, endX, endY, cornerX, cornerY;
+  
+  if (direzione === 'dx') {
+    startX = centerX - scaledLato1 / 2;
+    startY = centerY + scaledLato2 / 2;
+    cornerX = centerX + scaledLato1 / 2;
+    cornerY = centerY + scaledLato2 / 2;
+    endX = centerX + scaledLato1 / 2;
+    endY = centerY - scaledLato2 / 2;
+  } else {
+    startX = centerX + scaledLato1 / 2;
+    startY = centerY + scaledLato2 / 2;
+    cornerX = centerX - scaledLato1 / 2;
+    cornerY = centerY + scaledLato2 / 2;
+    endX = centerX - scaledLato1 / 2;
+    endY = centerY - scaledLato2 / 2;
+  }
+  
+  doc.setDrawColor(232, 63, 52);
+  doc.setLineWidth(1.5);
+
+  doc.line(startX, startY, cornerX, cornerY);
+  doc.line(cornerX, cornerY, endX, endY);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+
+  const midHorizX = (startX + cornerX) / 2;
+  doc.text(`${lato1}mm`, midHorizX, startY - 3, { align: 'center' });
+
+  const midVertY = (cornerY + endY) / 2;
+  doc.text(`${lato2}mm`, direzione === 'dx' ? endX + 8 : endX - 8, midVertY, { 
+    align: direzione === 'dx' ? 'left' : 'right',
+    angle: -90 
+  });
+
+  doc.setDrawColor(100, 100, 100);
+  doc.setLineWidth(0.3);
+
+  doc.line(startX, startY - 2, startX, startY + 2);
+  doc.line(cornerX, cornerY - 2, cornerX, cornerY + 2);
+
+  doc.line(cornerX - 2, cornerY, cornerX + 2, cornerY);
+  doc.line(endX - 2, endY, endX + 2, endY);
+}
+
+function disegnaFormaC(doc, centerX, centerY, lunghezze, scale) {
+  const lato1 = lunghezze.lato1 || 0;
+  const lato2 = lunghezze.lato2 || 0;
+  const lato3 = lunghezze.lato3 || 0;
+  
+  const scaledLato1 = lato1 * scale;
+  const scaledLato2 = lato2 * scale;
+  const scaledLato3 = lato3 * scale;
+
+  const maxWidth = Math.max(scaledLato1, scaledLato3);
+
+  const topLeft = { x: centerX - maxWidth / 2, y: centerY - scaledLato2 / 2 };
+  const topRight = { x: topLeft.x + scaledLato1, y: topLeft.y };
+  const middleLeft = { x: centerX - maxWidth / 2, y: centerY + scaledLato2 / 2 };
+  const bottomRight = { x: middleLeft.x + scaledLato3, y: middleLeft.y };
+  
+  doc.setDrawColor(232, 63, 52);
+  doc.setLineWidth(1.5);
+
+  doc.line(topLeft.x, topLeft.y, topRight.x, topRight.y);
+  doc.line(topLeft.x, topLeft.y, middleLeft.x, middleLeft.y);
+  doc.line(middleLeft.x, middleLeft.y, bottomRight.x, bottomRight.y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+
+  doc.text(`${lato1}mm`, (topLeft.x + topRight.x) / 2, topLeft.y - 3, { align: 'center' });
+  doc.text(`${lato2}mm`, topLeft.x - 8, centerY, { align: 'right', angle: -90 });
+  doc.text(`${lato3}mm`, (middleLeft.x + bottomRight.x) / 2, bottomRight.y + 8, { align: 'center' });
+
+  doc.setDrawColor(100, 100, 100);
+  doc.setLineWidth(0.3);
+
+  doc.line(topLeft.x, topLeft.y - 2, topLeft.x, topLeft.y + 2);
+  doc.line(topRight.x, topRight.y - 2, topRight.x, topRight.y + 2);
+
+  doc.line(topLeft.x - 2, topLeft.y, topLeft.x + 2, topLeft.y);
+  doc.line(middleLeft.x - 2, middleLeft.y, middleLeft.x + 2, middleLeft.y);
+
+  doc.line(middleLeft.x, middleLeft.y - 2, middleLeft.x, middleLeft.y + 2);
+  doc.line(bottomRight.x, bottomRight.y - 2, bottomRight.x, bottomRight.y + 2);
+}
+
+function disegnaRettangolo(doc, centerX, centerY, lunghezze, scale) {
+  const lunghezza = lunghezze.lato1 || 0;
+  const larghezza = lunghezze.lato2 || 0;
+  
+  const scaledLunghezza = lunghezza * scale;
+  const scaledLarghezza = larghezza * scale;
+
+  const startX = centerX - scaledLunghezza / 2;
+  const startY = centerY - scaledLarghezza / 2;
+  
+  doc.setDrawColor(232, 63, 52);
+  doc.setLineWidth(1.5);
+  doc.rect(startX, startY, scaledLunghezza, scaledLarghezza);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+
+  doc.text(`${lunghezza}mm`, centerX, startY - 3, { align: 'center' });
+  doc.text(`${larghezza}mm`, startX + scaledLunghezza + 8, centerY, { 
+    align: 'left', 
+    angle: -90 
+  });
+
+  doc.setDrawColor(100, 100, 100);
+  doc.setLineWidth(0.3);
+
+  doc.line(startX, startY - 2, startX, startY + 2);
+  doc.line(startX + scaledLunghezza, startY - 2, startX + scaledLunghezza, startY + 2);
+  doc.line(startX + scaledLunghezza - 2, startY, startX + scaledLunghezza + 2, startY);
+  doc.line(startX + scaledLunghezza - 2, startY + scaledLarghezza, startX + scaledLunghezza + 2, startY + scaledLarghezza);
+}
 
 function generaPDFContenuto(codiceProdotto, configurazione) {
 	try {
@@ -42,13 +244,18 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		console.warn('Logo non disponibile');
 	  }
   
-	  doc.setFontSize(14);
-	  doc.text(`Codice prodotto: ${codiceProdotto}`, 15, 35);
-  
 	  const dataOggi = new Date().toLocaleDateString('it-IT');
 	  doc.setFontSize(10);
 	  doc.text(`Data: ${dataOggi}`, 195, 20, { align: 'right' });
-  
+
+	  let currentY = 45;
+
+	  if (configurazione.modalitaConfigurazione !== 'solo_strip' && 
+		  configurazione.formaDiTaglioSelezionata && 
+		  configurazione.formaDiTaglioSelezionata !== 'undefined') {
+		currentY = disegnaVista2D(doc, configurazione, currentY);
+	  }
+
 	  const mappaNomi = {
 		// Categorie
 		'nanoprofili': 'Nanoprofili',
@@ -109,8 +316,6 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		if (configurazione.categoriaSelezionata) {
 			datiTabella.push(['Categoria', getNomeVisualizzabile(configurazione.categoriaSelezionata)]);
 		}
-
-		// ✅ NUOVO: Funzione per generare testo modello PDF ottimizzato
 		function generaTestoModelloPDF() {
 		if (!configurazione.combinazioneProfiloOttimale || configurazione.combinazioneProfiloOttimale.length === 0) {
 			let modelloText = (configurazione.nomeModello || codiceProdotto);
@@ -134,12 +339,10 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 			
 			return modelloText;
 		}
-		
-		// Multiple lunghezze
+
 		const parti = configurazione.combinazioneProfiloOttimale.map(combo => {
 			let codiceProfilo = '';
-			
-			// Genera codice specifico per questa lunghezza
+
 			if (configurazione.finituraSelezionata && configurazione.profiloSelezionato) {
 			const profiloBase = configurazione.profiloSelezionato;
 			const lunghezzaInCm = combo.lunghezza / 10;
@@ -148,8 +351,7 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 			if (configurazione.finituraSelezionata === "NERO") colorCode = 'BK';
 			else if (configurazione.finituraSelezionata === "BIANCO") colorCode = 'WH';
 			else if (configurazione.finituraSelezionata === "ALLUMINIO") colorCode = 'AL';
-			
-			// Logica per codici speciali basata sui profili
+
 			const isOpqProfile = ["PRF120_300", "PRF080_200"].includes(profiloBase);
 			const isSabProfile = ["PRF016_200SET", "PRF011_300"].includes(profiloBase);
 			const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
@@ -286,9 +488,9 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 	  if (configurazione.potenzaTotale) {
 		datiTabella.push(['Potenza totale', `${configurazione.potenzaTotale}W`]);
 	  }
-  
+
 	  doc.autoTable({
-		startY: 45,
+		startY: currentY,
 		head: [['Parametro', 'Valore']],
 		body: datiTabella,
 		theme: 'grid',
@@ -313,7 +515,7 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		  0: { fontStyle: 'bold', cellWidth: 60 },
 		  1: { cellWidth: 'auto' }
 		},
-		margin: { top: 45, right: 15, bottom: 15, left: 15 }
+		margin: { top: currentY, right: 15, bottom: 15, left: 15 }
 	  });
   
 	  const finalY = doc.lastAutoTable.finalY + 10;
@@ -340,4 +542,4 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 	  console.error("Errore nella generazione del PDF:", error);
 	  alert("Si è verificato un errore nella generazione del PDF. Riprova più tardi.");
 	}
-  }
+}

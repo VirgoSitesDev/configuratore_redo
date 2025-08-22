@@ -3,7 +3,6 @@ import { updateProgressBar } from '../utils.js';
 import { caricaProfili } from '../api.js';
 
 export function initStep1Listeners() {
-  // Gestione hotspot per entrambe le pagine (indoor e outdoor)
   $('.hotspot').on('click', function() {
     const categoria = $(this).data('categoria');
     if (!categoria) {

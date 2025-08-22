@@ -248,14 +248,12 @@
 
 {% block extra_js %}
 <script>
-// Aggiungi profilo
 function addProfilo(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
-    
-    // Converti checkbox in boolean
+
     data.attivo = !!document.getElementById('add_profilo_attivo').checked;
     
     $.ajax({
@@ -276,7 +274,6 @@ function addProfilo(event) {
     });
 }
 
-// Modifica profilo
 function editProfilo(id, nome, categoria, descrizione, immagine, attivo) {
     $('#edit_profilo_original_id').val(id);
     $('#edit_profilo_id').val(id);
@@ -294,8 +291,7 @@ function updateProfilo(event) {
     const data = Object.fromEntries(formData.entries());
     const profiloId = data.profilo_id;
     delete data.profilo_id;
-    
-    // Converti checkbox in boolean
+
     data.attivo = !!document.getElementById('edit_profilo_attivo').checked;
     
     $.ajax({
@@ -316,7 +312,6 @@ function updateProfilo(event) {
     });
 }
 
-// Elimina profilo singolo
 function deleteProfilo(id) {
     if (!confirmDelete('Sei sicuro di voler eliminare questo profilo?\nQuesta azione eliminerà anche tutte le relazioni associate.')) {
         return;
@@ -337,7 +332,6 @@ function deleteProfilo(id) {
     });
 }
 
-// Eliminazione in blocco
 function bulkDelete(table) {
     const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
                             .map(cb => cb.value);

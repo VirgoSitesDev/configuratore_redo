@@ -182,7 +182,6 @@
 
 {% block extra_js %}
 <script>
-// Aggiungi categoria
 function addCategoria(event) {
     event.preventDefault();
     
@@ -207,7 +206,6 @@ function addCategoria(event) {
     });
 }
 
-// Modifica categoria
 function editCategoria(id, nome, descrizione, immagine) {
     $('#edit_categoria_id').val(id);
     $('#edit_id').val(id);
@@ -242,7 +240,6 @@ function updateCategoria(event) {
     });
 }
 
-// Elimina categoria singola
 function deleteCategoria(id) {
     if (!confirmDelete('Sei sicuro di voler eliminare questa categoria?\nQuesta azione non può essere annullata.')) {
         return;
@@ -263,7 +260,6 @@ function deleteCategoria(id) {
     });
 }
 
-// Eliminazione in blocco
 function bulkDelete(table) {
     const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
                             .map(cb => cb.value);

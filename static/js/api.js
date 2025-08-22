@@ -1106,15 +1106,13 @@ export function finalizzaConfigurazione() {
         configurazione.lunghezzaMassimaProfilo = data.lunghezzaMassimaProfilo || 3000;
         configurazione.lunghezzaMassimaStripLed = data.lunghezzaMassimaStripLed || 5000;
         configurazione.lunghezzaTotale = data.lunghezzaTotale || 0;
-        
-        // ✅ NUOVO: gestisci la combinazione ottimale
+
         configurazione.combinazioneProfiloOttimale = data.combinazioneProfiloOttimale || [
           {lunghezza: configurazione.lunghezzaMassimaProfilo, quantita: configurazione.quantitaProfilo}
         ];
         
         const tuttiCodici = calcolaCodiceProdottoCompleto();
-        
-        // ✅ NUOVO: Funzione helper per generare il testo del modello ottimizzato
+
         function generaTestoModelloOttimizzato() {
           if (!configurazione.combinazioneProfiloOttimale || configurazione.combinazioneProfiloOttimale.length === 0) {
             return `${riepilogo.nomeModello} - ${tuttiCodici.profilo}`;
@@ -1128,10 +1126,8 @@ export function finalizzaConfigurazione() {
               return `${combo.quantita}x ${riepilogo.nomeModello} (${combo.lunghezza}mm cad.) - ${tuttiCodici.profilo}`;
             }
           }
-          
-          // Multiple lunghezze - genera codici specifici per ogni lunghezza
+
           const parti = configurazione.combinazioneProfiloOttimale.map(combo => {
-            // Genera il codice specifico per questa lunghezza
             let codiceProfilo = generaCodiceProfilo(combo.lunghezza);
             
             return `${combo.quantita}x ${riepilogo.nomeModello} (${combo.lunghezza}mm cad.) - ${codiceProfilo}`;
@@ -1139,8 +1135,7 @@ export function finalizzaConfigurazione() {
           
           return parti.join(' + ');
         }
-        
-        // ✅ NUOVO: Funzione helper per generare codice profilo per una lunghezza specifica
+
         function generaCodiceProfilo(lunghezza) {
           const profiloBase = configurazione.profiloSelezionato;
           
@@ -1173,11 +1168,9 @@ export function finalizzaConfigurazione() {
             if (isOpqProfile) colorCode = "M" + colorCode;
             else if (isSabProfile) colorCode = "S" + colorCode;
 
-            // Modifica per includere la lunghezza specifica
-            const lunghezzaInCm = lunghezza / 10; // Converti mm in cm
+            const lunghezzaInCm = lunghezza / 10;
             let profiloConLunghezza = profiloBase.replace(/_/g, '/');
-            
-            // Sostituisci la lunghezza nel codice se presente un pattern numerico
+
             profiloConLunghezza = profiloConLunghezza.replace(/\/\d+/, `/${lunghezzaInCm}`);
             
             if (colorCode) {
@@ -1244,7 +1237,6 @@ export function finalizzaConfigurazione() {
           return;
         }
 
-        // ✅ NUOVO: Per configurazione normale, usa il testo ottimizzato per il modello
         const modelloTestoOttimizzato = generaTestoModelloOttimizzato();
 
         let riepilogoHtml = `
@@ -1619,35 +1611,28 @@ riepilogoHtml += `
 }
 
 export function richiediPreventivo(codiceProdotto) {
-  // Mostra il modal
   const modal = new bootstrap.Modal(document.getElementById('preventivoModal'));
   modal.show();
 
-  // Gestisci l'invio del form
   $('#btn-invia-preventivo').off('click').on('click', function() {
     const form = document.getElementById('preventivoForm');
-    
-    // Validazione del form
+
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
-    // Calcola tutti i codici prodotto prima di inviare
     const tuttiCodici = calcolaCodiceProdottoCompleto();
     
-    // Arricchisci la configurazione con i codici calcolati
     const configurazioneCompleta = {
       ...configurazione,
       codiceProfilo: tuttiCodici.profilo,
       codiceStripLed: tuttiCodici.stripLed,
       codiceAlimentatore: tuttiCodici.alimentatore,
       codiceDimmer: tuttiCodici.dimmer,
-      // Aggiungi anche la potenza totale se disponibile
       potenzaTotale: configurazione.potenzaTotale || calcolaPotenzaTotale()
     };
 
-    // Raccogli i dati del form
     const formData = {
       nomeAgente: $('#nomeAgente').val(),
       emailAgente: $('#emailAgente').val(),
@@ -1658,11 +1643,9 @@ export function richiediPreventivo(codiceProdotto) {
       codiceProdotto: codiceProdotto
     };
 
-    // Mostra loading
     $('#loading-spinner').removeClass('d-none');
     $('#btn-invia-preventivo').prop('disabled', true);
 
-    // Invia la richiesta al server
     $.ajax({
       url: '/richiedi_preventivo',
       method: 'POST',
@@ -1671,8 +1654,7 @@ export function richiediPreventivo(codiceProdotto) {
       success: function(response) {
         if (response.success) {
           modal.hide();
-          
-          // Mostra messaggio di successo
+
           const alertHtml = `
             <div class="alert alert-success alert-dismissible fade show" role="alert">
               <strong>Preventivo inviato con successo!</strong> 
@@ -1682,8 +1664,7 @@ export function richiediPreventivo(codiceProdotto) {
           `;
           
           $('#riepilogo-container').prepend(alertHtml);
-          
-          // Reset del form
+
           form.reset();
         } else {
           alert('Errore nell\'invio del preventivo: ' + (response.message || 'Errore sconosciuto'));
@@ -1694,7 +1675,6 @@ export function richiediPreventivo(codiceProdotto) {
         alert('Errore nell\'invio del preventivo. Riprova più tardi.');
       },
       complete: function() {
-        // Nascondi loading
         $('#loading-spinner').addClass('d-none');
         $('#btn-invia-preventivo').prop('disabled', false);
       }
@@ -1702,18 +1682,16 @@ export function richiediPreventivo(codiceProdotto) {
   });
 }
 
-// Funzione helper per calcolare la potenza totale
 function calcolaPotenzaTotale() {
   if (!configurazione.potenzaSelezionata || !configurazione.lunghezzaRichiesta) {
     return 0;
   }
-  
-  // Estrai il valore numerico dalla potenza (es. "10W/m" -> 10)
+
   const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(?:\.\d+)?)/);
   if (!potenzaMatch) return 0;
   
   const potenzaPerMetro = parseFloat(potenzaMatch[1]);
   const lunghezzaMetri = configurazione.lunghezzaRichiesta / 1000;
   
-  return Math.round(potenzaPerMetro * lunghezzaMetri * 100) / 100; // Arrotonda a 2 decimali
+  return Math.round(potenzaPerMetro * lunghezzaMetri * 100) / 100;
 }
