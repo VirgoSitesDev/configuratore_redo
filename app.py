@@ -874,7 +874,11 @@ def finalizza_configurazione():
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
         tuttiCodici['alimentatore'], 
-        tuttiCodici['dimmer']
+        tuttiCodici['dimmer'],
+        finitura_profilo=configurazione.get('finituraSelezionata'),
+        lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
+        temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
+        potenza_strip=configurazione.get('potenzaSelezionata')
     )
 
     print("")
@@ -2127,12 +2131,22 @@ def get_prezzi_configurazione():
         codice_alimentatore = data.get('codice_alimentatore', '')
         codice_dimmer = data.get('codice_dimmer', '')
         
+        # ✅ NUOVO: Parametri aggiuntivi per una ricerca più precisa
+        finitura_profilo = data.get('finitura_profilo')
+        lunghezza_profilo = data.get('lunghezza_profilo')
+        temperatura_strip = data.get('temperatura_strip')
+        potenza_strip = data.get('potenza_strip')
+        
         # Ottieni tutti i prezzi
         prezzi = db.get_prezzi_configurazione(
             codice_profilo, 
             codice_strip, 
             codice_alimentatore, 
-            codice_dimmer
+            codice_dimmer,
+            finitura_profilo=finitura_profilo,
+            lunghezza_profilo=lunghezza_profilo,
+            temperatura_strip=temperatura_strip,
+            potenza_strip=potenza_strip
         )
         
         return jsonify({
@@ -2153,6 +2167,6 @@ def get_prezzi_configurazione():
                 'totale': 0.0
             }
         })
-
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

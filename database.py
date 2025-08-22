@@ -486,16 +486,23 @@ class DatabaseManager:
         self._cache_timestamps.clear()
         logging.info("Cache cleared")
 
-    def get_prezzo_strip_led(self, codice_completo: str) -> float:
-        """Ottiene il prezzo di una strip LED basato sul codice completo"""
+    def get_prezzo_strip_led(self, codice_completo: str, temperatura: str = None, potenza: str = None) -> float:
+        """Ottiene il prezzo di una strip LED basato sul codice completo + temperatura + potenza"""
         try:
             if not codice_completo:
                 return 0.0
 
-            result = self.supabase.table('strip_prezzi')\
-                .select('prezzo_euro')\
-                .eq('strip_id', codice_completo)\
-                .execute()
+            # Costruisci la query base
+            query = self.supabase.table('strip_prezzi').select('prezzo_euro')
+            query = query.eq('strip_id', codice_completo)
+            
+            # Aggiungi filtri aggiuntivi se forniti
+            if temperatura:
+                query = query.eq('temperatura', temperatura)
+            if potenza:
+                query = query.eq('potenza', potenza)
+            
+            result = query.execute()
             
             if result.data and len(result.data) > 0:
                 prezzo = result.data[0].get('prezzo_euro', 0.0)
@@ -507,16 +514,23 @@ class DatabaseManager:
             logging.error(f"Errore nel recupero prezzo strip LED {codice_completo}: {str(e)}")
             return 0.0
 
-    def get_prezzo_profilo(self, codice_listino: str) -> float:
-        """Ottiene il prezzo di un profilo basato sul codice listino"""
+    def get_prezzo_profilo(self, codice_listino: str, finitura: str = None, lunghezza_mm: int = None) -> float:
+        """Ottiene il prezzo di un profilo basato sul codice listino + finitura + lunghezza"""
         try:
             if not codice_listino:
                 return 0.0
                 
-            result = self.supabase.table('profili_prezzi')\
-                .select('prezzo_euro')\
-                .eq('codice_listino', codice_listino)\
-                .execute()
+            # Costruisci la query base
+            query = self.supabase.table('profili_prezzi').select('prezzo_euro')
+            query = query.eq('profilo_id', codice_listino)
+            
+            # Aggiungi filtri aggiuntivi se forniti
+            if finitura:
+                query = query.eq('finitura', finitura)
+            if lunghezza_mm:
+                query = query.eq('lunghezza_mm', lunghezza_mm)
+            
+            result = query.execute()
             
             if result.data and len(result.data) > 0:
                 prezzo = result.data[0].get('prezzo_euro', 0.0)
@@ -576,13 +590,16 @@ class DatabaseManager:
             return 0.0
 
     def get_prezzi_configurazione(self, codice_profilo: str, codice_strip: str, 
-                                codice_alimentatore: str, codice_dimmer: str) -> Dict[str, float]:
+                                codice_alimentatore: str, codice_dimmer: str,
+                                finitura_profilo: str = None, lunghezza_profilo: int = None,
+                                temperatura_strip: str = None, potenza_strip: str = None) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa"""
         try:
-            print("CODICE STRIP" + codice_strip)
+            codice_profilo = codice_profilo.replace('/', '_')
+            print("CODICE PROFILO " + codice_profilo)
             prezzi = {
-                'profilo': self.get_prezzo_profilo(codice_profilo),
-                'strip_led': self.get_prezzo_strip_led(codice_strip),
+                'profilo': self.get_prezzo_profilo(codice_profilo, finitura_profilo, lunghezza_profilo),
+                'strip_led': self.get_prezzo_strip_led(codice_strip, temperatura_strip, potenza_strip),
                 'alimentatore': self.get_prezzo_alimentatore(codice_alimentatore),
                 'dimmer': self.get_prezzo_dimmer(codice_dimmer)
             }
