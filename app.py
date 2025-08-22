@@ -738,8 +738,8 @@ def finalizza_configurazione():
         elif configurazione.get('profiloSelezionato'):
             codici['profilo'] = configurazione['profiloSelezionato'].replace('_', '/')
             
-        if configurazione.get('codiceStripLed'):
-            codici['stripLed'] = configurazione['codiceStripLed']
+        if configurazione.get('stripLedSelezionata'):
+            codici['stripLed'] = configurazione['stripLedSelezionata']
             
         if configurazione.get('codiceAlimentatore'):
             codici['alimentatore'] = configurazione['codiceAlimentatore']

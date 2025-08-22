@@ -491,10 +491,10 @@ class DatabaseManager:
         try:
             if not codice_completo:
                 return 0.0
-                
+
             result = self.supabase.table('strip_prezzi')\
                 .select('prezzo_euro')\
-                .eq('codice_completo', codice_completo)\
+                .eq('strip_id', codice_completo)\
                 .execute()
             
             if result.data and len(result.data) > 0:
@@ -579,6 +579,7 @@ class DatabaseManager:
                                 codice_alimentatore: str, codice_dimmer: str) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa"""
         try:
+            print("CODICE STRIP" + codice_strip)
             prezzi = {
                 'profilo': self.get_prezzo_profilo(codice_profilo),
                 'strip_led': self.get_prezzo_strip_led(codice_strip),
