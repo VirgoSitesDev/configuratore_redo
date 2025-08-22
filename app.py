@@ -1804,8 +1804,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         elif configurazione.get('profiloSelezionato'):
             codici['profilo'] = configurazione['profiloSelezionato'].replace('_', '/')
             
-        if configurazione.get('codiceStripLed'):
-            codici['stripLed'] = configurazione['codiceStripLed']
+        if configurazione.get('stripLedSelezionata'):
+            codici['stripLed'] = configurazione['stripLedSelezionata']
             
         if configurazione.get('codiceAlimentatore'):
             codici['alimentatore'] = configurazione['codiceAlimentatore']
@@ -1822,6 +1822,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     tuttiCodici = calcola_codici_prodotto()
     
     print("-------   2   --------")
+    print(tuttiCodici['profilo'])
+    print(tuttiCodici['stripLed'])
+    print(tuttiCodici['alimentatore'])
+    print(tuttiCodici['dimmer'])
     # ✅ Calcola i prezzi subito dopo aver ottenuto i codici
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
