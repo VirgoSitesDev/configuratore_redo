@@ -1791,25 +1791,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     
     data_corrente = datetime.now().strftime("%d/%m/%Y %H:%M")
     
-    # Funzione helper per ottenere nomi visualizzabili
-    def get_nome_visualizzabile(valore, mappa):
-        return mappa.get(valore, valore) if valore else 'N/A'
-
-    def format_prezzo(prezzo):
-        if not prezzo or prezzo == 0:
-            return ''
-        return f' - €{prezzo:.2f}'
-
-    prezzi = configurazione.get('prezzi', {
-        'profilo': 0,
-        'strip_led': 0,
-        'alimentatore': 0,
-        'dimmer': 0,
-        'totale': 0
-    })
-
-    
-    # Calcola i codici prodotto (simula la funzione JavaScript)
+    # ✅ SOLUZIONE: Calcola i codici prodotto PRIMA della costruzione dell'HTML
     def calcola_codici_prodotto():
         codici = {
             'profilo': '',
@@ -1843,6 +1825,29 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         return codici
     
     tuttiCodici = calcola_codici_prodotto()
+    
+    # ✅ Calcola i prezzi subito dopo aver ottenuto i codici
+    prezzi = db.get_prezzi_configurazione(
+        tuttiCodici['profilo'],
+        tuttiCodici['stripLed'],
+        tuttiCodici['alimentatore'], 
+        tuttiCodici['dimmer'],
+        finitura_profilo=configurazione.get('finituraSelezionata'),
+        lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
+        temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
+        potenza_strip=configurazione.get('potenzaSelezionata')
+    )
+    
+    print(f"DEBUG PREZZI CALCOLATI PRIMA HTML: {prezzi}")
+    
+    # Funzione helper per ottenere nomi visualizzabili
+    def get_nome_visualizzabile(valore, mappa):
+        return mappa.get(valore, valore) if valore else 'N/A'
+
+    def format_prezzo(prezzo):
+        if not prezzo or prezzo == 0:
+            return ''
+        return f' - €{prezzo:.2f}'
     
     html = f"""
     <!DOCTYPE html>
@@ -1945,7 +1950,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             modello_text += f" - {tuttiCodici['profilo']}"
         quantita_profilo = configurazione.get('quantitaProfilo', 1)
         prezzo_profilo_text = format_prezzo(prezzi['profilo'] * quantita_profilo)
-        print(prezzo_profilo_text)
         modello_text += prezzo_profilo_text
         html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
     
@@ -1980,7 +1984,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             nome_strip += f" - {tuttiCodici['stripLed']}"
         quantita_strip = configurazione.get('quantitaStripLed', 1)
         prezzo_strip_text = format_prezzo(prezzi['strip_led'] * quantita_strip)
-        print(prezzo_strip_text)
         nome_strip += prezzo_strip_text
 
         html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
@@ -2094,6 +2097,11 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('formaDiTaglioSelezionata') and configurazione['formaDiTaglioSelezionata'] != 'DRITTO_SEMPLICE':
         html += "• I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata<br>"
     
+    html += """
+        </div>
+    """
+    
+    # ✅ Sezione prezzi - ora i prezzi sono corretti
     if prezzi.get('totale', 0) > 0:
         html += f"""
         <div class="section">
@@ -2108,8 +2116,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         """
 
     html += """
-        </div>
-
         <div class="footer">
             <p><strong>REDO Srl</strong> - Configuratore Profili LED</p>
             <p>Questa è una richiesta di preventivo generata automaticamente dal configuratore online.</p>
