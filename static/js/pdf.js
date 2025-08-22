@@ -515,7 +515,19 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		  0: { fontStyle: 'bold', cellWidth: 60 },
 		  1: { cellWidth: 'auto' }
 		},
-		margin: { top: currentY, right: 15, bottom: 15, left: 15 }
+		margin: { top: 15, right: 15, bottom: 25, left: 15 },
+		pageBreak: 'auto',
+		showHead: 'everyPage',
+		didDrawPage: function (data) {
+		  if (data.pageNumber > 1) {
+			data.settings.startY = 15;
+		  }
+
+		  doc.setFontSize(8);
+		  doc.setFont('helvetica', 'normal');
+		  doc.setTextColor(0, 0, 0);
+		  doc.text('REDO Srl - Configuratore Profili LED', 105, doc.internal.pageSize.height - 15, { align: 'center' });
+		}
 	  });
   
 	  const finalY = doc.lastAutoTable.finalY + 10;
@@ -531,9 +543,6 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 	  doc.text('ATTENZIONE: eventuali staffe aggiuntive non incluse.', 15, finalY + 8);
 	  doc.setTextColor(0, 0, 0);
 	  doc.setFont('helvetica', 'normal');
-	  
-	  doc.setFontSize(8);
-	  doc.text('REDO Srl - Configuratore Profili LED', 105, 285, { align: 'center' });
   
 	  const filename = `configurazione_${codiceProdotto}_${Date.now()}.pdf`;
 	  doc.save(filename);
