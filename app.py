@@ -731,8 +731,7 @@ def finalizza_configurazione():
         # Per i codici completi, questi dovrebbero essere già calcolati lato client
         # e passati nella configurazione o calcolati qui se necessario
         # Per ora usiamo i valori dalla configurazione se presenti
-        
-        print(configurazione)
+
         if configurazione.get('codiceProfilo'):
             codici['profilo'] = configurazione['codiceProfilo']
         elif configurazione.get('profiloSelezionato'):
@@ -867,9 +866,7 @@ def finalizza_configurazione():
         profilo = configurazione.get('profiloSelezionato', '')
         codice_prodotto = profilo if profilo else 'Configurazione'
 
-    print("")
-    print(tuttiCodici)
-    print("")
+    print("-------   1   --------")
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
@@ -880,10 +877,8 @@ def finalizza_configurazione():
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
         potenza_strip=configurazione.get('potenzaSelezionata')
     )
-
-    print("")
     print(prezzi)
-    print("")
+    print("-------   1   --------")
     
     return jsonify({
         'success': True,
@@ -1826,6 +1821,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     
     tuttiCodici = calcola_codici_prodotto()
     
+    print("-------   2   --------")
     # ✅ Calcola i prezzi subito dopo aver ottenuto i codici
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
@@ -1837,8 +1833,9 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
         potenza_strip=configurazione.get('potenzaSelezionata')
     )
-    
-    print(f"DEBUG PREZZI CALCOLATI PRIMA HTML: {prezzi}")
+    print(prezzi)
+    print("-------   2   --------")
+
     
     # Funzione helper per ottenere nomi visualizzabili
     def get_nome_visualizzabile(valore, mappa):
@@ -1942,7 +1939,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     # Categoria
     if configurazione.get('categoriaSelezionata'):
         html += f"<tr><th>Categoria</th><td>{get_nome_visualizzabile(configurazione['categoriaSelezionata'], mappaCategorieVisualizzazione)}</td></tr>"
-    
+
     # Modello con codice
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
@@ -2144,6 +2141,7 @@ def get_prezzi_configurazione():
         potenza_strip = data.get('potenza_strip')
         
         # Ottieni tutti i prezzi
+        print("-------   3   --------")
         prezzi = db.get_prezzi_configurazione(
             codice_profilo, 
             codice_strip, 
@@ -2154,6 +2152,8 @@ def get_prezzi_configurazione():
             temperatura_strip=temperatura_strip,
             potenza_strip=potenza_strip
         )
+        print(prezzi)
+        print("-------   3   --------")
         
         return jsonify({
             'success': True,

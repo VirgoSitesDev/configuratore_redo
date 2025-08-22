@@ -596,7 +596,6 @@ class DatabaseManager:
         """Ottiene tutti i prezzi per una configurazione completa"""
         try:
             codice_profilo = codice_profilo.replace('/', '_')
-            print("CODICE PROFILO " + codice_profilo)
             prezzi = {
                 'profilo': self.get_prezzo_profilo(codice_profilo, finitura_profilo, lunghezza_profilo),
                 'strip_led': self.get_prezzo_strip_led(codice_strip, temperatura_strip, potenza_strip),
