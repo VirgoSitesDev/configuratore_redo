@@ -719,6 +719,41 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
 @app.route('/finalizza_configurazione', methods=['POST'])
 def finalizza_configurazione():
     configurazione = request.json
+
+    def calcola_codici_prodotto():
+        codici = {
+            'profilo': '',
+            'stripLed': '',
+            'alimentatore': '',
+            'dimmer': ''
+        }
+        
+        # Per i codici completi, questi dovrebbero essere già calcolati lato client
+        # e passati nella configurazione o calcolati qui se necessario
+        # Per ora usiamo i valori dalla configurazione se presenti
+        
+        print(configurazione)
+        if configurazione.get('codiceProfilo'):
+            codici['profilo'] = configurazione['codiceProfilo']
+        elif configurazione.get('profiloSelezionato'):
+            codici['profilo'] = configurazione['profiloSelezionato'].replace('_', '/')
+            
+        if configurazione.get('codiceStripLed'):
+            codici['stripLed'] = configurazione['codiceStripLed']
+            
+        if configurazione.get('codiceAlimentatore'):
+            codici['alimentatore'] = configurazione['codiceAlimentatore']
+            
+        if configurazione.get('codiceDimmer'):
+            codici['dimmer'] = configurazione['codiceDimmer']
+        elif configurazione.get('dimmerSelezionato') == 'NESSUN_DIMMER':
+            codici['dimmer'] = ''
+        elif configurazione.get('dimmerCodice'):
+            codici['dimmer'] = configurazione['dimmerCodice']
+            
+        return codici
+
+    tuttiCodici = calcola_codici_prodotto()
     
     potenza_per_metro = 0
     if 'potenzaSelezionata' in configurazione and configurazione['potenzaSelezionata']:
@@ -831,6 +866,20 @@ def finalizza_configurazione():
         # Per il flusso normale, usa il profilo
         profilo = configurazione.get('profiloSelezionato', '')
         codice_prodotto = profilo if profilo else 'Configurazione'
+
+    print("")
+    print(tuttiCodici)
+    print("")
+    prezzi = db.get_prezzi_configurazione(
+        tuttiCodici['profilo'],
+        tuttiCodici['stripLed'],
+        tuttiCodici['alimentatore'], 
+        tuttiCodici['dimmer']
+    )
+
+    print("")
+    print(prezzi)
+    print("")
     
     return jsonify({
         'success': True,
@@ -843,7 +892,8 @@ def finalizza_configurazione():
         'lunghezzaMassimaProfilo': lunghezza_massima_profilo,
         'lunghezzaMassimaStripLed': lunghezza_massima_strip,
         'lunghezzaTotale': lunghezza_totale,
-        'combinazioneProfiloOttimale': combinazione_ottimale  # ✅ NUOVO
+        'combinazioneProfiloOttimale': combinazione_ottimale,
+        'prezzi': prezzi
     })
 
 @app.route('/salva_configurazione', methods=['POST'])
@@ -1740,6 +1790,20 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     # Funzione helper per ottenere nomi visualizzabili
     def get_nome_visualizzabile(valore, mappa):
         return mappa.get(valore, valore) if valore else 'N/A'
+
+    def format_prezzo(prezzo):
+        if not prezzo or prezzo == 0:
+            return ''
+        return f' - €{prezzo:.2f}'
+
+    prezzi = configurazione.get('prezzi', {
+        'profilo': 0,
+        'strip_led': 0,
+        'alimentatore': 0,
+        'dimmer': 0,
+        'totale': 0
+    })
+
     
     # Calcola i codici prodotto (simula la funzione JavaScript)
     def calcola_codici_prodotto():
@@ -1875,6 +1939,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         modello_text = configurazione['nomeModello']
         if tuttiCodici['profilo']:
             modello_text += f" - {tuttiCodici['profilo']}"
+        quantita_profilo = configurazione.get('quantitaProfilo', 1)
+        prezzo_profilo_text = format_prezzo(prezzi['profilo'] * quantita_profilo)
+        print(prezzo_profilo_text)
+        modello_text += prezzo_profilo_text
         html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
     
     # Tipologia
@@ -1906,6 +1974,11 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
         if tuttiCodici['stripLed']:
             nome_strip += f" - {tuttiCodici['stripLed']}"
+        quantita_strip = configurazione.get('quantitaStripLed', 1)
+        prezzo_strip_text = format_prezzo(prezzi['strip_led'] * quantita_strip)
+        print(prezzo_strip_text)
+        nome_strip += prezzo_strip_text
+
         html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
         
         # Tipologia Strip
@@ -1933,6 +2006,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             alimentatore_text = configurazione['tipologiaAlimentatoreSelezionata']
             if tuttiCodici['alimentatore']:
                 alimentatore_text += f" - {tuttiCodici['alimentatore']}"
+            prezzo_alimentatore_text = format_prezzo(prezzi['alimentatore'])
+            alimentatore_text += prezzo_alimentatore_text
             html += f"<tr><th>Alimentatore</th><td>{alimentatore_text}</td></tr>"
         
         # Potenza consigliata
@@ -1946,7 +2021,9 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         else:
             dimmer_text = 'Nessun dimmer' if configurazione['dimmerSelezionato'] == 'NESSUN_DIMMER' else configurazione['dimmerSelezionato'].replace('_', ' ')
             if tuttiCodici['dimmer'] and configurazione['dimmerSelezionato'] != 'NESSUN_DIMMER':
-                dimmer_text += f" - {tuttiCodici['dimmer']}"
+                dimmer_text += f" {tuttiCodici['dimmer']}"
+        prezzo_dimmer_text = format_prezzo(prezzi['dimmer'])
+        dimmer_text += prezzo_dimmer_text
         
         html += f"<tr><th>Dimmer</th><td>{dimmer_text}</td></tr>"
         
@@ -2013,6 +2090,19 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('formaDiTaglioSelezionata') and configurazione['formaDiTaglioSelezionata'] != 'DRITTO_SEMPLICE':
         html += "• I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata<br>"
     
+    if prezzi.get('totale', 0) > 0:
+        html += f"""
+        <div class="section">
+            <h3>Riepilogo Prezzi</h3>
+            <table class="data-table">
+                <tr class="totale-row">
+                    <th>TOTALE CONFIGURAZIONE</th>
+                    <td><strong>€{prezzi['totale']:.2f}</strong></td>
+                </tr>
+            </table>
+        </div>
+        """
+
     html += """
         </div>
 
@@ -2025,6 +2115,44 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     """
     
     return html
+
+@app.route('/get_prezzi_configurazione', methods=['POST'])
+def get_prezzi_configurazione():
+    """Endpoint per ottenere i prezzi di una configurazione"""
+    try:
+        data = request.json
+        
+        codice_profilo = data.get('codice_profilo', '')
+        codice_strip = data.get('codice_strip', '')
+        codice_alimentatore = data.get('codice_alimentatore', '')
+        codice_dimmer = data.get('codice_dimmer', '')
+        
+        # Ottieni tutti i prezzi
+        prezzi = db.get_prezzi_configurazione(
+            codice_profilo, 
+            codice_strip, 
+            codice_alimentatore, 
+            codice_dimmer
+        )
+        
+        return jsonify({
+            'success': True,
+            'prezzi': prezzi
+        })
+        
+    except Exception as e:
+        logging.error(f"Errore in get_prezzi_configurazione: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'prezzi': {
+                'profilo': 0.0,
+                'strip_led': 0.0,
+                'alimentatore': 0.0,
+                'dimmer': 0.0,
+                'totale': 0.0
+            }
+        })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

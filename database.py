@@ -485,3 +485,118 @@ class DatabaseManager:
         self._cache.clear()
         self._cache_timestamps.clear()
         logging.info("Cache cleared")
+
+    def get_prezzo_strip_led(self, codice_completo: str) -> float:
+        """Ottiene il prezzo di una strip LED basato sul codice completo"""
+        try:
+            if not codice_completo:
+                return 0.0
+                
+            result = self.supabase.table('strip_prezzi')\
+                .select('prezzo_euro')\
+                .eq('codice_completo', codice_completo)\
+                .execute()
+            
+            if result.data and len(result.data) > 0:
+                prezzo = result.data[0].get('prezzo_euro', 0.0)
+                return float(prezzo) if prezzo is not None else 0.0
+            
+            return 0.0
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero prezzo strip LED {codice_completo}: {str(e)}")
+            return 0.0
+
+    def get_prezzo_profilo(self, codice_listino: str) -> float:
+        """Ottiene il prezzo di un profilo basato sul codice listino"""
+        try:
+            if not codice_listino:
+                return 0.0
+                
+            result = self.supabase.table('profili_prezzi')\
+                .select('prezzo_euro')\
+                .eq('codice_listino', codice_listino)\
+                .execute()
+            
+            if result.data and len(result.data) > 0:
+                prezzo = result.data[0].get('prezzo_euro', 0.0)
+                return float(prezzo) if prezzo is not None else 0.0
+            
+            return 0.0
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero prezzo profilo {codice_listino}: {str(e)}")
+            return 0.0
+
+    def get_prezzo_alimentatore(self, codice_alimentatore: str) -> float:
+        """Ottiene il prezzo di un alimentatore basato sul codice"""
+        try:
+            if not codice_alimentatore:
+                return 0.0
+                
+            result = self.supabase.table('alimentatori_potenze')\
+                .select('price')\
+                .eq('codice', codice_alimentatore)\
+                .execute()
+            
+            if result.data and len(result.data) > 0:
+                prezzo = result.data[0].get('price', 0.0)
+                return float(prezzo) if prezzo is not None else 0.0
+            
+            return 0.0
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero prezzo alimentatore {codice_alimentatore}: {str(e)}")
+            return 0.0
+
+    def get_prezzo_dimmer(self, codice_dimmer: str) -> float:
+        """Ottiene il prezzo di un dimmer basato sul codice"""
+        try:
+            if not codice_dimmer:
+                return 0.0
+                
+            # Rimuovi il prefisso " - " se presente
+            codice_pulito = codice_dimmer.replace(' - ', '').strip()
+            if not codice_pulito:
+                return 0.0
+                
+            result = self.supabase.table('dimmer')\
+                .select('price')\
+                .eq('codice', codice_pulito)\
+                .execute()
+            
+            if result.data and len(result.data) > 0:
+                prezzo = result.data[0].get('price', 0.0)
+                return float(prezzo) if prezzo is not None else 0.0
+            
+            return 0.0
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero prezzo dimmer {codice_dimmer}: {str(e)}")
+            return 0.0
+
+    def get_prezzi_configurazione(self, codice_profilo: str, codice_strip: str, 
+                                codice_alimentatore: str, codice_dimmer: str) -> Dict[str, float]:
+        """Ottiene tutti i prezzi per una configurazione completa"""
+        try:
+            prezzi = {
+                'profilo': self.get_prezzo_profilo(codice_profilo),
+                'strip_led': self.get_prezzo_strip_led(codice_strip),
+                'alimentatore': self.get_prezzo_alimentatore(codice_alimentatore),
+                'dimmer': self.get_prezzo_dimmer(codice_dimmer)
+            }
+            
+            # Calcola il totale
+            prezzi['totale'] = sum(prezzi.values())
+            
+            return prezzi
+            
+        except Exception as e:
+            logging.error(f"Errore nel calcolo prezzi configurazione: {str(e)}")
+            return {
+                'profilo': 0.0,
+                'strip_led': 0.0,
+                'alimentatore': 0.0,
+                'dimmer': 0.0,
+                'totale': 0.0
+            }
