@@ -1806,6 +1806,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             
         if configurazione.get('stripLedSelezionata'):
             codici['stripLed'] = configurazione['stripLedSelezionata']
+        elif configurazione.get('stripLedSceltaFinale'):
+            codici['stripLed'] = configurazione['stripLedSceltaFinale']
             
         if configurazione.get('codiceAlimentatore'):
             codici['alimentatore'] = configurazione['codiceAlimentatore']
@@ -1826,6 +1828,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     print(tuttiCodici['stripLed'])
     print(tuttiCodici['alimentatore'])
     print(tuttiCodici['dimmer'])
+    print(configurazione)
     # ✅ Calcola i prezzi subito dopo aver ottenuto i codici
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
@@ -1849,6 +1852,40 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         if not prezzo or prezzo == 0:
             return ''
         return f' - €{prezzo:.2f}'
+    
+    def get_codici_dal_database():
+        codici_email = {
+            'profilo': '',
+            'stripLed': ''
+        }
+        
+        # Codice profilo dal database
+        if configurazione.get('profiloSelezionato'):
+            profilo_id = configurazione['profiloSelezionato']
+            finitura = configurazione.get('finituraSelezionata')
+            lunghezza = configurazione.get('lunghezzaRichiesta')
+            
+            try:
+                codici_email['profilo'] = db.get_codice_profilo(profilo_id, finitura, int(lunghezza) if lunghezza else None)
+            except Exception as e:
+                logging.error(f"Errore recupero codice profilo: {str(e)}")
+                codici_email['profilo'] = profilo_id.replace('_', '/')  # fallback
+        
+        # Codice strip LED dal database
+        if configurazione.get('stripLedSelezionata'):
+            strip_id = configurazione['stripLedSelezionata']
+            temperatura = configurazione.get('temperaturaColoreSelezionata')
+            potenza = configurazione.get('potenzaSelezionata')
+            
+            try:
+                codici_email['stripLed'] = db.get_codice_strip_led(strip_id, temperatura, potenza)
+            except Exception as e:
+                logging.error(f"Errore recupero codice strip: {str(e)}")
+                codici_email['stripLed'] = strip_id  # fallback
+        
+        return codici_email
+    
+    codici_email = get_codici_dal_database()
     
     html = f"""
     <!DOCTYPE html>
@@ -1947,8 +1984,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     # Modello con codice
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
-        if tuttiCodici['profilo']:
-            modello_text += f" - {tuttiCodici['profilo']}"
+        if codici_email['profilo']:
+            modello_text += f" - {codici_email['profilo']}"
         quantita_profilo = configurazione.get('quantitaProfilo', 1)
         prezzo_profilo_text = format_prezzo(prezzi['profilo'] * quantita_profilo)
         modello_text += prezzo_profilo_text
@@ -1981,8 +2018,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     # Strip LED con codice
     if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
         nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
-        if tuttiCodici['stripLed']:
-            nome_strip += f" - {tuttiCodici['stripLed']}"
+        if codici_email['stripLed']:
+            nome_strip += f" - {codici_email['stripLed']}"
         quantita_strip = configurazione.get('quantitaStripLed', 1)
         prezzo_strip_text = format_prezzo(prezzi['strip_led'] * quantita_strip)
         nome_strip += prezzo_strip_text

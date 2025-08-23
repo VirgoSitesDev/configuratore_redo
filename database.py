@@ -521,6 +521,7 @@ class DatabaseManager:
                 return 0.0
                 
             # Costruisci la query base
+            codice_listino = codice_listino.split(' ')[0]
             query = self.supabase.table('profili_prezzi').select('prezzo_euro')
             query = query.eq('profilo_id', codice_listino)
             
@@ -617,3 +618,55 @@ class DatabaseManager:
                 'dimmer': 0.0,
                 'totale': 0.0
             }
+
+    def get_codice_profilo(self, profilo_id: str, finitura: str = None, lunghezza_mm: int = None) -> str:
+        """Ottiene il codice listino di un profilo basato su profilo_id, finitura e lunghezza"""
+        try:
+            if not profilo_id:
+                return ""
+
+            query = self.supabase.table('profili_prezzi').select('codice_listino')
+            query = query.eq('profilo_id', profilo_id)
+
+            if finitura:
+                query = query.eq('finitura', finitura)
+            if lunghezza_mm:
+                query = query.eq('lunghezza_mm', int(lunghezza_mm))
+            
+            result = query.execute()
+            
+            if result.data and len(result.data) > 0:
+                codice = result.data[0].get('codice_listino', '')
+                return str(codice) if codice is not None else ""
+            
+            return ""
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero codice profilo {profilo_id}: {str(e)}")
+            return ""
+
+    def get_codice_strip_led(self, strip_id: str, temperatura: str = None, potenza: str = None) -> str:
+        """Ottiene il codice completo di una strip LED basato su strip_id, temperatura e potenza"""
+        try:
+            if not strip_id:
+                return ""
+
+            query = self.supabase.table('strip_prezzi').select('codice_completo')
+            query = query.eq('strip_id', strip_id)
+
+            if temperatura:
+                query = query.eq('temperatura', temperatura)
+            if potenza:
+                query = query.eq('potenza', potenza)
+            
+            result = query.execute()
+            
+            if result.data and len(result.data) > 0:
+                codice = result.data[0].get('codice_completo', '')
+                return str(codice) if codice is not None else ""
+            
+            return ""
+            
+        except Exception as e:
+            logging.error(f"Errore nel recupero codice strip LED {strip_id}: {str(e)}")
+            return ""
