@@ -646,6 +646,7 @@ class DatabaseManager:
             if not profilo_id:
                 return ""
 
+            # Prima prova a cercare nel database con tutti i parametri
             query = self.supabase.table('profili_prezzi').select('codice_listino')
             query = query.eq('profilo_id', profilo_id)
 
@@ -658,13 +659,67 @@ class DatabaseManager:
             
             if result.data and len(result.data) > 0:
                 codice = result.data[0].get('codice_listino', '')
-                return str(codice) if codice is not None else ""
+                if codice:
+                    return str(codice)
             
-            return ""
+            # Se non trova nel database, genera il codice algoritmicamente
+            # (stessa logica del JavaScript)
+            return self._genera_codice_profilo_algoritmico(profilo_id, finitura, lunghezza_mm)
             
         except Exception as e:
             logging.error(f"Errore nel recupero codice profilo {profilo_id}: {str(e)}")
+            # Fallback alla generazione algoritmica
+            return self._genera_codice_profilo_algoritmico(profilo_id, finitura, lunghezza_mm)
+
+    def _genera_codice_profilo_algoritmico(self, profilo_id: str, finitura: str = None, lunghezza_mm: int = None) -> str:
+        """Genera il codice profilo usando la stessa logica del frontend JavaScript"""
+        if not profilo_id:
             return ""
+        
+        # Profili speciali (stessa logica del JavaScript)
+        is_special_profile = profilo_id in [
+            "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
+        ]
+        
+        if is_special_profile:
+            return profilo_id.replace('_', '/')
+        
+        # Logica per altri profili
+        is_sab_profile = profilo_id in ["PRF016_200SET", "PRF011_300"]
+        is_opq_profile = profilo_id in ["PRF120_300", "PRF080_200"]
+        is_al = (("PRFIT" in profilo_id or "PRF120" in profilo_id) and 
+                "PRFIT321" not in profilo_id)
+        
+        # Codice colore basato sulla finitura
+        color_code = ""
+        if finitura == "NERO":
+            color_code = 'BK'
+        elif finitura == "BIANCO":
+            color_code = 'WH'
+        elif finitura == "ALLUMINIO" and is_al:
+            color_code = 'AL'
+        
+        # Prefissi speciali per certi profili
+        if is_opq_profile and color_code:
+            color_code = "M" + color_code
+        elif is_sab_profile and color_code:
+            color_code = "S" + color_code
+        
+        # Costruzione del codice base
+        codice_base = profilo_id.replace('_', '/')
+        
+        # Per profili a taglio su misura, sostituisce la lunghezza nel codice
+        if lunghezza_mm:
+            lunghezza_cm = lunghezza_mm / 10
+            # Sostituisce il numero alla fine del codice con la lunghezza in cm
+            import re
+            codice_base = re.sub(r'/\d+$', f'/{int(lunghezza_cm)}', codice_base)
+        
+        # Aggiunge il codice colore se presente
+        if color_code:
+            return f"{codice_base} {color_code}"
+        else:
+            return codice_base
 
     def get_codice_strip_led(self, strip_id: str, temperatura: str = None, potenza: str = None) -> str:
         """Ottiene il codice completo di una strip LED basato su strip_id, temperatura e potenza"""
