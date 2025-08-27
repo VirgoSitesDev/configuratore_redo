@@ -866,7 +866,6 @@ def finalizza_configurazione():
         profilo = configurazione.get('profiloSelezionato', '')
         codice_prodotto = profilo if profilo else 'Configurazione'
 
-    print("-------   1   --------")
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
@@ -875,10 +874,10 @@ def finalizza_configurazione():
         finitura_profilo=configurazione.get('finituraSelezionata'),
         lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
-        potenza_strip=configurazione.get('potenzaSelezionata')
+        potenza_strip=configurazione.get('potenzaSelezionata'),
+        quantita_profilo=configurazione.get('quantitaProfilo', 1),
+        quantita_strip=configurazione.get('quantitaStripLed', 1)
     )
-    print(prezzi)
-    print("-------   1   --------")
     
     return jsonify({
         'success': True,
@@ -1822,14 +1821,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         return codici
     
     tuttiCodici = calcola_codici_prodotto()
-    
-    print("-------   2   --------")
-    print(tuttiCodici['profilo'])
-    print(tuttiCodici['stripLed'])
-    print(tuttiCodici['alimentatore'])
-    print(tuttiCodici['dimmer'])
-    print(configurazione)
-    # ✅ Calcola i prezzi subito dopo aver ottenuto i codici
+
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
@@ -1838,13 +1830,12 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         finitura_profilo=configurazione.get('finituraSelezionata'),
         lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
-        potenza_strip=configurazione.get('potenzaSelezionata')
+        potenza_strip=configurazione.get('potenzaSelezionata'),
+        quantita_profilo=configurazione.get('quantitaProfilo', 1),
+        quantita_strip=configurazione.get('quantitaStripLed', 1)
     )
-    print(prezzi)
-    print("-------   2   --------")
 
-    
-    # Funzione helper per ottenere nomi visualizzabili
+
     def get_nome_visualizzabile(valore, mappa):
         return mappa.get(valore, valore) if valore else 'N/A'
 
@@ -1981,14 +1972,31 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('categoriaSelezionata'):
         html += f"<tr><th>Categoria</th><td>{get_nome_visualizzabile(configurazione['categoriaSelezionata'], mappaCategorieVisualizzazione)}</td></tr>"
 
-    # Modello con codice
+    # Modello con codice e quantità
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
+
+        print(codici_email)
         if codici_email['profilo']:
             modello_text += f" - {codici_email['profilo']}"
-        quantita_profilo = configurazione.get('quantitaProfilo', 1)
-        prezzo_profilo_text = format_prezzo(prezzi['profilo'] * quantita_profilo)
+
+        if configurazione.get('quantitaProfilo', 1) > 1:
+            if configurazione.get('combinazioneProfiloOttimale'):
+                parti = []
+                for combo in configurazione['combinazioneProfiloOttimale']:
+                    if combo['quantita'] > 1:
+                        parte = f"{combo['quantita']}x {modello_text} ({combo['lunghezza']}mm cad.)"
+                    else:
+                        parte = f"{modello_text} ({combo['lunghezza']}mm)"
+                    parti.append(parte)
+                modello_text = " + ".join(parti)
+            else:
+                modello_text = f"{configurazione['quantitaProfilo']}x {modello_text}"
+
+
+        prezzo_profilo_text = format_prezzo(prezzi['profilo'])
         modello_text += prezzo_profilo_text
+        
         html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
     
     # Tipologia
@@ -2015,16 +2023,22 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 etichetta = etichette.get(lato, f"Lato {lato.replace('lato', '')}")
                 html += f"<tr><th>{etichetta}</th><td>{valore}mm</td></tr>"
     
-    # Strip LED con codice
-    if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
-        nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
-        if codici_email['stripLed']:
-            nome_strip += f" - {codici_email['stripLed']}"
-        quantita_strip = configurazione.get('quantitaStripLed', 1)
-        prezzo_strip_text = format_prezzo(prezzi['strip_led'] * quantita_strip)
-        nome_strip += prezzo_strip_text
+        # Strip LED
+        if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
+            nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
 
-        html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
+            if configurazione.get('quantitaStripLed', 1) > 1:
+                nome_strip = f"{configurazione['quantitaStripLed']}x {nome_strip} ({configurazione.get('lunghezzaMassimaStripLed', 5) * 1000}mm cad.)"
+
+            if codici_email['stripLed']:
+                nome_strip += f" - {codici_email['stripLed']}"
+
+            prezzo_strip_text = format_prezzo(prezzi['strip_led'])
+            nome_strip += prezzo_strip_text
+
+            html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
+        else:
+            html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
         
         # Tipologia Strip
         if configurazione.get('tipologiaStripSelezionata'):
@@ -2225,15 +2239,15 @@ def get_prezzi_configurazione():
         codice_strip = data.get('codice_strip', '')
         codice_alimentatore = data.get('codice_alimentatore', '')
         codice_dimmer = data.get('codice_dimmer', '')
-        
-        # ✅ NUOVO: Parametri aggiuntivi per una ricerca più precisa
+
         finitura_profilo = data.get('finitura_profilo')
         lunghezza_profilo = data.get('lunghezza_profilo')
         temperatura_strip = data.get('temperatura_strip')
         potenza_strip = data.get('potenza_strip')
-        
-        # Ottieni tutti i prezzi
-        print("-------   3   --------")
+
+        quantita_profilo = data.get('quantita_profilo', 1)
+        quantita_strip = data.get('quantita_strip', 1)
+
         prezzi = db.get_prezzi_configurazione(
             codice_profilo, 
             codice_strip, 
@@ -2242,10 +2256,10 @@ def get_prezzi_configurazione():
             finitura_profilo=finitura_profilo,
             lunghezza_profilo=lunghezza_profilo,
             temperatura_strip=temperatura_strip,
-            potenza_strip=potenza_strip
+            potenza_strip=potenza_strip,
+            quantita_profilo=quantita_profilo,
+            quantita_strip=quantita_strip
         )
-        print(prezzi)
-        print("-------   3   --------")
         
         return jsonify({
             'success': True,
@@ -2265,6 +2279,6 @@ def get_prezzi_configurazione():
                 'totale': 0.0
             }
         })
-    
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

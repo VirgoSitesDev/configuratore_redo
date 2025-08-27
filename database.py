@@ -519,13 +519,11 @@ class DatabaseManager:
         try:
             if not codice_listino:
                 return 0.0
-                
-            # Costruisci la query base
+
             codice_listino = codice_listino.split(' ')[0]
             query = self.supabase.table('profili_prezzi').select('prezzo_euro')
             query = query.eq('profilo_id', codice_listino)
-            
-            # Aggiungi filtri aggiuntivi se forniti
+
             if finitura:
                 query = query.eq('finitura', finitura)
             if lunghezza_mm:
@@ -536,7 +534,22 @@ class DatabaseManager:
             if result.data and len(result.data) > 0:
                 prezzo = result.data[0].get('prezzo_euro', 0.0)
                 return float(prezzo) if prezzo is not None else 0.0
+
+            if lunghezza_mm:
+                logging.warning(f"Prezzo specifico non trovato per lunghezza {lunghezza_mm}mm, provo con prezzo base")
+                query_base = self.supabase.table('profili_prezzi').select('prezzo_euro')
+                query_base = query_base.eq('profilo_id', codice_listino)
+                if finitura:
+                    query_base = query_base.eq('finitura', finitura)
+                
+                result_base = query_base.execute()
+                
+                if result_base.data and len(result_base.data) > 0:
+                    prezzo_base = result_base.data[0].get('prezzo_euro', 0.0)
+                    logging.info(f"Usando prezzo base €{prezzo_base:.2f} per profilo {codice_listino}")
+                    return float(prezzo_base) if prezzo_base is not None else 0.0
             
+            logging.warning(f"Nessun prezzo trovato per profilo {codice_listino}")
             return 0.0
             
         except Exception as e:
@@ -593,19 +606,27 @@ class DatabaseManager:
     def get_prezzi_configurazione(self, codice_profilo: str, codice_strip: str, 
                                 codice_alimentatore: str, codice_dimmer: str,
                                 finitura_profilo: str = None, lunghezza_profilo: int = None,
-                                temperatura_strip: str = None, potenza_strip: str = None) -> Dict[str, float]:
-        """Ottiene tutti i prezzi per una configurazione completa"""
+                                temperatura_strip: str = None, potenza_strip: str = None,
+                                quantita_profilo: int = 1, quantita_strip: int = 1) -> Dict[str, float]:
+        """Ottiene tutti i prezzi per una configurazione completa con quantità"""
         try:
             codice_profilo = codice_profilo.replace('/', '_')
+
+            prezzo_unitario_profilo = self.get_prezzo_profilo(codice_profilo, finitura_profilo, lunghezza_profilo)
+            prezzo_unitario_strip = self.get_prezzo_strip_led(codice_strip, temperatura_strip, potenza_strip)
+            prezzo_unitario_alimentatore = self.get_prezzo_alimentatore(codice_alimentatore)
+            prezzo_unitario_dimmer = self.get_prezzo_dimmer(codice_dimmer)
+
             prezzi = {
-                'profilo': self.get_prezzo_profilo(codice_profilo, finitura_profilo, lunghezza_profilo),
-                'strip_led': self.get_prezzo_strip_led(codice_strip, temperatura_strip, potenza_strip),
-                'alimentatore': self.get_prezzo_alimentatore(codice_alimentatore),
-                'dimmer': self.get_prezzo_dimmer(codice_dimmer)
+                'profilo': prezzo_unitario_profilo * quantita_profilo,
+                'strip_led': prezzo_unitario_strip * quantita_strip,
+                'alimentatore': prezzo_unitario_alimentatore,
+                'dimmer': prezzo_unitario_dimmer
             }
-            
-            # Calcola il totale
+
             prezzi['totale'] = sum(prezzi.values())
+            
+            logging.info(f"Prezzi calcolati - Profilo: €{prezzi['profilo']:.2f} (€{prezzo_unitario_profilo:.2f} x {quantita_profilo}), Strip: €{prezzi['strip_led']:.2f} (€{prezzo_unitario_strip:.2f} x {quantita_strip})")
             
             return prezzi
             
