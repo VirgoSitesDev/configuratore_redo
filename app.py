@@ -1684,7 +1684,7 @@ def invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale,
         
         msg = Message(
             subject=subject,
-            recipients=['furlaninicoletta@gmail.com'],
+            recipients=['furlaninicoletta@gmail.com', email_agente],
             html=email_html,
             sender=app.config['MAIL_DEFAULT_SENDER']
         )
