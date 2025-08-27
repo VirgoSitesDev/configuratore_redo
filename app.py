@@ -2139,19 +2139,70 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         </div>
     """
     
-    # ✅ Sezione prezzi - ora i prezzi sono corretti
+# Sostituire la sezione prezzi esistente (circa riga 900-915 in app.py) con questa:
+
+# ✅ Sezione prezzi con costi di lavorazione - SOLO per email preventivo
     if prezzi.get('totale', 0) > 0:
+        # Calcolo costi aggiuntivi per email preventivo
+        costo_lavorazione_profilo = 0
+        costo_taglio_strip = 0
+        costo_gestione = 7  # Sempre applicato
+        
+        # +5€ se taglio su misura
+        if configurazione.get('tipologiaSelezionata') == 'taglio_misura':
+            costo_lavorazione_profilo = 5
+        
+        # +5€ se c'è una strip LED
+        if (configurazione.get('stripLedSelezionata') and 
+            configurazione.get('stripLedSelezionata') not in ['NO_STRIP', 'senza_strip'] and
+            configurazione.get('includeStripLed') != False):
+            costo_taglio_strip = 5
+        
+        # Calcolo totale finale
+        totale_base = prezzi['totale']
+        totale_lavorazioni = costo_lavorazione_profilo + costo_taglio_strip + costo_gestione
+        totale_finale = totale_base + totale_lavorazioni
+        
         html += f"""
         <div class="section">
             <h3>Riepilogo Prezzi</h3>
             <table class="data-table">
-                <tr class="totale-row">
+                <tr>
                     <th>TOTALE CONFIGURAZIONE</th>
-                    <td><strong>€{prezzi['totale']:.2f}</strong></td>
+                    <td>€{totale_base:.2f}</td>
                 </tr>
-            </table>
-        </div>
         """
+        
+        # Aggiungi costi di lavorazione se applicabili
+        if costo_lavorazione_profilo > 0:
+            html += f"""
+                <tr>
+                    <th>Lavorazione profilo</th>
+                    <td>€{costo_lavorazione_profilo:.2f}</td>
+                </tr>
+            """
+        
+        if costo_taglio_strip > 0:
+            html += f"""
+                <tr>
+                    <th>Taglio e cablaggio strip</th>
+                    <td>€{costo_taglio_strip:.2f}</td>
+                </tr>
+            """
+    
+    # Spesa gestione sempre presente
+    html += f"""
+            <tr>
+                <th>Spesa di gestione fissa</th>
+                <td>€{costo_gestione:.2f}</td>
+            </tr>
+            <tr class="totale-row" style="border-top: 2px solid #e83f34;">
+                <th><strong>TOTALE CONFIGURAZIONE E LAVORAZIONE</strong></th>
+                <td><strong>€{totale_finale:.2f}</strong></td>
+            </tr>
+        </table>
+    </div>
+    """
 
     html += """
         <div class="footer">
