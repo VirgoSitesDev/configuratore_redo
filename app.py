@@ -1862,10 +1862,13 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 logging.error(f"Errore recupero codice profilo: {str(e)}")
                 codici_email['profilo'] = profilo_id.replace('_', '/')  # fallback
         
-        # Codice strip LED dal database
-        if configurazione.get('stripLedSelezionata'):
-            strip_id = configurazione['stripLedSelezionata']
-            temperatura = configurazione.get('temperaturaColoreSelezionata')
+        strip_id = (configurazione.get('stripLedSelezionata') or 
+               configurazione.get('stripLedSceltaFinale') or 
+               configurazione.get('stripLedSelezionata'))
+    
+        if strip_id and strip_id not in ['NO_STRIP', 'senza_strip', '', None]:
+            temperatura = (configurazione.get('temperaturaColoreSelezionata') or 
+                        configurazione.get('temperaturaSelezionata'))
             potenza = configurazione.get('potenzaSelezionata')
             
             try:
@@ -2023,35 +2026,33 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 etichetta = etichette.get(lato, f"Lato {lato.replace('lato', '')}")
                 html += f"<tr><th>{etichetta}</th><td>{valore}mm</td></tr>"
     
-        # Strip LED
-        if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
-            nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
+    # Strip LED
+    if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
+        nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
 
-            if configurazione.get('quantitaStripLed', 1) > 1:
-                nome_strip = f"{configurazione['quantitaStripLed']}x {nome_strip} ({configurazione.get('lunghezzaMassimaStripLed', 5) * 1000}mm cad.)"
+        if configurazione.get('quantitaStripLed', 1) > 1:
+            nome_strip = f"{configurazione['quantitaStripLed']}x {nome_strip} ({configurazione.get('lunghezzaMassimaStripLed', 5) * 1000}mm cad.)"
 
-            if codici_email['stripLed']:
-                nome_strip += f" - {codici_email['stripLed']}"
+        if codici_email['stripLed']:
+            nome_strip += f" - {codici_email['stripLed']}"
 
-            prezzo_strip_text = format_prezzo(prezzi['strip_led'])
-            nome_strip += prezzo_strip_text
+        prezzo_strip_text = format_prezzo(prezzi['strip_led'])
+        nome_strip += prezzo_strip_text
 
-            html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
-        else:
-            html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
-        
-        # Tipologia Strip
-        if configurazione.get('tipologiaStripSelezionata'):
-            tipologia_strip_text = get_nome_visualizzabile(configurazione['tipologiaStripSelezionata'], mappaTipologiaStripVisualizzazione)
-            if configurazione['tipologiaStripSelezionata'] == 'SPECIAL' and configurazione.get('specialStripSelezionata'):
-                tipologia_strip_text += f" - {get_nome_visualizzabile(configurazione['specialStripSelezionata'], mappaSpecialStripVisualizzazione)}"
-            html += f"<tr><th>Tipologia Strip</th><td>{tipologia_strip_text}</td></tr>"
-        
-        # Potenza
-        if configurazione.get('potenzaSelezionata'):
-            html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
+        html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
     else:
         html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
+        
+    # Tipologia Strip
+    if configurazione.get('tipologiaStripSelezionata'):
+        tipologia_strip_text = get_nome_visualizzabile(configurazione['tipologiaStripSelezionata'], mappaTipologiaStripVisualizzazione)
+        if configurazione['tipologiaStripSelezionata'] == 'SPECIAL' and configurazione.get('specialStripSelezionata'):
+            tipologia_strip_text += f" - {get_nome_visualizzabile(configurazione['specialStripSelezionata'], mappaSpecialStripVisualizzazione)}"
+        html += f"<tr><th>Tipologia Strip</th><td>{tipologia_strip_text}</td></tr>"
+    
+    # Potenza
+    if configurazione.get('potenzaSelezionata'):
+        html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
     
     # Alimentazione
     if configurazione.get('tensioneSelezionato') == '220V':
