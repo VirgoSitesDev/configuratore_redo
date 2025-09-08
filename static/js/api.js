@@ -1228,6 +1228,75 @@ export function finalizzaConfigurazione() {
                     </table>
                   </div>
                 </div>
+
+                <div class="text-center mt-4">
+                  <div class="alert alert-warning mt-3">
+                    <strong>Attenzione:</strong> eventuali staffe aggiuntive non incluse.
+                  </div>
+                  <div class="row mt-4">
+                    <div class="col-md-6 text-center">
+                      <button class="btn btn-success btn-lg w-100" id="btn-salva-configurazione">
+                        <i class="fas fa-download me-2"></i>Salva configurazione
+                      </button>
+                    </div>
+                    <div class="col-md-6 text-center">
+                      <button class="btn btn-primary btn-lg w-100" id="btn-preventivo">
+                        <i class="fas fa-envelope me-2"></i>Richiedi preventivo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal fade" id="preventivoModal" tabindex="-1" aria-labelledby="preventivoModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="preventivoModalLabel">Richiedi Preventivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="preventivoForm">
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label for="nomeAgente" class="form-label">Nome Agente *</label>
+                          <input type="text" class="form-control" id="nomeAgente" name="nomeAgente" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label for="emailAgente" class="form-label">Email Agente *</label>
+                          <input type="email" class="form-control" id="emailAgente" name="emailAgente" required>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label for="ragioneSociale" class="form-label">Ragione Sociale</label>
+                          <input type="text" class="form-control" id="ragioneSociale" name="ragioneSociale">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label for="riferimento" class="form-label">Riferimento *</label>
+                          <input type="text" class="form-control" id="riferimento" name="riferimento" required>
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label for="note" class="form-label">Note aggiuntive</label>
+                        <textarea class="form-control" id="note" name="note" rows="3" placeholder="Inserisci eventuali note o richieste specifiche..."></textarea>
+                      </div>
+                      <div class="alert alert-info">
+                        <strong>Riepilogo configurazione:</strong><br>
+                        Codice prodotto: ${codiceProdotto}<br>
+                        Il preventivo completo sarà inviato via email.
+                      </div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" id="btn-invia-preventivo">
+                      <span class="spinner-border spinner-border-sm d-none me-2" id="loading-spinner"></span>
+                      Invia Richiesta
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           `;
