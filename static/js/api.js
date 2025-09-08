@@ -1692,6 +1692,12 @@ export function richiediPreventivo(codiceProdotto) {
     }
 
     const tuttiCodici = calcolaCodiceProdottoCompleto();
+
+    console.log("🔧 DEBUG FRONTEND - Valori cavo nella configurazione:", {
+      tipoAlimentazioneCavo: configurazione.tipoAlimentazioneCavo,
+      lunghezzaCavoIngresso: configurazione.lunghezzaCavoIngresso,
+      lunghezzaCavoUscita: configurazione.lunghezzaCavoUscita
+    });
     
     const configurazioneCompleta = {
       ...configurazione,

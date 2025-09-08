@@ -1683,7 +1683,7 @@ def invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale,
         
         msg = Message(
             subject=subject,
-            recipients=['furlaninicoletta@gmail.com', 'realizzazioni@redogroup.it', email_agente],
+            recipients=['furlaninicoletta@gmail.com', email_agente],
             html=email_html,
             sender=app.config['MAIL_DEFAULT_SENDER']
         )
@@ -1718,6 +1718,9 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
 
 def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
     """Genera l'HTML dell'email del preventivo con tutti i dati del riepilogo"""
+    print(f"DEBUG CAVO - tipoAlimentazioneCavo: {configurazione.get('tipoAlimentazioneCavo')}")
+    print(f"DEBUG CAVO - lunghezzaCavoIngresso: {configurazione.get('lunghezzaCavoIngresso')}")
+    print(f"DEBUG CAVO - lunghezzaCavoUscita: {configurazione.get('lunghezzaCavoUscita')}")
     
     # Mappature per la visualizzazione (da config.js)
     mappaCategorieVisualizzazione = {
