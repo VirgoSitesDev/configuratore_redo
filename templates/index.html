@@ -1219,7 +1219,7 @@
     }
 
     function fixDuplicateButtons() {
-      const visibleSections = document.querySelectorAll('.step-section[style*="display: block"]');
+      const visibleSections = document.querySelectorAll('.step-section[style*="display: block"]:not(#step7-riepilogo)');
       visibleSections.forEach(function(section) {
         const navigationButtons = section.querySelectorAll('.row .btn-secondary, .row .btn-primary');
         const buttonRows = section.querySelectorAll('.row:has(.btn-secondary), .row:has(.btn-primary)');
