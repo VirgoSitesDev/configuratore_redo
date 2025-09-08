@@ -917,4 +917,16 @@ export function prepareControlloListeners() {
     
     checkStep5Completion();
   });
+
+  $('#lunghezza-cavo-ingresso').on('input change', function() {
+    const valore = parseInt($(this).val()) || 0;
+    configurazione.lunghezzaCavoIngresso = valore;
+    checkStep5Completion();
+  });
+  
+  $('#lunghezza-cavo-uscita').on('input change', function() {
+    const valore = parseInt($(this).val()) || 0;
+    configurazione.lunghezzaCavoUscita = valore;
+    checkStep5Completion();
+  });
 }

@@ -1718,9 +1718,6 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
 
 def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
     """Genera l'HTML dell'email del preventivo con tutti i dati del riepilogo"""
-    print(f"DEBUG CAVO - tipoAlimentazioneCavo: {configurazione.get('tipoAlimentazioneCavo')}")
-    print(f"DEBUG CAVO - lunghezzaCavoIngresso: {configurazione.get('lunghezzaCavoIngresso')}")
-    print(f"DEBUG CAVO - lunghezzaCavoUscita: {configurazione.get('lunghezzaCavoUscita')}")
     
     # Mappature per la visualizzazione (da config.js)
     mappaCategorieVisualizzazione = {
@@ -1982,7 +1979,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
 
-        print(codici_email)
         if codici_email['profilo']:
             modello_text += f" - {codici_email['profilo']}"
 
