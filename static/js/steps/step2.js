@@ -85,7 +85,7 @@ export function initStep2Listeners() {
     
     $("#step2-tipologia-strip").fadeOut(300, function() {
       if (configurazione.isFlussoProfiliEsterni) {
-        $("#step1-tipologia").fadeIn(300);
+        $("#step1-tipologia-outdoor").fadeIn(300);
         updateProgressBar(1);
       } else {
         $("#step2-option-strip").fadeIn(300);
