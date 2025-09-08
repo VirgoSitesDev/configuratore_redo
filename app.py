@@ -2129,6 +2129,14 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('potenzaTotale'):
         html += f"<tr><th>Potenza totale</th><td>{configurazione['potenzaTotale']}W</td></tr>"
     
+    if prezzi.get('totale', 0) > 0:
+        html += f"""
+                <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
+                    <th scope="row"><strong>Totale configurazione</strong></th>
+                    <td><strong>€{prezzi['totale']:.2f}</strong></td>
+                </tr>
+        """
+
     html += """
             </table>
         </div>
@@ -2153,14 +2161,11 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         </div>
     """
     
-# Sostituire la sezione prezzi esistente (circa riga 900-915 in app.py) con questa:
+    costo_lavorazione_profilo = 0
+    costo_taglio_strip = 0
+    costo_gestione = 7
 
-# ✅ Sezione prezzi con costi di lavorazione - SOLO per email preventivo
     if prezzi.get('totale', 0) > 0:
-        # Calcolo costi aggiuntivi per email preventivo
-        costo_lavorazione_profilo = 0
-        costo_taglio_strip = 0
-        costo_gestione = 7  # Sempre applicato
         
         # +5€ se taglio su misura
         if configurazione.get('tipologiaSelezionata') == 'taglio_misura':
