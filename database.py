@@ -708,12 +708,49 @@ class DatabaseManager:
         # Costruzione del codice base
         codice_base = profilo_id.replace('_', '/')
         
-        # Per profili a taglio su misura, sostituisce la lunghezza nel codice
-        if lunghezza_mm:
-            lunghezza_cm = lunghezza_mm / 10
+        # ✅ CORREZIONE: Usa la lunghezza standard più vicina per eccesso
+        if lunghezza_mm and lunghezza_mm > 0:
+            lunghezza_standard_da_usare = lunghezza_mm
+            
+            try:
+                # Recupera le lunghezze disponibili per questo profilo dal database
+                lunghezze_data = self.supabase.table('profili_lunghezze')\
+                    .select('lunghezza')\
+                    .eq('profilo_id', profilo_id)\
+                    .order('lunghezza')\
+                    .execute().data
+                
+                if lunghezze_data:
+                    lunghezze_disponibili = sorted([l['lunghezza'] for l in lunghezze_data])
+                    
+                    # Trova la prima lunghezza >= a quella richiesta
+                    lunghezza_per_eccesso = next((l for l in lunghezze_disponibili if l >= lunghezza_mm), None)
+                    
+                    if lunghezza_per_eccesso:
+                        lunghezza_standard_da_usare = lunghezza_per_eccesso
+                    else:
+                        # Se nessuna lunghezza è >= a quella richiesta, usa la più grande disponibile
+                        lunghezza_standard_da_usare = max(lunghezze_disponibili)
+                    
+                    logging.info(f"Lunghezza richiesta: {lunghezza_mm}mm, Lunghezze disponibili: {lunghezze_disponibili}, Lunghezza scelta: {lunghezza_standard_da_usare}mm")
+                
+            except Exception as e:
+                logging.warning(f"Errore nel recupero lunghezze per profilo {profilo_id}: {str(e)}")
+                # Fallback alla lunghezza richiesta
+                pass
+            
+            lunghezza_cm = round(lunghezza_standard_da_usare / 10)
+            
+            # Formatta con padding a 3 cifre (057, 114, 171, 228)
+            lunghezza_formattata = f"{lunghezza_cm:03d}"
+            
             # Sostituisce il numero alla fine del codice con la lunghezza in cm
             import re
-            codice_base = re.sub(r'/\d+$', f'/{int(lunghezza_cm)}', codice_base)
+            if re.search(r'/\d+$', codice_base):
+                codice_base = re.sub(r'/\d+$', f'/{lunghezza_formattata}', codice_base)
+            else:
+                # Se non c'è già una lunghezza, aggiungila
+                codice_base += f'/{lunghezza_formattata}'
         
         # Aggiunge il codice colore se presente
         if color_code:

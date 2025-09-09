@@ -2,6 +2,7 @@ import { configurazione } from './config.js';
 
 export function calcolaCodiceProfilo() {
   if (!configurazione.profiloSelezionato) return '';
+  
   const isSabProfile = [
     "PRF016_200SET",
     "PRF011_300"
@@ -14,28 +15,65 @@ export function calcolaCodiceProfilo() {
 
   const isSpecialProfile = [
     "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
-  ].includes(configurazione.profiloSelezionato)
+  ].includes(configurazione.profiloSelezionato);
 
   const isAl = (configurazione.profiloSelezionato.includes("PRFIT") || configurazione.profiloSelezionato.includes("PRF120")) && !configurazione.profiloSelezionato.includes("PRFIT321");
 
   let codiceProfilo;
 
-  if (isSpecialProfile) 
-  {
+  if (isSpecialProfile) {
     codiceProfilo = configurazione.profiloSelezionato.replace(/_/g, '/');
-  }
-  else {
-    let colorCode;
+  } else {
+    let colorCode = '';
     if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';
     else if (configurazione.finituraSelezionata == "BIANCO") colorCode = 'WH';
     else if (configurazione.finituraSelezionata == "ALLUMINIO" && isAl) colorCode = 'AL';
 
-    if (isOpqProfile) colorCode = "M" + colorCode;
-    else if (isSabProfile) colorCode = "S" + colorCode;
+    if (isOpqProfile && colorCode) colorCode = "M" + colorCode;
+    else if (isSabProfile && colorCode) colorCode = "S" + colorCode;
 
-    if (colorCode) codiceProfilo = configurazione.profiloSelezionato.replace(/_/g, '/') + ' ' + colorCode;
-    else codiceProfilo = configurazione.profiloSelezionato.replace(/_/g, '/');
+    let codiceBase = configurazione.profiloSelezionato.replace(/_/g, '/');
+    
+    // ✅ CORREZIONE: Usa la lunghezza standard più vicina per eccesso
+    if (configurazione.lunghezzaRichiesta && configurazione.lunghezzaRichiesta > 0) {
+      let lunghezzaStandardDaUsare = configurazione.lunghezzaRichiesta;
+      
+      // Se abbiamo le lunghezze disponibili per questo profilo, trova quella più vicina per eccesso
+      if (configurazione.lunghezzeDisponibili && configurazione.lunghezzeDisponibili.length > 0) {
+        const lunghezzeOrdinate = [...configurazione.lunghezzeDisponibili].sort((a, b) => a - b);
+        
+        // Trova la prima lunghezza >= a quella richiesta
+        const lunghezzaPerEccesso = lunghezzeOrdinate.find(l => l >= configurazione.lunghezzaRichiesta);
+        
+        if (lunghezzaPerEccesso) {
+          lunghezzaStandardDaUsare = lunghezzaPerEccesso;
+        } else {
+          // Se nessuna lunghezza è >= a quella richiesta, usa la più grande disponibile
+          lunghezzaStandardDaUsare = Math.max(...lunghezzeOrdinate);
+        }
+        
+        console.log(`Lunghezza richiesta: ${configurazione.lunghezzaRichiesta}mm, Lunghezze disponibili: [${lunghezzeOrdinate.join(', ')}], Lunghezza scelta: ${lunghezzaStandardDaUsare}mm`);
+      }
+      
+      const lunghezzaInCm = Math.round(lunghezzaStandardDaUsare / 10);
+      const lunghezzaFormattata = lunghezzaInCm.toString().padStart(3, '0');
+      
+      // Sostituisce la lunghezza esistente o aggiunge la nuova lunghezza
+      if (codiceBase.match(/\/\d+$/)) {
+        codiceBase = codiceBase.replace(/\/\d+$/, `/${lunghezzaFormattata}`);
+      } else {
+        codiceBase += `/${lunghezzaFormattata}`;
+      }
+    }
+
+    // Aggiungi il codice colore se presente
+    if (colorCode) {
+      codiceProfilo = `${codiceBase} ${colorCode}`;
+    } else {
+      codiceProfilo = codiceBase;
+    }
   }
+  
   return codiceProfilo;
 }
 
