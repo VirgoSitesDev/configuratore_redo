@@ -541,15 +541,18 @@ def calcola_lunghezze():
 
     def calcola_proposte_singole(lunghezza):
         if lunghezza > 0:
-            proposta1 = int((lunghezza - 5) // taglio_minimo * taglio_minimo) + 5
-            proposta2 = int((((lunghezza - 5) + taglio_minimo - 0.01) // taglio_minimo) * taglio_minimo) + 5
+            proposta1 = ((lunghezza - 5) // taglio_minimo * taglio_minimo) + 5
+            proposta2 = ((((lunghezza - 5) + taglio_minimo - 0.01) // taglio_minimo) * taglio_minimo) + 5
 
             if proposta2 <= proposta1:
-                proposta2 = int(proposta1 + taglio_minimo)
+                proposta2 = (proposta1 + taglio_minimo)
         else:
             proposta1 = 0
             proposta2 = 0
-        
+
+        if data.get('formaDiTaglioSelezionata') is None:
+            proposta1 -= 5
+            proposta2 -= 5
         return proposta1, proposta2
 
     def calcola_spazio_buio_lato(valore_originale, proposta1, proposta2):

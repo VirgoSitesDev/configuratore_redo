@@ -112,6 +112,7 @@ function calcolaProposte(lunghezzaRichiesta) {
           configurazione.combinazioni = data.combinazioni;
         }
         
+        data.formaDiTaglioSelezionata = requestData.formaDiTaglioSelezionata;
         resolve(data);
       },
       error: function(error) {
@@ -194,11 +195,11 @@ export function vaiAlleProposte() {
 }
 
 function renderProposteSemplici(data, lunghezzaOriginale) {
-  const spazioProduzione = data.spazioProduzione || 5;
   const coincideConProposta1 = lunghezzaOriginale === data.proposte.proposta1;
   const coincideConProposta2 = lunghezzaOriginale === data.proposte.proposta2;
   const coincideConProposte = coincideConProposta1 || coincideConProposta2;
-  const spazioBuio = Math.abs(lunghezzaOriginale - data.proposte.proposta1) + 5;
+  let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2 ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + 5 : Math.abs(lunghezzaOriginale - data.proposte.proposta2) + 5;
+  if (data.formaDiTaglioSelezionata == null) spazioBuio -= 5;
   const proposte = [];
 
   proposte.push({
