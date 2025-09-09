@@ -210,7 +210,11 @@ function applicaFiltroTipologieEsterni() {
 function filtraSpecialStripPerEsterniFiltrate() {
   $('.special-strip-card').parent().hide();
 
-  const specialStripEsterni = ['XSNAKE', 'XMAGIS'];
+  let specialStripEsterni = [];
+  if (configurazione.categoriaSelezionata == 'esterni')
+    specialStripEsterni = ['XSNAKE', 'XMAGIS'];
+  else if (configurazione.categoriaSelezionata == 'wall_washer_ext')
+    specialStripEsterni = ['XFLEX'];
   
   specialStripEsterni.forEach(specialType => {
     const $card = $(`.special-strip-card[data-special-strip="${specialType}"]`);
@@ -218,8 +222,6 @@ function filtraSpecialStripPerEsterniFiltrate() {
       $card.parent().show();
     }
   });
-
-  $(`.special-strip-card[data-special-strip="XFLEX"]`).parent().hide();
 
   if (specialStripEsterni.length === 1) {
     const $unica = $(`.special-strip-card[data-special-strip="${specialStripEsterni[0]}"]`);
