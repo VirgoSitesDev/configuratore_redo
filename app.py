@@ -666,58 +666,74 @@ def calcola_lunghezze():
 def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
     """
     Trova la combinazione ottimale di lunghezze standard per minimizzare lo spreco
+    usando programmazione dinamica per esplorare tutte le combinazioni
     """
     if not lunghezze_disponibili or lunghezza_richiesta <= 0:
         return [{'lunghezza': 3000, 'quantita': 1}]
     
-    # Ordina per lunghezza decrescente e rimuovi duplicati
-    lunghezze = sorted(set(lunghezze_disponibili), reverse=True)
+    # Rimuovi duplicati e ordina
+    lunghezze = sorted(list(set(lunghezze_disponibili)))
+    
+    # Usa programmazione dinamica per trovare tutte le combinazioni possibili
+    # fino a un limite ragionevole per evitare calcoli infiniti
+    limite_massimo = lunghezza_richiesta + max(lunghezze)
     
     migliore_combinazione = None
     minimo_spreco = float('inf')
+    minimo_pezzi = float('inf')
     
-    # Prova diverse strategie di combinazione
-    for strategia in range(len(lunghezze)):
-        combinazione = []
-        rimanente = lunghezza_richiesta
+    # Genera tutte le combinazioni possibili usando un approccio ricorsivo limitato
+    def genera_combinazioni(lunghezza_target, combinazione_corrente, lunghezze_usate):
+        nonlocal migliore_combinazione, minimo_spreco, minimo_pezzi
         
-        # Strategia: inizia con la lunghezza all'indice 'strategia'
-        lunghezze_ordinate = lunghezze[strategia:] + lunghezze[:strategia]
+        # Calcola lunghezza totale e spreco della combinazione corrente
+        lunghezza_totale = sum(lunghezze_usate)
         
-        for lunghezza in lunghezze_ordinate:
-            if rimanente <= 0:
-                break
+        # Se abbiamo raggiunto o superato la lunghezza target
+        if lunghezza_totale >= lunghezza_target:
+            spreco = lunghezza_totale - lunghezza_target
+            pezzi_totali = sum(combinazione_corrente.values())
+            
+            # Migliora se: spreco minore, o stesso spreco ma meno pezzi
+            if (spreco < minimo_spreco) or (spreco == minimo_spreco and pezzi_totali < minimo_pezzi):
+                minimo_spreco = spreco
+                minimo_pezzi = pezzi_totali
+                migliore_combinazione = [
+                    {'lunghezza': lunghezza, 'quantita': quantita}
+                    for lunghezza, quantita in combinazione_corrente.items()
+                    if quantita > 0
+                ]
+            return
+        
+        # Se la lunghezza totale supera il limite massimo, interrompi
+        if lunghezza_totale > limite_massimo:
+            return
+            
+        # Prova ad aggiungere ogni lunghezza disponibile
+        for lunghezza in lunghezze:
+            # Limita il numero massimo di pezzi per lunghezza per evitare esplosione combinatoria
+            max_pezzi_per_lunghezza = min(10, (limite_massimo // lunghezza) + 1)
+            
+            if combinazione_corrente.get(lunghezza, 0) < max_pezzi_per_lunghezza:
+                nuova_combinazione = combinazione_corrente.copy()
+                nuova_combinazione[lunghezza] = nuova_combinazione.get(lunghezza, 0) + 1
+                nuove_lunghezze = lunghezze_usate + [lunghezza]
                 
-            quantita = rimanente // lunghezza
-            if quantita > 0:
-                combinazione.append({'lunghezza': lunghezza, 'quantita': quantita})
-                rimanente -= quantita * lunghezza
-        
-        # Se c'è ancora rimanente, aggiungi un pezzo della lunghezza più piccola
-        if rimanente > 0:
-            lunghezza_min = min(lunghezze)
-            # Verifica se esiste già questa lunghezza nella combinazione
-            trovato = False
-            for item in combinazione:
-                if item['lunghezza'] == lunghezza_min:
-                    item['quantita'] += 1
-                    trovato = True
-                    break
-            if not trovato:
-                combinazione.append({'lunghezza': lunghezza_min, 'quantita': 1})
-        
-        # Calcola spreco totale
-        lunghezza_totale = sum(item['lunghezza'] * item['quantita'] for item in combinazione)
-        spreco = lunghezza_totale - lunghezza_richiesta
-        
-        # Preferisci combinazioni con meno spreco, a parità di spreco preferisci meno pezzi
-        peso_spreco = spreco * 1000 + sum(item['quantita'] for item in combinazione)
-        
-        if spreco >= 0 and peso_spreco < minimo_spreco:
-            minimo_spreco = peso_spreco
-            migliore_combinazione = combinazione[:]
+                genera_combinazioni(lunghezza_target, nuova_combinazione, nuove_lunghezze)
     
-    return migliore_combinazione or [{'lunghezza': max(lunghezze), 'quantita': math.ceil(lunghezza_richiesta / max(lunghezze))}]
+    # Inizia la ricerca
+    genera_combinazioni(lunghezza_richiesta, {}, [])
+    
+    # Se non trova nessuna combinazione, usa il fallback
+    if migliore_combinazione is None:
+        lunghezza_max = max(lunghezze)
+        quantita_necessaria = math.ceil(lunghezza_richiesta / lunghezza_max)
+        migliore_combinazione = [{'lunghezza': lunghezza_max, 'quantita': quantita_necessaria}]
+    
+    # Ordina la combinazione per lunghezza decrescente per una presentazione migliore
+    migliore_combinazione.sort(key=lambda x: x['lunghezza'], reverse=True)
+    
+    return migliore_combinazione
 
 @app.route('/finalizza_configurazione', methods=['POST'])
 def finalizza_configurazione():
