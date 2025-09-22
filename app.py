@@ -1702,18 +1702,24 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         if configurazione.get('profiloSelezionato'):
             profilo_id = configurazione['profiloSelezionato']
             finitura = configurazione.get('finituraSelezionata')
-            lunghezza = configurazione.get('lunghezzaRichiesta')
+
+            lunghezza = None
+            if configurazione.get('combinazioneProfiloOttimale') and len(configurazione['combinazioneProfiloOttimale']) > 0:
+                lunghezze_combinazione = [combo['lunghezza'] for combo in configurazione['combinazioneProfiloOttimale']]
+                lunghezza = max(lunghezze_combinazione)
+            else:
+                lunghezza = configurazione.get('lunghezzaRichiesta')
             
             try:
                 codici_email['profilo'] = db.get_codice_profilo(profilo_id, finitura, int(lunghezza) if lunghezza else None)
             except Exception as e:
                 logging.error(f"Errore recupero codice profilo: {str(e)}")
                 codici_email['profilo'] = profilo_id.replace('_', '/')
-        
+
         strip_id = (configurazione.get('stripLedSelezionata') or 
-               configurazione.get('stripLedSceltaFinale') or 
-               configurazione.get('stripLedSelezionata'))
-    
+            configurazione.get('stripLedSceltaFinale') or 
+            configurazione.get('stripLedSelezionata'))
+
         if strip_id and strip_id not in ['NO_STRIP', 'senza_strip', '', None]:
             temperatura = (configurazione.get('temperaturaColoreSelezionata') or 
                         configurazione.get('temperaturaSelezionata'))
@@ -1726,7 +1732,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 codici_email['stripLed'] = strip_id
         
         return codici_email
-    
+
     codici_email = get_codici_dal_database()
     
     html = f"""

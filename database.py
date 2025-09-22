@@ -715,8 +715,8 @@ class DatabaseManager:
                     else:
                         lunghezza_standard_da_usare = max(lunghezze_disponibili)
                     
-                    logging.info(f"Lunghezza richiesta: {lunghezza_mm}mm, Lunghezze disponibili: {lunghezze_disponibili}, Lunghezza scelta: {lunghezza_standard_da_usare}mm")
-                
+                    logging.info(f"Profilo {profilo_id}: lunghezza richiesta {lunghezza_mm}mm -> lunghezza standard {lunghezza_standard_da_usare}mm")
+                    
             except Exception as e:
                 logging.warning(f"Errore nel recupero lunghezze per profilo {profilo_id}: {str(e)}")
                 pass
@@ -725,8 +725,8 @@ class DatabaseManager:
             lunghezza_formattata = f"{lunghezza_cm:03d}"
 
             import re
-            if re.search(r'/\d+$', codice_base):
-                codice_base = re.sub(r'/\d+$', f'/{lunghezza_formattata}', codice_base)
+            if re.search(r'/\d+', codice_base):
+                codice_base = re.sub(r'/\d+', f'/{lunghezza_formattata}', codice_base)
             else:
                 codice_base += f'/{lunghezza_formattata}'
 

@@ -33,40 +33,41 @@ export function calcolaCodiceProfilo() {
     else if (isSabProfile && colorCode) colorCode = "S" + colorCode;
 
     let codiceBase = configurazione.profiloSelezionato.replace(/_/g, '/');
+
+    let lunghezzaDaUsare = configurazione.lunghezzaRichiesta;
+
+    if (configurazione.combinazioneProfiloOttimale && configurazione.combinazioneProfiloOttimale.length > 0) {
+      const lunghezze = configurazione.combinazioneProfiloOttimale.map(combo => combo.lunghezza);
+      lunghezzaDaUsare = Math.max(...lunghezze);
+    }
     
-    // ✅ CORREZIONE: Usa la lunghezza standard più vicina per eccesso
-    if (configurazione.lunghezzaRichiesta && configurazione.lunghezzaRichiesta > 0) {
-      let lunghezzaStandardDaUsare = configurazione.lunghezzaRichiesta;
-      
-      // Se abbiamo le lunghezze disponibili per questo profilo, trova quella più vicina per eccesso
+    if (lunghezzaDaUsare && lunghezzaDaUsare > 0) {
+      let lunghezzaStandardDaUsare = lunghezzaDaUsare;
+
       if (configurazione.lunghezzeDisponibili && configurazione.lunghezzeDisponibili.length > 0) {
         const lunghezzeOrdinate = [...configurazione.lunghezzeDisponibili].sort((a, b) => a - b);
-        
-        // Trova la prima lunghezza >= a quella richiesta
-        const lunghezzaPerEccesso = lunghezzeOrdinate.find(l => l >= configurazione.lunghezzaRichiesta);
+
+        const lunghezzaPerEccesso = lunghezzeOrdinate.find(l => l >= lunghezzaDaUsare);
         
         if (lunghezzaPerEccesso) {
           lunghezzaStandardDaUsare = lunghezzaPerEccesso;
         } else {
-          // Se nessuna lunghezza è >= a quella richiesta, usa la più grande disponibile
           lunghezzaStandardDaUsare = Math.max(...lunghezzeOrdinate);
         }
         
-        console.log(`Lunghezza richiesta: ${configurazione.lunghezzaRichiesta}mm, Lunghezze disponibili: [${lunghezzeOrdinate.join(', ')}], Lunghezza scelta: ${lunghezzaStandardDaUsare}mm`);
+        console.log(`Lunghezza richiesta: ${lunghezzaDaUsare}mm, Lunghezze disponibili: [${lunghezzeOrdinate.join(', ')}], Lunghezza scelta: ${lunghezzaStandardDaUsare}mm`);
       }
       
       const lunghezzaInCm = Math.round(lunghezzaStandardDaUsare / 10);
       const lunghezzaFormattata = lunghezzaInCm.toString().padStart(3, '0');
-      
-      // Sostituisce la lunghezza esistente o aggiunge la nuova lunghezza
-      if (codiceBase.match(/\/\d+$/)) {
-        codiceBase = codiceBase.replace(/\/\d+$/, `/${lunghezzaFormattata}`);
+
+      if (codiceBase.match(/\/\d+/)) {
+        codiceBase = codiceBase.replace(/\/\d+/, `/${lunghezzaFormattata}`);
       } else {
         codiceBase += `/${lunghezzaFormattata}`;
       }
     }
 
-    // Aggiungi il codice colore se presente
     if (colorCode) {
       codiceProfilo = `${codiceBase} ${colorCode}`;
     } else {
