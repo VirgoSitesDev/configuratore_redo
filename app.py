@@ -1685,6 +1685,16 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         lunghezze_multiple=configurazione.get('lunghezzeMultiple')
     )
 
+    lunghezza_cavo_totale_mm = 0
+    if configurazione.get('lunghezzaCavoIngresso'):
+        lunghezza_cavo_totale_mm += configurazione['lunghezzaCavoIngresso']
+    if configurazione.get('lunghezzaCavoUscita'):
+        lunghezza_cavo_totale_mm += configurazione['lunghezzaCavoUscita']
+
+    lunghezza_cavo_totale_metri_esatti = lunghezza_cavo_totale_mm / 1000 if lunghezza_cavo_totale_mm > 0 else 0
+    metri_da_fatturare = math.ceil(lunghezza_cavo_totale_metri_esatti) if lunghezza_cavo_totale_mm > 0 else 0
+    prezzo_cavo = metri_da_fatturare * 2
+
     def get_nome_visualizzabile(valore, mappa):
         return mappa.get(valore, valore) if valore else 'N/A'
 
@@ -1847,7 +1857,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             else:
                 modello_text = f"{configurazione['quantitaProfilo']}x {modello_text}"
 
-
         prezzo_profilo_text = format_prezzo(prezzi['profilo'])
         modello_text += prezzo_profilo_text
         
@@ -1941,6 +1950,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_DOPPIA' and configurazione.get('lunghezzaCavoUscita'):
             html += f"<tr><th>Lunghezza cavo uscita</th><td>{configurazione['lunghezzaCavoUscita']}mm</td></tr>"
 
+    # 🔧 AGGIUNTA: Lunghezza cavo totale
+    if lunghezza_cavo_totale_mm > 0:
+        html += f"<tr><th>Lunghezza cavo</th><td>{lunghezza_cavo_totale_mm}mm ({lunghezza_cavo_totale_metri_esatti:.2f}m → {metri_da_fatturare}m fatturati)</td></tr>"
+
     if configurazione.get('uscitaCavoSelezionata') and configurazione.get('categoriaSelezionata') not in ['esterni', 'wall_washer_ext']:
         uscita_cavo_text = configurazione['uscitaCavoSelezionata']
         if uscita_cavo_text == 'DRITTA':
@@ -2009,7 +2022,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             costo_taglio_strip = 5
 
         totale_base = prezzi['totale']
-        totale_lavorazioni = costo_lavorazione_profilo + costo_taglio_strip + costo_gestione
+        totale_lavorazioni = costo_lavorazione_profilo + costo_taglio_strip + costo_gestione + prezzo_cavo
         totale_finale = totale_base + totale_lavorazioni
         
         html += f"""
@@ -2035,6 +2048,14 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 <tr>
                     <th>Taglio e cablaggio strip</th>
                     <td>€{costo_taglio_strip:.2f}</td>
+                </tr>
+            """
+
+        if prezzo_cavo > 0:
+            html += f"""
+                <tr>
+                    <th>Prezzo cavo</th>
+                    <td>€{prezzo_cavo:.2f}</td>
                 </tr>
             """
 
