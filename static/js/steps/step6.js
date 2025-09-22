@@ -105,9 +105,16 @@ function calcolaProposte(lunghezzaRichiesta) {
         configurazione.spazioProduzione = data.spazioProduzione || 5;
         
         if (data.tipo === 'semplice') {
-          configurazione.proposta1 = data.proposte.proposta1;
-          configurazione.proposta2 = data.proposte.proposta2;
+          configurazione.proposta1 = Math.floor(data.proposte.proposta1);
+          configurazione.proposta2 = Math.floor(data.proposte.proposta2);
         } else {
+          if (data.proposte_per_lato) {
+            Object.keys(data.proposte_per_lato).forEach(lato => {
+              if (Array.isArray(data.proposte_per_lato[lato])) {
+                data.proposte_per_lato[lato] = data.proposte_per_lato[lato].map(val => Math.floor(val));
+              }
+            });
+          }
           configurazione.propostePerLato = data.proposte_per_lato;
           configurazione.combinazioni = data.combinazioni;
         }
@@ -195,6 +202,10 @@ export function vaiAlleProposte() {
 }
 
 function renderProposteSemplici(data, lunghezzaOriginale) {
+  data.proposte.proposta1 = Math.floor(data.proposte.proposta1);
+  data.proposte.proposta2 = Math.floor(data.proposte.proposta2);
+  lunghezzaOriginale = Math.floor(lunghezzaOriginale);
+  
   const coincideConProposta1 = lunghezzaOriginale === data.proposte.proposta1;
   const coincideConProposta2 = lunghezzaOriginale === data.proposte.proposta2;
   const coincideConProposte = coincideConProposta1 || coincideConProposta2;
@@ -300,6 +311,22 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
 }
 
 function renderProposteCombinazioni(data) {
+  data.combinazioni.forEach(combinazione => {
+    combinazione.lunghezza_totale = Math.floor(combinazione.lunghezza_totale);
+
+    Object.keys(combinazione.lunghezze).forEach(lato => {
+      combinazione.lunghezze[lato] = Math.floor(combinazione.lunghezze[lato]);
+    });
+
+    if (combinazione.spazio_buio_totale) {
+      combinazione.spazio_buio_totale = Math.floor(combinazione.spazio_buio_totale);
+    }
+  });
+
+  const lunghezzeMultipleArrotondate = {};
+  Object.keys(configurazione.lunghezzeMultiple).forEach(lato => {
+    lunghezzeMultipleArrotondate[lato] = Math.floor(configurazione.lunghezzeMultiple[lato]);
+  });
   
   const etichetteLati = {
     'FORMA_L_DX': {
