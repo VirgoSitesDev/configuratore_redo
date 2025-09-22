@@ -1952,7 +1952,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
 
     # 🔧 AGGIUNTA: Lunghezza cavo totale
     if lunghezza_cavo_totale_mm > 0:
-        html += f"<tr><th>Lunghezza cavo</th><td>{lunghezza_cavo_totale_mm}mm ({lunghezza_cavo_totale_metri_esatti:.2f}m → {metri_da_fatturare}m fatturati)</td></tr>"
+        html += f"<tr><th>Lunghezza cavo</th><td>{lunghezza_cavo_totale_mm}mm</td></tr>"
 
     if configurazione.get('uscitaCavoSelezionata') and configurazione.get('categoriaSelezionata') not in ['esterni', 'wall_washer_ext']:
         uscita_cavo_text = configurazione['uscitaCavoSelezionata']
