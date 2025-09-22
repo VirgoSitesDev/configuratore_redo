@@ -895,7 +895,8 @@ def finalizza_configurazione():
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
-        quantita_strip=configurazione.get('quantitaStripLed', 1)
+        quantita_strip=configurazione.get('quantitaStripLed', 1),
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple')  # ✅ AGGIUNTO
     )
     
     return jsonify({
@@ -1851,9 +1852,9 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
-        quantita_strip=configurazione.get('quantitaStripLed', 1)
+        quantita_strip=configurazione.get('quantitaStripLed', 1),
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple')  # ✅ AGGIUNTO
     )
-
 
     def get_nome_visualizzabile(valore, mappa):
         return mappa.get(valore, valore) if valore else 'N/A'

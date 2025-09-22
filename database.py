@@ -6,6 +6,7 @@ import logging
 from functools import lru_cache
 from datetime import datetime, timedelta
 import time
+import math
 
 load_dotenv()
 
@@ -153,13 +154,12 @@ class DatabaseManager:
             profilo['finitureDisponibili'] = finiture_map.get(pid, [])
             profilo['lunghezzeDisponibili'] = lunghezze_map.get(pid, [])
             profilo['stripLedCompatibili'] = strip_map.get(pid, [])
-            
-            # ✅ NUOVO: Aggiungere lunghezza massima del profilo
+
             lunghezze_profilo = lunghezze_map.get(pid, [])
             if lunghezze_profilo:
                 profilo['lunghezzaMassima'] = max(lunghezze_profilo)
             else:
-                profilo['lunghezzaMassima'] = profilo.get('lunghezza_massima', 3000)  # fallback
+                profilo['lunghezzaMassima'] = profilo.get('lunghezza_massima', 3000)
         
         self._log_query_time(f"get_profili_by_categoria({categoria})", start_time)
         self._set_cache(cache_key, profili)
@@ -168,10 +168,8 @@ class DatabaseManager:
     def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str, 
                             temperatura: str, potenza: Optional[str] = None,
                             tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
-        # DEBUG: Log dei parametri in ingresso
         logging.info(f"get_strip_led_filtrate chiamata con: profilo_id={profilo_id}, tensione={tensione}, ip={ip}, temperatura={temperatura}, potenza={potenza}, tipologia={tipologia}")
-        
-        # DEBUG: Verifica se il profilo esiste
+
         profilo_check = self.supabase.table('profili').select('id, nome').eq('id', profilo_id).execute()
         logging.info(f"Profilo trovato: {profilo_check.data}")
         
@@ -179,21 +177,18 @@ class DatabaseManager:
             .select('strip_id')\
             .eq('profilo_id', profilo_id)\
             .execute().data
-        
-        # DEBUG: Log delle strip compatibili trovate
+
         logging.info(f"Strip compatibili trovate per profilo {profilo_id}: {len(strip_compatibili)} strip")
         logging.info(f"Strip IDs: {[s['strip_id'] for s in strip_compatibili]}")
         
         strip_ids = [s['strip_id'] for s in strip_compatibili]
         
         if not strip_ids:
-            # DEBUG: Controlla se ci sono dati nella tabella compatibilità
             all_compat = self.supabase.table('profili_strip_compatibili').select('*').limit(10).execute().data
             logging.warning(f"Nessuna strip compatibile trovata per profilo {profilo_id}!")
             logging.info(f"Primi 10 record della tabella compatibilità: {all_compat}")
             return []
 
-        # ✅ MODIFICA: Includere la lunghezza nel select
         query = self.supabase.table('strip_led').select('*, lunghezza')
         query = query.eq('tensione', tensione).eq('ip', ip)
         
@@ -250,9 +245,7 @@ class DatabaseManager:
             strip['codiciProdotto'] = codici_map.get(sid, [])
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
-            
-            # ✅ NUOVO: Assicurare che lunghezzaMassima sia presente
-            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)  # fallback a 5000mm
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)
             
             result.append(strip)
         
@@ -266,7 +259,7 @@ class DatabaseManager:
         senza considerare la compatibilità con un profilo specifico.
         Usato per il flusso esterni.
         """
-        # ✅ MODIFICA: Includere la lunghezza nel select
+
         query = self.supabase.table('strip_led').select('*, lunghezza')
         query = query.eq('tensione', tensione).eq('ip', ip)
         
@@ -323,9 +316,7 @@ class DatabaseManager:
             strip['codiciProdotto'] = codici_map.get(sid, [])
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
-            
-            # ✅ NUOVO: Assicurare che lunghezzaMassima sia presente
-            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)  # fallback a 5000mm
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)
             
             result.append(strip)
         
@@ -492,11 +483,9 @@ class DatabaseManager:
             if not codice_completo:
                 return 0.0
 
-            # Costruisci la query base
             query = self.supabase.table('strip_prezzi').select('prezzo_euro')
             query = query.eq('strip_id', codice_completo)
-            
-            # Aggiungi filtri aggiuntivi se forniti
+
             if temperatura:
                 query = query.eq('temperatura', temperatura)
             if potenza:
@@ -582,8 +571,7 @@ class DatabaseManager:
         try:
             if not codice_dimmer:
                 return 0.0
-                
-            # Rimuovi il prefisso " - " se presente
+
             codice_pulito = codice_dimmer.replace(' - ', '').strip()
             if not codice_pulito:
                 return 0.0
@@ -607,26 +595,35 @@ class DatabaseManager:
                                 codice_alimentatore: str, codice_dimmer: str,
                                 finitura_profilo: str = None, lunghezza_profilo: int = None,
                                 temperatura_strip: str = None, potenza_strip: str = None,
-                                quantita_profilo: int = 1, quantita_strip: int = 1) -> Dict[str, float]:
+                                quantita_profilo: int = 1, quantita_strip: int = 1,
+                                lunghezze_multiple: dict = None) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa con quantità"""
         try:
             codice_profilo = codice_profilo.replace('/', '_')
-
             prezzo_unitario_profilo = self.get_prezzo_profilo(codice_profilo, finitura_profilo, lunghezza_profilo)
             prezzo_unitario_strip = self.get_prezzo_strip_led(codice_strip, temperatura_strip, potenza_strip)
             prezzo_unitario_alimentatore = self.get_prezzo_alimentatore(codice_alimentatore)
             prezzo_unitario_dimmer = self.get_prezzo_dimmer(codice_dimmer)
 
+            lunghezza_totale_mm = 0
+            
+            if lunghezze_multiple:
+                lunghezza_totale_mm = sum(v for v in lunghezze_multiple.values() if v and v > 0)
+            elif lunghezza_profilo:
+                lunghezza_totale_mm = lunghezza_profilo
+
+            metri_totali = math.ceil(lunghezza_totale_mm / 1000) if lunghezza_totale_mm > 0 else 0
+
             prezzi = {
                 'profilo': prezzo_unitario_profilo * quantita_profilo,
-                'strip_led': prezzo_unitario_strip * quantita_strip,
+                'strip_led': prezzo_unitario_strip * metri_totali,
                 'alimentatore': prezzo_unitario_alimentatore,
                 'dimmer': prezzo_unitario_dimmer
             }
 
             prezzi['totale'] = sum(prezzi.values())
             
-            logging.info(f"Prezzi calcolati - Profilo: €{prezzi['profilo']:.2f} (€{prezzo_unitario_profilo:.2f} x {quantita_profilo}), Strip: €{prezzi['strip_led']:.2f} (€{prezzo_unitario_strip:.2f} x {quantita_strip})")
+            logging.info(f"Prezzi calcolati - Profilo: €{prezzi['profilo']:.2f} (€{prezzo_unitario_profilo:.2f} x {quantita_profilo}), Strip: €{prezzi['strip_led']:.2f} (€{prezzo_unitario_strip:.2f} x {metri_totali}m)")
             
             return prezzi
             
@@ -646,7 +643,6 @@ class DatabaseManager:
             if not profilo_id:
                 return ""
 
-            # Prima prova a cercare nel database con tutti i parametri
             query = self.supabase.table('profili_prezzi').select('codice_listino')
             query = query.eq('profilo_id', profilo_id)
 
@@ -661,36 +657,30 @@ class DatabaseManager:
                 codice = result.data[0].get('codice_listino', '')
                 if codice:
                     return str(codice)
-            
-            # Se non trova nel database, genera il codice algoritmicamente
-            # (stessa logica del JavaScript)
+
             return self._genera_codice_profilo_algoritmico(profilo_id, finitura, lunghezza_mm)
             
         except Exception as e:
             logging.error(f"Errore nel recupero codice profilo {profilo_id}: {str(e)}")
-            # Fallback alla generazione algoritmica
             return self._genera_codice_profilo_algoritmico(profilo_id, finitura, lunghezza_mm)
 
     def _genera_codice_profilo_algoritmico(self, profilo_id: str, finitura: str = None, lunghezza_mm: int = None) -> str:
         """Genera il codice profilo usando la stessa logica del frontend JavaScript"""
         if not profilo_id:
             return ""
-        
-        # Profili speciali (stessa logica del JavaScript)
+
         is_special_profile = profilo_id in [
             "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
         ]
         
         if is_special_profile:
             return profilo_id.replace('_', '/')
-        
-        # Logica per altri profili
+
         is_sab_profile = profilo_id in ["PRF016_200SET", "PRF011_300"]
         is_opq_profile = profilo_id in ["PRF120_300", "PRF080_200"]
         is_al = (("PRFIT" in profilo_id or "PRF120" in profilo_id) and 
                 "PRFIT321" not in profilo_id)
-        
-        # Codice colore basato sulla finitura
+
         color_code = ""
         if finitura == "NERO":
             color_code = 'BK'
@@ -698,22 +688,18 @@ class DatabaseManager:
             color_code = 'WH'
         elif finitura == "ALLUMINIO" and is_al:
             color_code = 'AL'
-        
-        # Prefissi speciali per certi profili
+
         if is_opq_profile and color_code:
             color_code = "M" + color_code
         elif is_sab_profile and color_code:
             color_code = "S" + color_code
-        
-        # Costruzione del codice base
+
         codice_base = profilo_id.replace('_', '/')
-        
-        # ✅ CORREZIONE: Usa la lunghezza standard più vicina per eccesso
+
         if lunghezza_mm and lunghezza_mm > 0:
             lunghezza_standard_da_usare = lunghezza_mm
             
             try:
-                # Recupera le lunghezze disponibili per questo profilo dal database
                 lunghezze_data = self.supabase.table('profili_lunghezze')\
                     .select('lunghezza')\
                     .eq('profilo_id', profilo_id)\
@@ -722,37 +708,28 @@ class DatabaseManager:
                 
                 if lunghezze_data:
                     lunghezze_disponibili = sorted([l['lunghezza'] for l in lunghezze_data])
-                    
-                    # Trova la prima lunghezza >= a quella richiesta
                     lunghezza_per_eccesso = next((l for l in lunghezze_disponibili if l >= lunghezza_mm), None)
                     
                     if lunghezza_per_eccesso:
                         lunghezza_standard_da_usare = lunghezza_per_eccesso
                     else:
-                        # Se nessuna lunghezza è >= a quella richiesta, usa la più grande disponibile
                         lunghezza_standard_da_usare = max(lunghezze_disponibili)
                     
                     logging.info(f"Lunghezza richiesta: {lunghezza_mm}mm, Lunghezze disponibili: {lunghezze_disponibili}, Lunghezza scelta: {lunghezza_standard_da_usare}mm")
                 
             except Exception as e:
                 logging.warning(f"Errore nel recupero lunghezze per profilo {profilo_id}: {str(e)}")
-                # Fallback alla lunghezza richiesta
                 pass
             
             lunghezza_cm = round(lunghezza_standard_da_usare / 10)
-            
-            # Formatta con padding a 3 cifre (057, 114, 171, 228)
             lunghezza_formattata = f"{lunghezza_cm:03d}"
-            
-            # Sostituisce il numero alla fine del codice con la lunghezza in cm
+
             import re
             if re.search(r'/\d+$', codice_base):
                 codice_base = re.sub(r'/\d+$', f'/{lunghezza_formattata}', codice_base)
             else:
-                # Se non c'è già una lunghezza, aggiungila
                 codice_base += f'/{lunghezza_formattata}'
-        
-        # Aggiunge il codice colore se presente
+
         if color_code:
             return f"{codice_base} {color_code}"
         else:
