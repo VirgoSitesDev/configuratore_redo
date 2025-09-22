@@ -197,41 +197,17 @@ def get_temperature_colore(profilo_id, tipologia, tensione, ip):
 @app.route('/get_opzioni_potenza/<profilo_id>/<tensione>/<ip>/<temperatura>/<tipologia_strip>')
 def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=None):
     try:
-        # AGGIUNGI QUESTO LOG ALL'INIZIO
-        logging.info(f"=== DEBUG get_opzioni_potenza ===")
-        logging.info(f"Parametri ricevuti: profilo_id={profilo_id}, tensione={tensione}, ip={ip}, temperatura={temperatura}, tipologia_strip={tipologia_strip}")
-        
-        # Verifica se il profilo esiste
-        profilo_check = db.supabase.table('profili').select('id, nome').eq('id', profilo_id).execute()
-        logging.info(f"Verifica profilo: {profilo_check.data}")
-        
-        # Verifica compatibilità prima di chiamare la funzione principale
-        strip_compatibili_check = db.supabase.table('profili_strip_compatibili')\
-            .select('strip_id')\
-            .eq('profilo_id', profilo_id)\
-            .execute().data
-        logging.info(f"Strip compatibili trovate (diretta): {len(strip_compatibili_check)}")
-        
-        # Per gli esterni, cerca tutte le strip senza filtrare per profilo
         if profilo_id == 'ESTERNI':
-            logging.info("Modalità ESTERNI - usando get_all_strip_led_filtrate")
             strips = db.get_all_strip_led_filtrate(tensione, ip, temperatura, None, tipologia_strip)
         else:
-            logging.info("Modalità normale - usando get_strip_led_filtrate")
             strips = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, None, tipologia_strip)
-        
-        logging.info(f"Strip trovate dopo filtro: {len(strips)}")
         
         tutte_potenze_disponibili = set()
         for strip in strips:
             potenze_strip = strip.get('potenzeDisponibili', [])
-            logging.info(f"Strip {strip.get('id', 'N/A')}: potenze = {potenze_strip}")
             tutte_potenze_disponibili.update(potenze_strip)
         
-        logging.info(f"Tutte le potenze raccolte: {tutte_potenze_disponibili}")
-        
         if not tutte_potenze_disponibili:
-            logging.warning("NESSUNA POTENZA DISPONIBILE!")
             return jsonify({'success': False, 'message': 'Nessuna potenza disponibile per i parametri selezionati'})
         
         potenze_complete = []
@@ -242,8 +218,7 @@ def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=N
                 'codice': '',
                 'specifiche': ''
             })
-        
-        logging.info(f"Ritornando {len(potenze_complete)} potenze")
+
         return jsonify({'success': True, 'potenze': potenze_complete})
         
     except Exception as e:
@@ -258,8 +233,7 @@ def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipol
     try:
         if potenza:
             potenza = potenza.replace('-', ' ').replace('_', '/')
-        
-        # Per gli esterni, cerca tutte le strip senza filtrare per profilo
+
         if profilo_id == 'ESTERNI':
             strips = db.get_all_strip_led_filtrate(tensione, ip, temperatura, potenza, tipologia)
         else:
@@ -409,17 +383,10 @@ def get_strip_compatibile_standalone():
         temperatura = data.get('temperatura')
         potenza = data.get('potenza')
         special = data.get('special')
-        
-        logging.info(f"=== get_strip_compatibile_standalone ===")
-        logging.info(f"Parametri: tipologia={tipologia}, tensione={tensione}, ip={ip}, temperatura={temperatura}, potenza={potenza}, special={special}")
-        
-        # Costruisci la query per trovare strip reali
         query = db.supabase.table('strip_led').select('*')
         query = query.eq('tensione', tensione).eq('ip', ip)
-        
-        # Applica filtri per tipologia
+
         if tipologia == 'SPECIAL' and special:
-            # Per special strip, filtra per nome commerciale/id
             if special == 'XMAGIS':
                 query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
             elif special == 'XFLEX':
@@ -432,15 +399,13 @@ def get_strip_compatibile_standalone():
             query = query.eq('tipo', tipologia)
         
         strips = query.execute().data
-        logging.info(f"Strip trovate: {len(strips)}")
         
         if not strips:
             return jsonify({
                 'success': False, 
                 'message': 'Nessuna strip trovata per i parametri specificati'
             })
-        
-        # Filtra per temperatura se specificata
+
         if temperatura:
             strip_ids = [s['id'] for s in strips]
             temp_check = db.supabase.table('strip_temperature')\
@@ -451,9 +416,7 @@ def get_strip_compatibile_standalone():
             
             strip_ids_con_temp = [t['strip_id'] for t in temp_check]
             strips = [s for s in strips if s['id'] in strip_ids_con_temp]
-            logging.info(f"Strip dopo filtro temperatura: {len(strips)}")
-        
-        # Filtra per potenza se specificata
+
         if potenza:
             strip_ids = [s['id'] for s in strips]
             potenza_check = db.supabase.table('strip_potenze')\
@@ -464,22 +427,20 @@ def get_strip_compatibile_standalone():
             
             strip_ids_con_potenza = [p['strip_id'] for p in potenza_check]
             strips = [s for s in strips if s['id'] in strip_ids_con_potenza]
-            logging.info(f"Strip dopo filtro potenza: {len(strips)}")
         
         if not strips:
             return jsonify({
                 'success': False, 
                 'message': 'Nessuna strip trovata dopo tutti i filtri'
             })
-        
-        # Prendi la prima strip che corrisponde ai criteri
+
         strip_scelta = strips[0]
         logging.info(f"Strip scelta: {strip_scelta['id']} - {strip_scelta.get('nome_commerciale', '')}")
         
         return jsonify({
             'success': True,
             'strip_led': {
-                'id': strip_scelta['id'],  # ✅ ID REALE dal database
+                'id': strip_scelta['id'],
                 'nomeCommerciale': strip_scelta.get('nome_commerciale', ''),
                 'nome': strip_scelta.get('nome', ''),
                 'tensione': strip_scelta.get('tensione', ''),
@@ -670,31 +631,23 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
     """
     if not lunghezze_disponibili or lunghezza_richiesta <= 0:
         return [{'lunghezza': 3000, 'quantita': 1}]
-    
-    # Rimuovi duplicati e ordina
+
     lunghezze = sorted(list(set(lunghezze_disponibili)))
-    
-    # Usa programmazione dinamica per trovare tutte le combinazioni possibili
-    # fino a un limite ragionevole per evitare calcoli infiniti
     limite_massimo = lunghezza_richiesta + max(lunghezze)
     
     migliore_combinazione = None
     minimo_spreco = float('inf')
     minimo_pezzi = float('inf')
-    
-    # Genera tutte le combinazioni possibili usando un approccio ricorsivo limitato
+
     def genera_combinazioni(lunghezza_target, combinazione_corrente, lunghezze_usate):
         nonlocal migliore_combinazione, minimo_spreco, minimo_pezzi
-        
-        # Calcola lunghezza totale e spreco della combinazione corrente
+
         lunghezza_totale = sum(lunghezze_usate)
-        
-        # Se abbiamo raggiunto o superato la lunghezza target
+
         if lunghezza_totale >= lunghezza_target:
             spreco = lunghezza_totale - lunghezza_target
             pezzi_totali = sum(combinazione_corrente.values())
-            
-            # Migliora se: spreco minore, o stesso spreco ma meno pezzi
+
             if (spreco < minimo_spreco) or (spreco == minimo_spreco and pezzi_totali < minimo_pezzi):
                 minimo_spreco = spreco
                 minimo_pezzi = pezzi_totali
@@ -704,14 +657,11 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
                     if quantita > 0
                 ]
             return
-        
-        # Se la lunghezza totale supera il limite massimo, interrompi
+
         if lunghezza_totale > limite_massimo:
             return
-            
-        # Prova ad aggiungere ogni lunghezza disponibile
+
         for lunghezza in lunghezze:
-            # Limita il numero massimo di pezzi per lunghezza per evitare esplosione combinatoria
             max_pezzi_per_lunghezza = min(10, (limite_massimo // lunghezza) + 1)
             
             if combinazione_corrente.get(lunghezza, 0) < max_pezzi_per_lunghezza:
@@ -720,17 +670,14 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
                 nuove_lunghezze = lunghezze_usate + [lunghezza]
                 
                 genera_combinazioni(lunghezza_target, nuova_combinazione, nuove_lunghezze)
-    
-    # Inizia la ricerca
+
     genera_combinazioni(lunghezza_richiesta, {}, [])
-    
-    # Se non trova nessuna combinazione, usa il fallback
+
     if migliore_combinazione is None:
         lunghezza_max = max(lunghezze)
         quantita_necessaria = math.ceil(lunghezza_richiesta / lunghezza_max)
         migliore_combinazione = [{'lunghezza': lunghezza_max, 'quantita': quantita_necessaria}]
-    
-    # Ordina la combinazione per lunghezza decrescente per una presentazione migliore
+
     migliore_combinazione.sort(key=lambda x: x['lunghezza'], reverse=True)
     
     return migliore_combinazione
@@ -746,10 +693,6 @@ def finalizza_configurazione():
             'alimentatore': '',
             'dimmer': ''
         }
-        
-        # Per i codici completi, questi dovrebbero essere già calcolati lato client
-        # e passati nella configurazione o calcolati qui se necessario
-        # Per ora usiamo i valori dalla configurazione se presenti
 
         if configurazione.get('codiceProfilo'):
             codici['profilo'] = configurazione['codiceProfilo']
@@ -789,29 +732,21 @@ def finalizza_configurazione():
             lunghezza_in_metri = 0
     
     potenza_totale = potenza_per_metro * lunghezza_in_metri
-    
-    # ✅ NUOVO: Calcolo delle quantità necessarie con ottimizzazione
+
     quantita_profilo = 1
     quantita_strip_led = 1
-    lunghezza_massima_profilo = 3000  # default
-    lunghezza_massima_strip = 5000    # default
-    combinazione_ottimale = [{'lunghezza': 3000, 'quantita': 1}]  # default
-    
-    # Calcolare la lunghezza totale richiesta
+    lunghezza_massima_profilo = 3000
+    lunghezza_massima_strip = 5000
+    combinazione_ottimale = [{'lunghezza': 3000, 'quantita': 1}]
+
     lunghezza_totale = 0
     if 'lunghezzeMultiple' in configurazione and configurazione['lunghezzeMultiple']:
-        # Forme complesse: somma di tutti i lati
         lunghezza_totale = sum(v for v in configurazione['lunghezzeMultiple'].values() if v and v > 0)
     elif 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
-        # Forme semplici
         lunghezza_totale = float(configurazione['lunghezzaRichiesta'])
-    
-    logging.info(f"Lunghezza totale calcolata: {lunghezza_totale}mm")
-    
-    # Recuperare lunghezze disponibili del profilo e ottimizzare
+
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
-            # Recupera le lunghezze disponibili per il profilo
             lunghezze_profilo = db.supabase.table('profili_lunghezze')\
                 .select('lunghezza')\
                 .eq('profilo_id', configurazione['profiloSelezionato'])\
@@ -820,19 +755,10 @@ def finalizza_configurazione():
             if lunghezze_profilo and lunghezza_totale > 0:
                 lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
                 lunghezza_massima_profilo = max(lunghezze_list)
-                
-                # ✅ OTTIMIZZA le quantità usando tutte le lunghezze disponibili
                 combinazione_ottimale = ottimizza_quantita_profilo(lunghezza_totale, lunghezze_list)
-                
-                # Calcola quantità totale per compatibilità
                 quantita_profilo = sum(item['quantita'] for item in combinazione_ottimale)
                 
-                logging.info(f"Lunghezze disponibili: {lunghezze_list}")
-                logging.info(f"Combinazione ottimale: {combinazione_ottimale}")
-                logging.info(f"Quantità totale profilo: {quantita_profilo}")
-                
             elif lunghezze_profilo:
-                # Fallback se non c'è lunghezza totale
                 lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
                 lunghezza_massima_profilo = max(lunghezze_list)
                 quantita_profilo = 1
@@ -840,12 +766,10 @@ def finalizza_configurazione():
                 
         except Exception as e:
             logging.error(f"Errore nel calcolo ottimizzato quantità profilo: {str(e)}")
-            # Fallback al calcolo originale
             if lunghezza_totale > 0:
                 quantita_profilo = math.ceil(lunghezza_totale / lunghezza_massima_profilo)
             combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': quantita_profilo}]
-    
-    # Recuperare lunghezza massima della strip LED dal database
+
     if 'stripLedSelezionata' in configurazione and configurazione['stripLedSelezionata'] and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
         try:
             strip_data = db.supabase.table('strip_led')\
@@ -857,20 +781,15 @@ def finalizza_configurazione():
             if strip_data.data and strip_data.data.get('lunghezza'):
                 lunghezza_massima_strip = strip_data.data['lunghezza']
                 logging.info(f"Lunghezza massima strip: {lunghezza_massima_strip}mm")
-                
-                # Calcola quantità strip LED
+
                 if lunghezza_totale > 0:
                     quantita_strip_led = math.ceil(lunghezza_totale / (lunghezza_massima_strip * 1000))
         except Exception as e:
             logging.error(f"Errore nel recupero lunghezza strip: {str(e)}")
-    
-    logging.info(f"Quantità calcolate - Profilo: {quantita_profilo}, Strip LED: {quantita_strip_led}")
-    
-    # ✅ CORREZIONE: Gestisci il codice prodotto in base alla modalità
+
     modalita = configurazione.get('modalitaConfigurazione', '')
     
     if modalita == 'solo_strip':
-        # Per il flusso solo strip, usa il codice della strip LED
         strip_led = configurazione.get('stripLedSelezionata', '')
         nome_commerciale = configurazione.get('nomeCommercialeStripLed', '')
         
@@ -881,7 +800,6 @@ def finalizza_configurazione():
         else:
             codice_prodotto = 'Strip LED'
     else:
-        # Per il flusso normale, usa il profilo
         profilo = configurazione.get('profiloSelezionato', '')
         codice_prodotto = profilo if profilo else 'Configurazione'
 
@@ -896,7 +814,7 @@ def finalizza_configurazione():
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
         quantita_strip=configurazione.get('quantitaStripLed', 1),
-        lunghezze_multiple=configurazione.get('lunghezzeMultiple')  # ✅ AGGIUNTO
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple')
     )
     
     return jsonify({
@@ -904,7 +822,6 @@ def finalizza_configurazione():
         'riepilogo': configurazione,
         'potenzaTotale': round(potenza_totale, 2),
         'codiceProdotto': codice_prodotto,
-        # ✅ NUOVO: Aggiungere le quantità alla risposta
         'quantitaProfilo': quantita_profilo,
         'quantitaStripLed': quantita_strip_led,
         'lunghezzaMassimaProfilo': lunghezza_massima_profilo,
@@ -1060,13 +977,10 @@ def genera_excel_configurazione(configurazione, codice_prodotto):
     
     return filename
 
-# Aggiungi questi nuovi endpoint in app.py
-
 @app.route('/get_tipologie_strip_disponibili')
 def get_tipologie_strip_disponibili():
     """Ottiene tutte le tipologie di strip disponibili nel database"""
     try:
-        # Ottieni tutte le tipologie distinte dal database
         tipologie_data = db.supabase.table('strip_led').select('tipo').execute().data
         tipologie_uniche = list(set([t['tipo'] for t in tipologie_data if t['tipo']]))
         
@@ -1079,20 +993,16 @@ def get_tipologie_strip_disponibili():
 def get_special_strip_disponibili():
     """Ottiene tutte le special strip disponibili nel database"""
     try:
-        # Ottieni tutte le strip con nomi commerciali
         strips_data = db.supabase.table('strip_led').select('nome_commerciale, id').execute().data
-        
         special_strips = set()
-        
-        # Definisci le keywords per identificare le special strip
+
         special_keywords = {
             'XFLEX': ['XFLEX', 'FLEX'],
             'XSNAKE': ['XSNAKE', 'SNAKE', 'SNK'],
             'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17'],
             'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG']
         }
-        
-        # Cerca le special strip nel database
+
         for strip in strips_data:
             nome_commerciale = (strip.get('nome_commerciale') or '').upper()
             strip_id = (strip.get('id') or '').upper()
@@ -1107,7 +1017,6 @@ def get_special_strip_disponibili():
         logging.error(f"Errore in get_special_strip_disponibili: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
-# Sostituisci l'endpoint esistente get_opzioni_strip_standalone con questo:
 @app.route('/get_opzioni_strip_standalone', methods=['POST'])
 def get_opzioni_strip_standalone():
     """Ottiene le tensioni disponibili dal database per tipologia e special strip"""
@@ -1115,15 +1024,10 @@ def get_opzioni_strip_standalone():
         data = request.json
         tipologia = data.get('tipologia')
         special = data.get('special')
-        
-        logging.info(f"get_opzioni_strip_standalone chiamata con: tipologia={tipologia}, special={special}")
-        
-        # Interroga il database per le tensioni disponibili
         query = db.supabase.table('strip_led').select('tensione')
         
         if tipologia and tipologia != 'None':
             if tipologia == 'SPECIAL':
-                # Per special strip, filtra per nome commerciale/id
                 if special:
                     if special == 'XMAGIS':
                         query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
@@ -1134,26 +1038,21 @@ def get_opzioni_strip_standalone():
                     elif special == 'ZIG_ZAG':
                         query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
                 else:
-                    # Se SPECIAL ma senza tipo specifico, cerca tutte le special strip
                     special_keywords = ['XFLEX', 'XSNAKE', 'XMAGIS', 'ZIGZAG', 'ZIG_ZAG', 'MG13X12', 'MG12X17', 'SNK']
                     or_conditions = []
                     for keyword in special_keywords:
                         or_conditions.extend([f"nome_commerciale.ilike.%{keyword}%", f"id.ilike.%{keyword}%"])
                     query = query.or_(','.join(or_conditions))
             else:
-                # Per tipologie normali (COB, SMD)
                 query = query.eq('tipo', tipologia)
         
         strips = query.execute().data
-        logging.info(f"Strip trovate: {len(strips)}")
         
         if not strips:
             return jsonify({'success': True, 'tensioni': []})
-        
-        # Estrai tensioni uniche
+
         tensioni_uniche = list(set([s['tensione'] for s in strips if s['tensione']]))
-        
-        # Ordina le tensioni numericamente
+
         def get_tensione_order(tensione):
             try:
                 return int(tensione.replace('V', ''))
@@ -1161,8 +1060,6 @@ def get_opzioni_strip_standalone():
                 return 999
         
         tensioni_ordinate = sorted(tensioni_uniche, key=get_tensione_order)
-        
-        logging.info(f"Tensioni disponibili nel DB: {tensioni_ordinate}")
         
         return jsonify({'success': True, 'tensioni': tensioni_ordinate})
     except Exception as e:
@@ -1175,7 +1072,6 @@ def get_opzioni_strip_standalone():
 def get_opzioni_ip_standalone():
     try:
         data = request.get_json()
-        logging.info(f"DEBUG IP - Dati ricevuti: {data}")
         
         if not data:
             return jsonify({'success': False, 'message': 'Nessun dato ricevuto'})
@@ -1183,22 +1079,14 @@ def get_opzioni_ip_standalone():
         tipologia = data.get('tipologia', '')
         tensione = data.get('tensione', '')
         special = data.get('special')
-        
-        logging.info(f"DEBUG IP - Parametri estratti: tipologia={tipologia}, tensione={tensione}, special={special}")
 
-        # Costruisci la query base per trovare le strip LED
         query = db.supabase.table('strip_led').select('ip')\
             .eq('tensione', tensione)
-        
-        # Applica filtro per tipologia se presente
+
         if tipologia and tipologia != 'None':
             query = query.eq('tipo', tipologia)
-        
-        # Applica filtri per special strip se presente
+
         if tipologia == 'SPECIAL' and special:
-            logging.info(f"DEBUG IP - Caso SPECIAL con special={special}")
-            
-            # Resetta la query per applicare i filtri OR per le special strip
             query = db.supabase.table('strip_led').select('ip')\
                 .eq('tensione', tensione)
             
@@ -1210,26 +1098,20 @@ def get_opzioni_ip_standalone():
                 query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
                 query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
-        
-        # Esegui la query
+
         strips = query.execute().data
-        logging.info(f"DEBUG IP - Strip trovate: {len(strips)}")
         
         if not strips:
             logging.warning("DEBUG IP - Nessuna strip trovata per i parametri specificati")
             return jsonify({'success': True, 'gradi_ip': []})
-        
-        # Estrai tutti gli IP unici dalle strip trovate
+
         ip_disponibili = list(set([strip['ip'] for strip in strips if strip['ip']]))
-        
-        # Ordina gli IP (IP20 < IP65 < IP66 < IP67)
+
         def get_ip_order(ip):
             ip_order = {'IP20': 1, 'IP44': 2, 'IP65': 3, 'IP66': 4, 'IP67': 5}
             return ip_order.get(ip, 999)
         
         ip_ordinati = sorted(ip_disponibili, key=get_ip_order)
-        
-        logging.info(f"DEBUG IP - IP disponibili trovati nel DB: {ip_ordinati}")
         
         return jsonify({
             'success': True, 
@@ -1255,7 +1137,6 @@ def get_opzioni_ip_standalone():
 def get_opzioni_temperatura_standalone():
     try:
         data = request.get_json()
-        logging.info(f"DEBUG TEMPERATURA - Dati ricevuti: {data}")
         
         if not data:
             return jsonify({'success': False, 'message': 'Nessun dato ricevuto'})
@@ -1264,25 +1145,18 @@ def get_opzioni_temperatura_standalone():
         tensione = data.get('tensione', '')
         ip = data.get('ip', '')
         special = data.get('special')
-        categoria = data.get('categoria')  # Nuovo parametro per gestire meglio il filtro
-        
-        logging.info(f"DEBUG TEMPERATURA - Parametri estratti: tipologia={tipologia}, tensione={tensione}, ip={ip}, special={special}, categoria={categoria}")
+        categoria = data.get('categoria')
 
-        # Costruisci la query base
         strips = []
         
         if tipologia == 'SPECIAL' and special:
-            logging.info(f"DEBUG TEMPERATURA - Ricerca SPECIAL strip: {special}")
-            
-            # Per special strip, usa una strategia più robusta
             query = db.supabase.table('strip_led')\
                 .select('id, nome_commerciale, tensione, ip, tipo')\
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
             
             all_strips = query.execute().data
-            
-            # Filtra per special strip
+
             special_keywords = {
                 'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17'],
                 'XFLEX': ['XFLEX', 'FLEX'],
@@ -1295,14 +1169,11 @@ def get_opzioni_temperatura_standalone():
             for strip in all_strips:
                 nome_commerciale = (strip.get('nome_commerciale') or '').upper()
                 strip_id = (strip.get('id') or '').upper()
-                
-                # Verifica se la strip contiene una delle keywords
+
                 if any(keyword in nome_commerciale or keyword in strip_id for keyword in keywords):
                     strips.append(strip)
-                    logging.info(f"DEBUG TEMPERATURA - Special strip trovata: {strip_id} ({nome_commerciale})")
             
         else:
-            # Per tipologie normali (COB, SMD)
             query = db.supabase.table('strip_led').select('id, nome_commerciale, tensione, ip, tipo')\
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
@@ -1311,49 +1182,36 @@ def get_opzioni_temperatura_standalone():
                 query = query.eq('tipo', tipologia)
             
             strips = query.execute().data
-            logging.info(f"DEBUG TEMPERATURA - Strip normali trovate: {len(strips)}")
-        
-        logging.info(f"DEBUG TEMPERATURA - Strip finali dopo tutti i filtri: {len(strips)}")
         
         if not strips:
             logging.warning("DEBUG TEMPERATURA - Nessuna strip trovata per i parametri specificati")
             return jsonify({'success': True, 'temperature': []})
-        
-        # Estrai gli ID delle strip trovate
+
         strip_ids = [s['id'] for s in strips]
-        logging.info(f"DEBUG TEMPERATURA - Strip IDs finali: {strip_ids}")
-        
-        # Cerca le temperature disponibili per queste strip
         temperature_data = db.supabase.table('strip_temperature')\
             .select('temperatura')\
             .in_('strip_id', strip_ids)\
             .execute().data
         
-        logging.info(f"DEBUG TEMPERATURA - Temperature data trovate: {len(temperature_data)}")
-        
         if not temperature_data:
             logging.warning("DEBUG TEMPERATURA - Nessuna temperatura trovata per le strip")
             return jsonify({'success': True, 'temperature': []})
-        
-        # Estrai temperature uniche
+
         temperature_uniche = list(set([t['temperatura'] for t in temperature_data if t['temperatura']]))
-        
-        # Ordina le temperature logicamente
+
         def get_temperatura_order(temp):
             if 'K' in temp and temp.replace('K', '').isdigit():
-                return (0, int(temp.replace('K', '')))  # Temperature Kelvin prime, ordinate numericamente
+                return (0, int(temp.replace('K', '')))
             elif temp == 'CCT':
-                return (1, 0)  # CCT dopo le temperature fisse
+                return (1, 0)
             elif temp == 'RGB':
-                return (2, 0)  # RGB dopo CCT
+                return (2, 0)
             elif temp == 'RGBW':
-                return (3, 0)  # RGBW per ultimo
+                return (3, 0)
             else:
-                return (4, 0)  # Altre temperature non riconosciute
+                return (4, 0)
         
         temperature_ordinate = sorted(temperature_uniche, key=get_temperatura_order)
-        
-        logging.info(f"DEBUG TEMPERATURA - Temperature disponibili nel DB: {temperature_ordinate}")
         
         return jsonify({
             'success': True, 
@@ -1453,9 +1311,6 @@ def get_strip_led_filtrate_standalone():
         temperatura = data.get('temperatura')
         potenza = data.get('potenza')
 
-        # NUOVO APPROCCIO: Per Special Strip, prima cerchiamo la tipologia specifica
-        # poi filtriamo per parametri compatibili invece che il contrario
-        
         if tipologia == 'SPECIAL' and special:
             
             special_keywords = {
@@ -1469,8 +1324,7 @@ def get_strip_led_filtrate_standalone():
             
             if not keywords:
                 return jsonify({'success': False, 'message': f'Tipologia special strip non riconosciuta: {special}'})
-            
-            # Prima trova TUTTE le strip di questo tipo special (senza filtri tensione/IP)
+
             base_query = db.supabase.table('strip_led').select('*')
             
             or_conditions = []
@@ -1482,22 +1336,17 @@ def get_strip_led_filtrate_standalone():
             
             special_strips = base_query.or_(or_query).execute().data
 
-            # Ora filtra per tensione (obbligatorio)
             if tensione:
                 special_strips = [s for s in special_strips if s['tensione'] == tensione]
-            
-            # Per IP: se l'utente ha selezionato un IP che non esiste per questa special strip,
-            # mostriamo comunque le strip disponibili con i loro IP reali
+
             if ip:
                 strips_con_ip_richiesto = [s for s in special_strips if s['ip'] == ip]
                 if strips_con_ip_richiesto:
                     special_strips = strips_con_ip_richiesto
 
-            # Continuiamo con tutte le strip trovate invece di bloccare
             strips = special_strips
             
         else:
-            # Logica normale per non-special strip
             query = db.supabase.table('strip_led').select('*')
             
             if tensione:
@@ -1511,8 +1360,7 @@ def get_strip_led_filtrate_standalone():
         result = []
         for strip in strips:
             strip_id = strip['id']
-            
-            # Controllo temperatura
+
             if temperatura:
                 temp_check = db.supabase.table('strip_temperature')\
                     .select('temperatura')\
@@ -1522,8 +1370,7 @@ def get_strip_led_filtrate_standalone():
                 
                 if not temp_check:
                     continue
-            
-            # Controllo potenza
+
             if potenza:
                 potenza_check = db.supabase.table('strip_potenze')\
                     .select('potenza')\
@@ -1533,14 +1380,12 @@ def get_strip_led_filtrate_standalone():
 
                 if not potenza_check:
                     continue
-            
-            # Ottieni temperature disponibili
+
             temperatures = db.supabase.table('strip_temperature')\
                 .select('temperatura')\
                 .eq('strip_id', strip_id)\
                 .execute().data
-            
-            # Ottieni potenze disponibili
+
             potenze = db.supabase.table('strip_potenze')\
                 .select('potenza, codice_prodotto')\
                 .eq('strip_id', strip_id)\
@@ -1566,16 +1411,13 @@ def get_strip_led_filtrate_standalone():
 @app.route('/get_strip_compatibili_esterni/<categoria>')
 def get_strip_compatibili_esterni(categoria):
     try:
-        # Ottieni tutti i profili della categoria
         profili = db.get_profili_by_categoria(categoria)
-        
-        # Raccogli tutte le strip compatibili
+
         strip_compatibili_totali = set()
         for profilo in profili:
             if 'stripLedCompatibili' in profilo:
                 strip_compatibili_totali.update(profilo['stripLedCompatibili'])
-        
-        # Ottieni i dettagli delle strip compatibili
+
         if strip_compatibili_totali:
             strip_details = db.supabase.table('strip_led')\
                 .select('*')\
@@ -1635,8 +1477,7 @@ def health():
 def richiedi_preventivo():
     try:
         data = request.json
-        
-        # Estrai i dati del form
+
         nome_agente = data.get('nomeAgente', '')
         email_agente = data.get('emailAgente', '')
         ragione_sociale = data.get('ragioneSociale', '')
@@ -1644,21 +1485,18 @@ def richiedi_preventivo():
         note = data.get('note', '')
         configurazione = data.get('configurazione', {})
         codice_prodotto = data.get('codiceProdotto', '')
-        
-        # Valida i campi obbligatori
+
         if not nome_agente or not email_agente or not riferimento:
             return jsonify({
                 'success': False, 
                 'message': 'Nome agente, email agente e riferimento sono obbligatori'
             }), 400
 
-        # Genera l'HTML dell'email
         email_html = genera_email_preventivo(
             nome_agente, email_agente, ragione_sociale, 
             riferimento, note, configurazione, codice_prodotto
         )
-        
-        # Invia l'email
+
         success = invia_email_preventivo(
             email_html, nome_agente, email_agente, 
             ragione_sociale, riferimento, codice_prodotto
@@ -1685,11 +1523,9 @@ def richiedi_preventivo():
 def invia_email_preventivo(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto):
     """Invia l'email del preventivo"""
     try:
-        # Usa Flask-Mail se configurato
         if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
             return invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto)
         else:
-            # Fallback: salva in un file di log per ora
             return salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale, riferimento, codice_prodotto)
             
     except Exception as e:
@@ -1722,8 +1558,7 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"preventivo_{timestamp}_{riferimento}.html"
         filepath = os.path.join(os.path.dirname(__file__), 'preventivi_log', filename)
-        
-        # Crea la directory se non esiste
+
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         
         with open(filepath, 'w', encoding='utf-8') as f:
@@ -1738,8 +1573,7 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
 
 def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
     """Genera l'HTML dell'email del preventivo con tutti i dati del riepilogo"""
-    
-    # Mappature per la visualizzazione (da config.js)
+
     mappaCategorieVisualizzazione = {
         'nanoprofili': 'Nanoprofili',
         'incasso': 'Profili a Incasso',
@@ -1804,8 +1638,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     }
     
     data_corrente = datetime.now().strftime("%d/%m/%Y %H:%M")
-    
-    # ✅ SOLUZIONE: Calcola i codici prodotto PRIMA della costruzione dell'HTML
+
     def calcola_codici_prodotto():
         codici = {
             'profilo': '',
@@ -1813,10 +1646,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             'alimentatore': '',
             'dimmer': ''
         }
-        
-        # Per i codici completi, questi dovrebbero essere già calcolati lato client
-        # e passati nella configurazione o calcolati qui se necessario
-        # Per ora usiamo i valori dalla configurazione se presenti
         
         if configurazione.get('codiceProfilo'):
             codici['profilo'] = configurazione['codiceProfilo']
@@ -1853,7 +1682,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
         quantita_strip=configurazione.get('quantitaStripLed', 1),
-        lunghezze_multiple=configurazione.get('lunghezzeMultiple')  # ✅ AGGIUNTO
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple')
     )
 
     def get_nome_visualizzabile(valore, mappa):
@@ -1869,8 +1698,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             'profilo': '',
             'stripLed': ''
         }
-        
-        # Codice profilo dal database
+
         if configurazione.get('profiloSelezionato'):
             profilo_id = configurazione['profiloSelezionato']
             finitura = configurazione.get('finituraSelezionata')
@@ -1880,7 +1708,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 codici_email['profilo'] = db.get_codice_profilo(profilo_id, finitura, int(lunghezza) if lunghezza else None)
             except Exception as e:
                 logging.error(f"Errore recupero codice profilo: {str(e)}")
-                codici_email['profilo'] = profilo_id.replace('_', '/')  # fallback
+                codici_email['profilo'] = profilo_id.replace('_', '/')
         
         strip_id = (configurazione.get('stripLedSelezionata') or 
                configurazione.get('stripLedSceltaFinale') or 
@@ -1895,7 +1723,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 codici_email['stripLed'] = db.get_codice_strip_led(strip_id, temperatura, potenza)
             except Exception as e:
                 logging.error(f"Errore recupero codice strip: {str(e)}")
-                codici_email['stripLed'] = strip_id  # fallback
+                codici_email['stripLed'] = strip_id
         
         return codici_email
     
@@ -1990,12 +1818,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             <h3>Configurazione Prodotto</h3>
             <table class="data-table">
     """
-    
-    # Categoria
+
     if configurazione.get('categoriaSelezionata'):
         html += f"<tr><th>Categoria</th><td>{get_nome_visualizzabile(configurazione['categoriaSelezionata'], mappaCategorieVisualizzazione)}</td></tr>"
 
-    # Modello con codice e quantità
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
 
@@ -2020,16 +1846,13 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         modello_text += prezzo_profilo_text
         
         html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
-    
-    # Tipologia
+
     if configurazione.get('tipologiaSelezionata'):
         html += f"<tr><th>Tipologia</th><td>{get_nome_visualizzabile(configurazione['tipologiaSelezionata'], mappaTipologieVisualizzazione)}</td></tr>"
-    
-    # Lunghezza richiesta
+
     if configurazione.get('lunghezzaRichiesta'):
         html += f"<tr><th>Lunghezza richiesta</th><td>{configurazione['lunghezzaRichiesta']}mm</td></tr>"
-    
-    # Lunghezze multiple per forme complesse
+
     if configurazione.get('lunghezzeMultiple') and configurazione.get('formaDiTaglioSelezionata') != 'DRITTO_SEMPLICE':
         etichette_lati = {
             'FORMA_L_DX': {'lato1': 'Lato orizzontale', 'lato2': 'Lato verticale'},
@@ -2044,8 +1867,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             if valore:
                 etichetta = etichette.get(lato, f"Lato {lato.replace('lato', '')}")
                 html += f"<tr><th>{etichetta}</th><td>{valore}mm</td></tr>"
-    
-    # Strip LED
+
     if configurazione.get('stripLedSelezionata') and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
         nome_strip = configurazione.get('nomeCommercialeStripLed') or get_nome_visualizzabile(configurazione['stripLedSelezionata'], mappaStripLedVisualizzazione)
 
@@ -2061,26 +1883,22 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
     else:
         html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
-        
-    # Tipologia Strip
+
     if configurazione.get('tipologiaStripSelezionata'):
         tipologia_strip_text = get_nome_visualizzabile(configurazione['tipologiaStripSelezionata'], mappaTipologiaStripVisualizzazione)
         if configurazione['tipologiaStripSelezionata'] == 'SPECIAL' and configurazione.get('specialStripSelezionata'):
             tipologia_strip_text += f" - {get_nome_visualizzabile(configurazione['specialStripSelezionata'], mappaSpecialStripVisualizzazione)}"
         html += f"<tr><th>Tipologia Strip</th><td>{tipologia_strip_text}</td></tr>"
-    
-    # Potenza
+
     if configurazione.get('potenzaSelezionata'):
         html += f"<tr><th>Potenza</th><td>{configurazione['potenzaSelezionata']}</td></tr>"
-    
-    # Alimentazione
+
     if configurazione.get('tensioneSelezionato') == '220V':
         html += f"<tr><th>Alimentazione</th><td>Strip 220V (no alimentatore)</td></tr>"
     elif configurazione.get('alimentazioneSelezionata'):
         alimentazione_text = 'ON/OFF' if configurazione['alimentazioneSelezionata'] == 'ON-OFF' else configurazione['alimentazioneSelezionata'].replace('_', ' ')
         html += f"<tr><th>Alimentazione</th><td>{alimentazione_text}</td></tr>"
-        
-        # Alimentatore con codice
+
         if configurazione.get('tipologiaAlimentatoreSelezionata') and configurazione['alimentazioneSelezionata'] != 'SENZA_ALIMENTATORE':
             alimentatore_text = configurazione['tipologiaAlimentatoreSelezionata']
             if tuttiCodici['alimentatore']:
@@ -2088,12 +1906,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             prezzo_alimentatore_text = format_prezzo(prezzi['alimentatore'])
             alimentatore_text += prezzo_alimentatore_text
             html += f"<tr><th>Alimentatore</th><td>{alimentatore_text}</td></tr>"
-        
-        # Potenza consigliata
+
         if configurazione.get('potenzaConsigliataAlimentatore') and configurazione.get('tensioneSelezionato') != '220V':
             html += f"<tr><th>Potenza consigliata</th><td>{configurazione['potenzaConsigliataAlimentatore']}W</td></tr>"
-    
-    # Dimmer con codice
+
     if configurazione.get('dimmerSelezionato'):
         if configurazione.get('tensioneSelezionato') == '220V' and configurazione['dimmerSelezionato'] == 'DIMMER_A_PULSANTE_SEMPLICE':
             dimmer_text = 'CTR130 - Dimmerabile TRIAC tramite pulsante e sistema TUYA'
@@ -2105,25 +1921,20 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         dimmer_text += prezzo_dimmer_text
         
         html += f"<tr><th>Dimmer</th><td>{dimmer_text}</td></tr>"
-        
-        # Nota dimmer touch
+
         if configurazione.get('dimmerSelezionato') and 'TOUCH_SU_PROFILO' in configurazione['dimmerSelezionato']:
             html += f"<tr><th>Nota dimmer</th><td class='text-warning'>Spazio non illuminato di 50mm per touch su profilo</td></tr>"
-    
-    # Alimentazione cavo
+
     if configurazione.get('tipoAlimentazioneCavo'):
         alimentazione_cavo_text = 'Alimentazione unica' if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_UNICA' else 'Alimentazione doppia'
         html += f"<tr><th>Alimentazione cavo</th><td>{alimentazione_cavo_text}</td></tr>"
-        
-        # Lunghezza cavo ingresso
+
         if configurazione.get('lunghezzaCavoIngresso'):
             html += f"<tr><th>Lunghezza cavo ingresso</th><td>{configurazione['lunghezzaCavoIngresso']}mm</td></tr>"
-        
-        # Lunghezza cavo uscita (solo per alimentazione doppia)
+
         if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_DOPPIA' and configurazione.get('lunghezzaCavoUscita'):
             html += f"<tr><th>Lunghezza cavo uscita</th><td>{configurazione['lunghezzaCavoUscita']}mm</td></tr>"
-    
-    # Uscita cavo
+
     if configurazione.get('uscitaCavoSelezionata') and configurazione.get('categoriaSelezionata') not in ['esterni', 'wall_washer_ext']:
         uscita_cavo_text = configurazione['uscitaCavoSelezionata']
         if uscita_cavo_text == 'DRITTA':
@@ -2136,16 +1947,13 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             uscita_cavo_text = 'Retro'
         
         html += f"<tr><th>Uscita cavo</th><td>{uscita_cavo_text}</td></tr>"
-    
-    # Forma di taglio
+
     if configurazione.get('formaDiTaglioSelezionata'):
         html += f"<tr><th>Forma di taglio</th><td>{get_nome_visualizzabile(configurazione['formaDiTaglioSelezionata'], mappaFormeTaglio)}</td></tr>"
-    
-    # Finitura
+
     if configurazione.get('finituraSelezionata'):
         html += f"<tr><th>Finitura</th><td>{get_nome_visualizzabile(configurazione['finituraSelezionata'], mappaFiniture)}</td></tr>"
-    
-    # Potenza totale
+
     if configurazione.get('potenzaTotale'):
         html += f"<tr><th>Potenza totale</th><td>{configurazione['potenzaTotale']}W</td></tr>"
     
@@ -2161,8 +1969,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             </table>
         </div>
     """
-    
-    # Note di attenzione
+
     html += """
         <div class="alert-warning">
             <strong>Note importanti:</strong><br>
@@ -2186,18 +1993,15 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     costo_gestione = 7
 
     if prezzi.get('totale', 0) > 0:
-        
-        # +5€ se taglio su misura
+
         if configurazione.get('tipologiaSelezionata') == 'taglio_misura':
             costo_lavorazione_profilo = 5
-        
-        # +5€ se c'è una strip LED
+
         if (configurazione.get('stripLedSelezionata') and 
             configurazione.get('stripLedSelezionata') not in ['NO_STRIP', 'senza_strip'] and
             configurazione.get('includeStripLed') != False):
             costo_taglio_strip = 5
-        
-        # Calcolo totale finale
+
         totale_base = prezzi['totale']
         totale_lavorazioni = costo_lavorazione_profilo + costo_taglio_strip + costo_gestione
         totale_finale = totale_base + totale_lavorazioni
@@ -2211,8 +2015,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                     <td>€{totale_base:.2f}</td>
                 </tr>
         """
-        
-        # Aggiungi costi di lavorazione se applicabili
+
         if costo_lavorazione_profilo > 0:
             html += f"""
                 <tr>
@@ -2228,8 +2031,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                     <td>€{costo_taglio_strip:.2f}</td>
                 </tr>
             """
-    
-    # Spesa gestione sempre presente
+
     html += f"""
             <tr>
                 <th>Spesa di gestione fissa</th>
