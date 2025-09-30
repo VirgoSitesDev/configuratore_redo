@@ -564,6 +564,11 @@ async function verificaEMostraTappi() {
       $('#tappi-container').remove();
       configurazione.tappiSelezionati = null;
       configurazione.quantitaTappi = null;
+      // Restore original length if it was modified
+      if (configurazione.lunghezzaOriginalePreTappi !== undefined) {
+        configurazione.lunghezzaRichiesta = configurazione.lunghezzaOriginalePreTappi;
+        configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaOriginalePreTappi;
+      }
     }
   } catch (error) {
     console.error("Errore verifica tappi:", error);
@@ -672,6 +677,11 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
       configurazione.tappiSelezionati = null;
       configurazione.quantitaTappi = null;
       configurazione.tipoTappiSelezionato = null;
+      // Restore original length if it was modified
+      if (configurazione.lunghezzaOriginalePreTappi !== undefined) {
+        configurazione.lunghezzaRichiesta = configurazione.lunghezzaOriginalePreTappi;
+        configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaOriginalePreTappi;
+      }
       checkPersonalizzazioneCompletion();
     }
   });
@@ -835,22 +845,32 @@ function aggiornaQuantitaTappi() {
 
 function aggiornaLunghezzaEffettiva() {
   const tappo = configurazione.tappiSelezionati;
-  if (!tappo || !configurazione.lunghezzaRichiesta) return;
+
+  // Store original length if not already stored
+  if (configurazione.lunghezzaOriginalePreTappi === undefined && configurazione.lunghezzaRichiesta) {
+    configurazione.lunghezzaOriginalePreTappi = configurazione.lunghezzaRichiesta;
+  }
+
+  if (!tappo || !configurazione.lunghezzaOriginalePreTappi) return;
 
   if (configurazione.tipologiaSelezionata === 'taglio_misura') {
-    const lunghezzaOriginale = configurazione.lunghezzaRichiesta;
+    const lunghezzaOriginale = configurazione.lunghezzaOriginalePreTappi;
     const lunghezzaEsternatappi = tappo.lunghezza_esterna || 0;
     const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappi;
 
     $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappi);
     $('#lunghezza-effettiva-profilo').text(lunghezzaEffettiva);
-    
+
+    // Override lunghezzaRichiesta with effective length
+    configurazione.lunghezzaRichiesta = lunghezzaEffettiva;
     configurazione.lunghezzaEffettivaProfilo = lunghezzaEffettiva;
-    
+
     $('#tappi-lunghezza-warning').show();
   } else {
     $('#tappi-lunghezza-warning').hide();
-    configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaRichiesta;
+    // Keep original length for profilo_intero
+    configurazione.lunghezzaRichiesta = configurazione.lunghezzaOriginalePreTappi;
+    configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaOriginalePreTappi;
   }
 }
 

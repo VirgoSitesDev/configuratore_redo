@@ -49,6 +49,7 @@ const configurazione = {
 	tappiSelezionati: null,
     quantitaTappi: null,
     lunghezzaEffettivaProfilo: null,
+    lunghezzaOriginalePreTappi: undefined,
 	tipoTappiSelezionato: null
 };
 
