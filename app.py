@@ -2133,6 +2133,53 @@ def get_prezzi_configurazione():
                 'totale': 0.0
             }
         })
+    
+@app.route('/verifica_tappi_profilo', methods=['POST'])
+def verifica_tappi_profilo():
+    try:
+        data = request.json
+        profilo_id = data.get('profilo_id')
+
+        profilo_id = profilo_id.split('_')[0]
+        print(profilo_id)
+        
+        if not profilo_id:
+            return jsonify({'success': False, 'message': 'Profilo ID mancante'})
+
+        tappi_result = db.supabase.table('tappi')\
+            .select('*')\
+            .eq('prf_riferimento', profilo_id)\
+            .execute()
+        
+        if tappi_result.data and len(tappi_result.data) > 0:
+            tappi_disponibili = []
+            for tappo in tappi_result.data:
+                tappi_disponibili.append({
+                    'id': tappo['codice'],
+                    'codice': tappo['codice'],
+                    'prezzo': float(tappo['prezzo']) if tappo['prezzo'] else 0.0,
+                    'finitura': tappo['finitura'],
+                    'lunghezza_interna': float(tappo['lunghezza_interna']) if tappo['lunghezza_interna'] else 0.0,
+                    'lunghezza_esterna': float(tappo['lunghezza_esterna']) if tappo['lunghezza_esterna'] else 0.0,
+                    'quantita': int(tappo['quantita']) if tappo['quantita'] else 1,
+                    'forati': tappo['forati'],
+                    'inclusi': tappo['inclusi']
+                })
+            
+            return jsonify({
+                'success': True,
+                'has_tappi': True,
+                'tappi_disponibili': tappi_disponibili
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'has_tappi': False
+            })
+            
+    except Exception as e:
+        logging.error(f"Errore in verifica_tappi_profilo: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

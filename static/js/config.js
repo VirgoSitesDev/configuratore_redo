@@ -45,7 +45,11 @@ const configurazione = {
 	lunghezzaMassimaStripLed: null,
 	quantitaProfilo: 1,
 	quantitaStripLed: 1,
-	lunghezzaTotale: 0
+	lunghezzaTotale: 0,
+	tappiSelezionati: null,
+    quantitaTappi: null,
+    lunghezzaEffettivaProfilo: null,
+	tipoTappiSelezionato: null
 };
 
   const mappaCategorieVisualizzazione = {
