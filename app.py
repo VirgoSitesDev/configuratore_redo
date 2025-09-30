@@ -806,7 +806,7 @@ def finalizza_configurazione():
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
-        tuttiCodici['alimentatore'], 
+        tuttiCodici['alimentatore'],
         tuttiCodici['dimmer'],
         finitura_profilo=configurazione.get('finituraSelezionata'),
         lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
@@ -814,7 +814,9 @@ def finalizza_configurazione():
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
         quantita_strip=configurazione.get('quantitaStripLed', 1),
-        lunghezze_multiple=configurazione.get('lunghezzeMultiple')
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
+        tappi_selezionati=configurazione.get('tappiSelezionati'),
+        quantita_tappi=configurazione.get('quantitaTappi', 0)
     )
     
     return jsonify({
@@ -1674,7 +1676,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     prezzi = db.get_prezzi_configurazione(
         tuttiCodici['profilo'],
         tuttiCodici['stripLed'],
-        tuttiCodici['alimentatore'], 
+        tuttiCodici['alimentatore'],
         tuttiCodici['dimmer'],
         finitura_profilo=configurazione.get('finituraSelezionata'),
         lunghezza_profilo=configurazione.get('lunghezzaRichiesta'),
@@ -1682,7 +1684,9 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
         quantita_strip=configurazione.get('quantitaStripLed', 1),
-        lunghezze_multiple=configurazione.get('lunghezzeMultiple')
+        lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
+        tappi_selezionati=configurazione.get('tappiSelezionati'),
+        quantita_tappi=configurazione.get('quantitaTappi', 0)
     )
 
     lunghezza_cavo_totale_mm = 0
@@ -1975,7 +1979,13 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
 
     if configurazione.get('potenzaTotale'):
         html += f"<tr><th>Potenza totale</th><td>{configurazione['potenzaTotale']}W</td></tr>"
-    
+
+    if configurazione.get('tappiSelezionati') and configurazione.get('quantitaTappi', 0) > 0:
+        tappo = configurazione['tappiSelezionati']
+        quantita_selezionata = configurazione['quantitaTappi']
+        prezzo_tappi = prezzi.get('tappi', 0)
+        html += f"<tr><th>Tappi</th><td>{quantita_selezionata}x {tappo['codice']} - €{prezzo_tappi:.2f}</td></tr>"
+
     if prezzi.get('totale', 0) > 0:
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
@@ -1994,19 +2004,19 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             <strong>Note importanti:</strong><br>
             • Eventuali staffe aggiuntive non incluse<br>
     """
-    
+
     if configurazione.get('categoriaSelezionata') in ['esterni', 'wall_washer_ext']:
         html += "• La lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto<br>"
     else:
         html += "• Verrà aggiunto automaticamente uno spazio di 5mm per i tappi e la saldatura<br>"
-    
+
     if configurazione.get('formaDiTaglioSelezionata') and configurazione['formaDiTaglioSelezionata'] != 'DRITTO_SEMPLICE':
         html += "• I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata<br>"
-    
+
     html += """
         </div>
     """
-    
+
     costo_lavorazione_profilo = 0
     costo_taglio_strip = 0
     costo_gestione = 7

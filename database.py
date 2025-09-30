@@ -596,7 +596,8 @@ class DatabaseManager:
                                 finitura_profilo: str = None, lunghezza_profilo: int = None,
                                 temperatura_strip: str = None, potenza_strip: str = None,
                                 quantita_profilo: int = 1, quantita_strip: int = 1,
-                                lunghezze_multiple: dict = None) -> Dict[str, float]:
+                                lunghezze_multiple: dict = None,
+                                tappi_selezionati: dict = None, quantita_tappi: int = 0) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa con quantità"""
         try:
             codice_profilo = codice_profilo.replace('/', '_')
@@ -618,8 +619,14 @@ class DatabaseManager:
                 'profilo': prezzo_unitario_profilo * quantita_profilo,
                 'strip_led': prezzo_unitario_strip * metri_totali,
                 'alimentatore': prezzo_unitario_alimentatore,
-                'dimmer': prezzo_unitario_dimmer
+                'dimmer': prezzo_unitario_dimmer,
+                'tappi': 0.0
             }
+            if tappi_selezionati and quantita_tappi > 0:
+                quantita_db = tappi_selezionati.get('quantita', 1)
+                num_pezzi = int(quantita_tappi / quantita_db)
+                prezzo_unitario_tappo = float(tappi_selezionati.get('prezzo', 0))
+                prezzi['tappi'] = prezzo_unitario_tappo * num_pezzi
 
             prezzi['totale'] = sum(prezzi.values())
             

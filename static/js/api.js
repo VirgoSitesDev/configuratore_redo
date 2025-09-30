@@ -1089,7 +1089,11 @@ export function finalizzaConfigurazione() {
       url: '/finalizza_configurazione',
       method: 'POST',
       contentType: 'application/json',
-      data: JSON.stringify(configurazione),
+      data: JSON.stringify({
+        ...configurazione,
+        tappiSelezionati: configurazione.tappiSelezionati,
+        quantitaTappi: configurazione.quantitaTappi
+      }),
       success: function(data) {
         
         if (!data.success) {
@@ -1569,6 +1573,17 @@ export function finalizzaConfigurazione() {
                       <th scope="row">Potenza totale</th>
                       <td>${potenzaTotale}W</td>
                     </tr>
+          `;
+        }
+        if (configurazione.tappiSelezionati && configurazione.quantitaTappi > 0) {
+          const tappo = configurazione.tappiSelezionati;
+          const quantitaSelezionata = configurazione.quantitaTappi;
+          
+          riepilogoHtml += `
+                        <tr>
+                          <th scope="row">Tappi</th>
+                          <td>${quantitaSelezionata > 1 ? quantitaSelezionata + 'x ' : ''}${tappo.codice}</td>
+                        </tr>
           `;
         }
         

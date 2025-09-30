@@ -627,7 +627,6 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
         <div class="alert alert-info mb-3" id="tappi-info">
           <p class="mb-0"><strong>Tappo selezionato:</strong> <span id="tappo-nome"></span></p>
           <p class="mb-0"><strong>Codice:</strong> <span id="tappo-codice"></span></p>
-          <p class="mb-0"><strong>Prezzo unitario:</strong> €<span id="tappo-prezzo"></span></p>
         </div>
 
         <div class="mb-4">
@@ -642,7 +641,7 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
           </div>
         </div>
 
-        <div class="alert alert-warning" id="tappi-lunghezza-warning">
+        <div class="alert alert-warning" id="tappi-lunghezza-warning" style="display: none;">
           <strong>ATTENZIONE:</strong> La lunghezza effettiva del profilo sarà 
           <strong><span id="lunghezza-effettiva-profilo"></span>mm</strong> 
           (lunghezza selezionata - <span id="lunghezza-esterna-tappi"></span>mm dei tappi)
@@ -788,7 +787,6 @@ function selezionaTappoAutomatico(tappiDisponibili, forati) {
     // Aggiorna UI
     $('#tappo-nome').text(tappoCompatibile.forati ? 'Tappi forati' : 'Tappi ciechi');
     $('#tappo-codice').text(tappoCompatibile.codice);
-    $('#tappo-prezzo').text(tappoCompatibile.prezzo.toFixed(2));
     $('#tappo-quantita-minima').text(tappoCompatibile.quantita);
     $('#tappo-quantita-minima-text').text(tappoCompatibile.quantita);
     
@@ -839,14 +837,21 @@ function aggiornaLunghezzaEffettiva() {
   const tappo = configurazione.tappiSelezionati;
   if (!tappo || !configurazione.lunghezzaRichiesta) return;
 
-  const lunghezzaOriginale = configurazione.lunghezzaRichiesta;
-  const lunghezzaEsternatappi = tappo.lunghezza_esterna || 0;
-  const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappi;
+  if (configurazione.tipologiaSelezionata === 'taglio_misura') {
+    const lunghezzaOriginale = configurazione.lunghezzaRichiesta;
+    const lunghezzaEsternatappi = tappo.lunghezza_esterna || 0;
+    const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappi;
 
-  $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappi);
-  $('#lunghezza-effettiva-profilo').text(lunghezzaEffettiva);
-  
-  configurazione.lunghezzaEffettivaProfilo = lunghezzaEffettiva;
+    $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappi);
+    $('#lunghezza-effettiva-profilo').text(lunghezzaEffettiva);
+    
+    configurazione.lunghezzaEffettivaProfilo = lunghezzaEffettiva;
+    
+    $('#tappi-lunghezza-warning').show();
+  } else {
+    $('#tappi-lunghezza-warning').hide();
+    configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaRichiesta;
+  }
 }
 
 function toggleFormaTaglioSection() {
