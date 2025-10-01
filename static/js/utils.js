@@ -220,6 +220,23 @@ export function checkPersonalizzazioneCompletion() {
       }
     }
   }
+
+  // Check if tappi section is visible and requires a choice
+  if ($('#tappi-container').length > 0) {
+    const tappiSceltaSelected = $('.tappi-scelta-card.selected').length > 0;
+    if (!tappiSceltaSelected) {
+      isComplete = false;
+    }
+  }
+
+  // Check if diffusore section is visible and requires a choice
+  if ($('#diffusore-container').length > 0) {
+    const diffusoreSceltaSelected = $('.diffusore-scelta-card.selected').length > 0;
+    if (!diffusoreSceltaSelected) {
+      isComplete = false;
+    }
+  }
+
   $('#btn-continua-personalizzazione').prop('disabled', !isComplete);
   return isComplete;
 }

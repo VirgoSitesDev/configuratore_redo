@@ -986,22 +986,6 @@ body.on-homepage .step-progress {
   }
 }
 
-#tappi-container {
-  border: 2px solid #e83f34;
-  border-radius: 8px;
-  padding: 20px;
-  background-color: #fff5f5;
-}
-
-.tappi-scelta-card {
-  transition: all 0.3s ease;
-}
-
-.tappi-scelta-card.selected {
-  border-color: #e83f34;
-  background-color: #fff0f0;
-}
-
 #quantita-tappi {
   font-size: 1.1rem;
   font-weight: bold;
@@ -1019,12 +1003,6 @@ body.on-homepage .step-progress {
 .tappi-tipo-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.tappi-tipo-card.selected {
-  border-color: #e83f34;
-  background-color: #fff0f0;
-  box-shadow: 0 0 15px rgba(232, 63, 52, 0.3);
 }
 
 #tappi-tipo-section {

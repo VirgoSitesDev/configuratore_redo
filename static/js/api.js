@@ -1092,7 +1092,9 @@ export function finalizzaConfigurazione() {
       data: JSON.stringify({
         ...configurazione,
         tappiSelezionati: configurazione.tappiSelezionati,
-        quantitaTappi: configurazione.quantitaTappi
+        quantitaTappi: configurazione.quantitaTappi,
+        diffusoreSelezionato: configurazione.diffusoreSelezionato,
+        quantitaDiffusore: configurazione.quantitaDiffusore
       }),
       success: function(data) {
         
@@ -1578,7 +1580,7 @@ export function finalizzaConfigurazione() {
         if (configurazione.tappiSelezionati && configurazione.quantitaTappi > 0) {
           const tappo = configurazione.tappiSelezionati;
           const quantitaSelezionata = configurazione.quantitaTappi;
-          
+
           riepilogoHtml += `
                         <tr>
                           <th scope="row">Tappi</th>
@@ -1586,7 +1588,19 @@ export function finalizzaConfigurazione() {
                         </tr>
           `;
         }
-        
+
+        if (configurazione.diffusoreSelezionato && configurazione.quantitaDiffusore > 0) {
+          const diffusore = configurazione.diffusoreSelezionato;
+          const quantitaDiffusore = configurazione.quantitaDiffusore;
+
+          riepilogoHtml += `
+                        <tr>
+                          <th scope="row">Diffusore</th>
+                          <td>${quantitaDiffusore > 1 ? quantitaDiffusore + 'x ' : ''}${diffusore.codice}</td>
+                        </tr>
+          `;
+        }
+
         riepilogoHtml += `
                 </tbody>
               </table>

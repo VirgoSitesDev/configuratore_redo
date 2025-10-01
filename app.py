@@ -816,9 +816,11 @@ def finalizza_configurazione():
         quantita_strip=configurazione.get('quantitaStripLed', 1),
         lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
         tappi_selezionati=configurazione.get('tappiSelezionati'),
-        quantita_tappi=configurazione.get('quantitaTappi', 0)
+        quantita_tappi=configurazione.get('quantitaTappi', 0),
+        diffusore_selezionato=configurazione.get('diffusoreSelezionato'),
+        quantita_diffusore=configurazione.get('quantitaDiffusore', 0)
     )
-    
+
     return jsonify({
         'success': True,
         'riepilogo': configurazione,
@@ -1686,7 +1688,9 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         quantita_strip=configurazione.get('quantitaStripLed', 1),
         lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
         tappi_selezionati=configurazione.get('tappiSelezionati'),
-        quantita_tappi=configurazione.get('quantitaTappi', 0)
+        quantita_tappi=configurazione.get('quantitaTappi', 0),
+        diffusore_selezionato=configurazione.get('diffusoreSelezionato'),
+        quantita_diffusore=configurazione.get('quantitaDiffusore', 0)
     )
 
     lunghezza_cavo_totale_mm = 0
@@ -1986,6 +1990,12 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         prezzo_tappi = prezzi.get('tappi', 0)
         html += f"<tr><th>Tappi</th><td>{quantita_selezionata}x {tappo['codice']} - €{prezzo_tappi:.2f}</td></tr>"
 
+    if configurazione.get('diffusoreSelezionato') and configurazione.get('quantitaDiffusore', 0) > 0:
+        diffusore = configurazione['diffusoreSelezionato']
+        quantita_diffusore = configurazione['quantitaDiffusore']
+        prezzo_diffusore = prezzi.get('diffusore', 0)
+        html += f"<tr><th>Diffusore</th><td>{quantita_diffusore}x {diffusore['codice']} - €{prezzo_diffusore:.2f}</td></tr>"
+
     if prezzi.get('totale', 0) > 0:
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
@@ -2189,6 +2199,51 @@ def verifica_tappi_profilo():
             
     except Exception as e:
         logging.error(f"Errore in verifica_tappi_profilo: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/verifica_diffusori_profilo', methods=['POST'])
+def verifica_diffusori_profilo():
+    try:
+        data = request.json
+        profilo_id = data.get('profilo_id')
+
+        profilo_id = profilo_id.split('_')[0]
+        print(f"Verifica diffusori per profilo: {profilo_id}")
+
+        if not profilo_id:
+            return jsonify({'success': False, 'message': 'Profilo ID mancante'})
+
+        diffusori_result = db.supabase.table('diffusori')\
+            .select('*')\
+            .eq('prf_riferimento', profilo_id)\
+            .execute()
+
+        if diffusori_result.data and len(diffusori_result.data) > 0:
+            diffusore = diffusori_result.data[0]
+            # Convert length from meters to millimeters
+            lunghezza_metri = float(diffusore['lunghezza']) if diffusore['lunghezza'] else 0.0
+            lunghezza_mm = lunghezza_metri * 1000
+
+            diffusore_data = {
+                'id': diffusore['codice'],
+                'codice': diffusore['codice'],
+                'prezzo': float(diffusore['prezzo']) if diffusore['prezzo'] else 0.0,
+                'lunghezza': lunghezza_mm
+            }
+
+            return jsonify({
+                'success': True,
+                'has_diffusore': True,
+                'diffusore': diffusore_data
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'has_diffusore': False
+            })
+
+    except Exception as e:
+        logging.error(f"Errore in verifica_diffusori_profilo: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':

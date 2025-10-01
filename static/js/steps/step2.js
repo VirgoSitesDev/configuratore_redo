@@ -514,6 +514,9 @@ export function preparePersonalizzazioneListeners() {
 
   $('#lunghezza-personalizzata').on('input', function() {
     configurazione.lunghezzaRichiesta = parseInt($(this).val(), 10) || null;
+    if (configurazione.diffusoreSelezionato) {
+      calcolaQuantitaDiffusore();
+    }
     checkPersonalizzazioneCompletion();
   });
 
@@ -539,6 +542,11 @@ export function preparePersonalizzazioneListeners() {
   togglePersonalizzazioneLunghezza();
   checkPersonalizzazioneCompletion();
   verificaEMostraTappi();
+
+  // Verifica diffusori solo per indoor (non esterni)
+  if (!configurazione.isFlussoProfiliEsterni) {
+    verificaEMostraDiffusori();
+  }
 }
 
 async function verificaEMostraTappi() {
@@ -874,6 +882,130 @@ function aggiornaLunghezzaEffettiva() {
   }
 }
 
+// ==================== DIFFUSORI FUNCTIONS ====================
+
+async function verificaEMostraDiffusori() {
+  if (!configurazione.profiloSelezionato) {
+    return;
+  }
+
+  try {
+    const response = await $.ajax({
+      url: '/verifica_diffusori_profilo',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        profilo_id: configurazione.profiloSelezionato
+      })
+    });
+
+    if (response.success && response.has_diffusore) {
+      mostraSezioneConfigurazioneDiffusore(response.diffusore);
+    } else {
+      $('#diffusore-container').remove();
+      configurazione.diffusoreSelezionato = null;
+      configurazione.quantitaDiffusore = null;
+    }
+  } catch (error) {
+    console.error("Errore verifica diffusore:", error);
+    $('#diffusore-container').remove();
+  }
+}
+
+function mostraSezioneConfigurazioneDiffusore(diffusore) {
+  $('#diffusore-container').remove();
+
+  // Insert after tappi-container or lunghezza-info-container
+  let insertAfter = $('#tappi-container');
+  if (insertAfter.length === 0) {
+    if (configurazione.tipologiaSelezionata === 'profilo_intero') {
+      insertAfter = $('#lunghezza-info-container');
+    } else {
+      insertAfter = $('.container.mb-5:has(h3:contains("Personalizzazione lunghezza"))');
+    }
+  }
+
+  if (insertAfter.length === 0) {
+    console.error("Non riesco a trovare il punto di inserimento per il diffusore");
+    return;
+  }
+
+  const diffusoreHtml = `
+    <div class="container mb-5" id="diffusore-container">
+      <h3 class="mb-3">Configurazione Diffusore</h3>
+
+      <div class="mb-4">
+        <h5 class="mb-3">Vuoi aggiungere il diffusore al profilo?</h5>
+        <div class="row" id="diffusore-scelta-container">
+          <div class="col-md-6 mb-3">
+            <div class="card option-card diffusore-scelta-card" data-scelta="si">
+              <div class="card-body text-center">
+                <h5 class="card-title">Sì</h5>
+                <p class="card-text small text-muted">Aggiungi diffusore al profilo</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card option-card diffusore-scelta-card" data-scelta="no">
+              <div class="card-body text-center">
+                <h5 class="card-title">No</h5>
+                <p class="card-text small text-muted">Procedi senza diffusore</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="diffusore-dettagli-section" style="display: none;">
+        <div class="alert alert-info mb-3">
+          <p class="mb-0"><strong>Diffusore selezionato:</strong> ${diffusore.codice}</p>
+          <p class="mb-0"><strong>Lunghezza diffusore:</strong> ${diffusore.lunghezza}mm</p>
+          <p class="mb-0"><strong>Quantità calcolata:</strong> <span id="quantita-diffusore-calcolata">0</span> pezzi</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  insertAfter.after(diffusoreHtml);
+
+  window.diffusoreData = diffusore;
+
+  $('.diffusore-scelta-card').on('click', function() {
+    $('.diffusore-scelta-card').removeClass('selected');
+    $(this).addClass('selected');
+
+    const scelta = $(this).data('scelta');
+
+    if (scelta === 'si') {
+      $('#diffusore-dettagli-section').slideDown(300);
+      calcolaQuantitaDiffusore();
+    } else {
+      $('#diffusore-dettagli-section').slideUp(300);
+      configurazione.diffusoreSelezionato = null;
+      configurazione.quantitaDiffusore = null;
+      checkPersonalizzazioneCompletion();
+    }
+  });
+}
+
+function calcolaQuantitaDiffusore() {
+  if (!window.diffusoreData || !configurazione.lunghezzaRichiesta) {
+    return;
+  }
+
+  const lunghezzaDiffusore = window.diffusoreData.lunghezza;
+  const lunghezzaProfilo = configurazione.lunghezzaRichiesta;
+
+  const quantita = Math.ceil(lunghezzaProfilo / lunghezzaDiffusore);
+
+  $('#quantita-diffusore-calcolata').text(quantita);
+
+  configurazione.diffusoreSelezionato = window.diffusoreData;
+  configurazione.quantitaDiffusore = quantita;
+
+  checkPersonalizzazioneCompletion();
+}
+
 function toggleFormaTaglioSection() {
   let formaTaglioContainer = null;
   $('.container.mb-5').each(function() {
@@ -981,6 +1113,9 @@ export function updateIstruzioniMisurazione(forma) {
 
       $('#lunghezza-personalizzata').on('input', function() {
         configurazione.lunghezzaRichiesta = parseInt($(this).val(), 10) || null;
+        if (configurazione.diffusoreSelezionato) {
+          calcolaQuantitaDiffusore();
+        }
         checkPersonalizzazioneCompletion();
       });
       $('#non-assemblato-warning').hide();
@@ -1113,7 +1248,11 @@ export function updateIstruzioniMisurazione(forma) {
     } else {
       configurazione.lunghezzaRichiesta = null;
     }
-    
+
+    if (configurazione.diffusoreSelezionato) {
+      calcolaQuantitaDiffusore();
+    }
+
     checkPersonalizzazioneCompletion();
   });
 }
@@ -1301,7 +1440,7 @@ function checkPersonalizzazioneComplete() {
     alert("Seleziona una forma di taglio prima di continuare");
     return false;
   }
-  
+
   if (!configurazione.finituraSelezionata) {
     alert("Seleziona una finitura prima di continuare");
     return false;
@@ -1310,7 +1449,7 @@ function checkPersonalizzazioneComplete() {
   if (configurazione.tipologiaSelezionata === 'profilo_intero') {
     return true;
   }
-  
+
   if (configurazione.tipologiaSelezionata === 'taglio_misura') {
     if (configurazione.formaDiTaglioSelezionata === 'DRITTO_SEMPLICE') {
       if (!configurazione.lunghezzaRichiesta) {
@@ -1329,7 +1468,7 @@ function checkPersonalizzazioneComplete() {
 
       const latiValidi = Object.values(configurazione.lunghezzeMultiple)
         .filter(val => val && val > 0).length;
-      
+
       if (latiValidi < numLatiRichiesti) {
         alert("Inserisci tutte le misure richieste per questa forma");
         return false;
