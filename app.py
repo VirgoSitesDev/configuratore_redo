@@ -2018,6 +2018,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         html += f"<tr><th>Diffusore</th><td>{quantita_diffusore}x {diffusore['codice']} - €{prezzo_diffusore:.2f}</td></tr>"
 
     # Show staffe with quantity and price in email
+    prezzo_totale_staffe = 0
     if configurazione.get('staffaSelezionata'):
         staffa = configurazione['staffaSelezionata']
         quantita_staffe = configurazione.get('quantitaStaffe', configurazione.get('quantitaProfilo', 1))
@@ -2026,10 +2027,11 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         html += f"<tr><th>Staffe di fissaggio</th><td>{quantita_staffe}x {staffa['codice']} - €{prezzo_totale_staffe:.2f}</td></tr>"
 
     if prezzi.get('totale', 0) > 0:
+        totale_con_staffe = prezzi['totale'] + prezzo_totale_staffe
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
-                    <th scope="row"><strong>Totale configurazione</strong></th>
-                    <td><strong>€{prezzi['totale']:.2f}</strong></td>
+                    <th scope="row"><strong>Totale configurazione (prezzi di listino)</strong></th>
+                    <td><strong>€{totale_con_staffe:.2f}</strong></td>
                 </tr>
         """
 
@@ -2076,12 +2078,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         
         html += f"""
         <div class="section">
-            <h3>Riepilogo Prezzi</h3>
+            <h3>Costi di lavorazione</h3>
             <table class="data-table">
-                <tr>
-                    <th>TOTALE CONFIGURAZIONE</th>
-                    <td>€{totale_base:.2f}</td>
-                </tr>
         """
 
         if costo_lavorazione_profilo > 0:
@@ -2114,8 +2112,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 <td>€{costo_gestione:.2f}</td>
             </tr>
             <tr class="totale-row" style="border-top: 2px solid #e83f34;">
-                <th><strong>TOTALE CONFIGURAZIONE E LAVORAZIONE</strong></th>
-                <td><strong>€{totale_finale:.2f}</strong></td>
+                <th><strong>Totale costi di lavorazione (netti)</strong></th>
+                <td><strong>€{totale_lavorazioni:.2f}</strong></td>
             </tr>
         </table>
     </div>

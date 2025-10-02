@@ -489,6 +489,24 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		datiTabella.push(['Potenza totale', `${configurazione.potenzaTotale}W`]);
 	  }
 
+	  // Add tappi if present
+	  if (configurazione.tappiSelezionati && configurazione.tappiSelezionati.codice) {
+		const quantitaTappi = configurazione.quantitaTappi || configurazione.tappiSelezionati.quantita || 2;
+		datiTabella.push(['Tappi', `${quantitaTappi}x ${configurazione.tappiSelezionati.codice}`]);
+	  }
+
+	  // Add diffusore if present
+	  if (configurazione.diffusoreSelezionato && configurazione.diffusoreSelezionato.codice) {
+		const quantitaDiffusore = configurazione.quantitaDiffusore || 1;
+		datiTabella.push(['Diffusore', `${quantitaDiffusore}x ${configurazione.diffusoreSelezionato.codice}`]);
+	  }
+
+	  // Add staffe if present
+	  if (configurazione.staffaSelezionata && configurazione.staffaSelezionata.codice) {
+		const quantitaStaffe = configurazione.quantitaStaffe || configurazione.quantitaProfilo || 1;
+		datiTabella.push(['Staffe di fissaggio', `${quantitaStaffe}x ${configurazione.staffaSelezionata.codice}`]);
+	  }
+
 	  doc.autoTable({
 		startY: currentY,
 		head: [['Parametro', 'Valore']],
