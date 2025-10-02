@@ -1997,6 +1997,14 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         prezzo_diffusore = prezzi.get('diffusore', 0)
         html += f"<tr><th>Diffusore</th><td>{quantita_diffusore}x {diffusore['codice']} - €{prezzo_diffusore:.2f}</td></tr>"
 
+    # Show staffe with quantity and price in email
+    if configurazione.get('staffaSelezionata'):
+        staffa = configurazione['staffaSelezionata']
+        quantita_staffe = configurazione.get('quantitaStaffe', configurazione.get('quantitaProfilo', 1))
+        prezzo_unitario_staffa = float(staffa.get('prezzo', 0))
+        prezzo_totale_staffe = prezzo_unitario_staffa * quantita_staffe
+        html += f"<tr><th>Staffe di fissaggio</th><td>{quantita_staffe}x {staffa['codice']} - €{prezzo_totale_staffe:.2f}</td></tr>"
+
     if prezzi.get('totale', 0) > 0:
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
@@ -2245,6 +2253,49 @@ def verifica_diffusori_profilo():
 
     except Exception as e:
         logging.error(f"Errore in verifica_diffusori_profilo: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/verifica_staffe_profilo', methods=['POST'])
+def verifica_staffe_profilo():
+    try:
+        data = request.json
+        profilo_id = data.get('profilo_id')
+
+        profilo_id = profilo_id.split('_')[0]
+        print(f"Verifica staffe per profilo: {profilo_id}")
+
+        if not profilo_id:
+            return jsonify({'success': False, 'message': 'Profilo ID mancante'})
+
+        staffe_result = db.supabase.table('staffe')\
+            .select('*')\
+            .eq('prf_riferimento', profilo_id)\
+            .eq('incluso', False)\
+            .execute()
+
+        if staffe_result.data and len(staffe_result.data) > 0:
+            staffa = staffe_result.data[0]
+
+            staffa_data = {
+                'id': staffa['codice'],
+                'codice': staffa['codice'],
+                'prezzo': float(staffa['prezzo']) if staffa['prezzo'] else 0.0,
+                'incluso': staffa['incluso']
+            }
+
+            return jsonify({
+                'success': True,
+                'has_staffa': True,
+                'staffa': staffa_data
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'has_staffa': False
+            })
+
+    except Exception as e:
+        logging.error(f"Errore in verifica_staffe_profilo: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':

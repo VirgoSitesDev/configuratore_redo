@@ -547,6 +547,9 @@ export function preparePersonalizzazioneListeners() {
   if (!configurazione.isFlussoProfiliEsterni) {
     verificaEMostraDiffusori();
   }
+
+  // Verifica staffe sia per indoor che outdoor
+  verificaEMostraStaffe();
 }
 
 async function verificaEMostraTappi() {
@@ -1047,6 +1050,119 @@ function calcolaQuantitaDiffusore() {
   configurazione.quantitaDiffusore = quantita;
 
   checkPersonalizzazioneCompletion();
+}
+
+// ==================== STAFFE FUNCTIONS ====================
+
+async function verificaEMostraStaffe() {
+  if (!configurazione.profiloSelezionato) {
+    return;
+  }
+
+  try {
+    const response = await $.ajax({
+      url: '/verifica_staffe_profilo',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        profilo_id: configurazione.profiloSelezionato
+      })
+    });
+
+    if (response.success && response.has_staffa) {
+      mostraSezioneConfigurazioneStaffe(response.staffa);
+    } else {
+      $('#staffe-container').remove();
+      configurazione.staffaSelezionata = null;
+    }
+  } catch (error) {
+    console.error("Errore verifica staffe:", error);
+    $('#staffe-container').remove();
+  }
+}
+
+function mostraSezioneConfigurazioneStaffe(staffa) {
+  $('#staffe-container').remove();
+
+  // Insert after diffusore-container or tappi-container or lunghezza-info-container
+  let insertAfter = $('#diffusore-container');
+  if (insertAfter.length === 0) {
+    insertAfter = $('#tappi-container');
+  }
+  if (insertAfter.length === 0) {
+    if (configurazione.tipologiaSelezionata === 'profilo_intero') {
+      insertAfter = $('#lunghezza-info-container');
+    } else {
+      insertAfter = $('.container.mb-5:has(h3:contains("Personalizzazione lunghezza"))');
+    }
+  }
+
+  if (insertAfter.length === 0) {
+    console.error("Non riesco a trovare il punto di inserimento per le staffe");
+    return;
+  }
+
+  const staffeHtml = `
+    <div class="container mb-5" id="staffe-container">
+      <h3 class="mb-3">Staffe di fissaggio</h3>
+
+      <div class="mb-4">
+        <h5 class="mb-3">Vuoi aggiungere le staffe di fissaggio?</h5>
+        <div class="row" id="staffe-scelta-container">
+          <div class="col-md-6 mb-3">
+            <div class="card option-card staffe-scelta-card" data-scelta="si">
+              <div class="card-body text-center">
+                <h5 class="card-title">Sì</h5>
+                <p class="card-text small text-muted">Aggiungi staffe di fissaggio</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card option-card staffe-scelta-card" data-scelta="no">
+              <div class="card-body text-center">
+                <h5 class="card-title">No</h5>
+                <p class="card-text small text-muted">Procedi senza staffe</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="staffe-dettagli-section" style="display: none;">
+        <div class="alert alert-info mb-3">
+          <p class="mb-0"><strong>Staffa selezionata:</strong> ${staffa.codice}</p>
+          <p class="mb-0"><strong>Quantità:</strong> <span id="quantita-staffe-calcolata">1</span> (basata sulla quantità profili)</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  insertAfter.after(staffeHtml);
+
+  window.staffaData = staffa;
+
+  $('.staffe-scelta-card').on('click', function() {
+    $('.staffe-scelta-card').removeClass('selected');
+    $(this).addClass('selected');
+
+    const scelta = $(this).data('scelta');
+
+    if (scelta === 'si') {
+      $('#staffe-dettagli-section').slideDown(300);
+      configurazione.staffaSelezionata = window.staffaData;
+
+      // Set quantity based on profile quantity (will be calculated later in finalizza)
+      configurazione.quantitaStaffe = configurazione.quantitaProfilo || 1;
+      $('#quantita-staffe-calcolata').text(configurazione.quantitaStaffe);
+
+      checkPersonalizzazioneCompletion();
+    } else {
+      $('#staffe-dettagli-section').slideUp(300);
+      configurazione.staffaSelezionata = null;
+      configurazione.quantitaStaffe = null;
+      checkPersonalizzazioneCompletion();
+    }
+  });
 }
 
 function toggleFormaTaglioSection() {

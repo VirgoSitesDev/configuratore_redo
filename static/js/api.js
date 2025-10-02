@@ -1094,7 +1094,9 @@ export function finalizzaConfigurazione() {
         tappiSelezionati: configurazione.tappiSelezionati,
         quantitaTappi: configurazione.quantitaTappi,
         diffusoreSelezionato: configurazione.diffusoreSelezionato,
-        quantitaDiffusore: configurazione.quantitaDiffusore
+        quantitaDiffusore: configurazione.quantitaDiffusore,
+        staffaSelezionata: configurazione.staffaSelezionata,
+        quantitaStaffe: configurazione.quantitaStaffe
       }),
       success: function(data) {
         
@@ -1112,6 +1114,11 @@ export function finalizzaConfigurazione() {
         configurazione.lunghezzaMassimaProfilo = data.lunghezzaMassimaProfilo || 3000;
         configurazione.lunghezzaMassimaStripLed = data.lunghezzaMassimaStripLed || 5000;
         configurazione.lunghezzaTotale = data.lunghezzaTotale || 0;
+
+        // Set staffe quantity equal to profile quantity
+        if (configurazione.staffaSelezionata) {
+          configurazione.quantitaStaffe = configurazione.quantitaProfilo;
+        }
 
         configurazione.combinazioneProfiloOttimale = data.combinazioneProfiloOttimale || [
           {lunghezza: configurazione.lunghezzaMassimaProfilo, quantita: configurazione.quantitaProfilo}
@@ -1597,6 +1604,18 @@ export function finalizzaConfigurazione() {
                         <tr>
                           <th scope="row">Diffusore</th>
                           <td>${quantitaDiffusore > 1 ? quantitaDiffusore + 'x ' : ''}${diffusore.codice}</td>
+                        </tr>
+          `;
+        }
+
+        if (configurazione.staffaSelezionata) {
+          const staffa = configurazione.staffaSelezionata;
+          const quantitaStaffe = configurazione.quantitaStaffe || 1;
+
+          riepilogoHtml += `
+                        <tr>
+                          <th scope="row">Staffe di fissaggio</th>
+                          <td>${quantitaStaffe > 1 ? quantitaStaffe + 'x ' : ''}${staffa.codice}</td>
                         </tr>
           `;
         }
