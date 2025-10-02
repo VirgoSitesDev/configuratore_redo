@@ -2169,9 +2169,22 @@ def verifica_tappi_profilo():
         data = request.json
         profilo_id = data.get('profilo_id')
 
+        print(f"[DEBUG TAPPI] Profilo ID ricevuto: '{profilo_id}'")
+        print(f"[DEBUG TAPPI] Tipo: {type(profilo_id)}")
+
+        # First split by underscore (for indoor profiles like "PROFILE_123")
         profilo_id = profilo_id.split('_')[0]
-        print(profilo_id)
-        
+
+        # For outdoor profiles: trim last 2 letters if they follow numbers
+        # e.g., MG13X12PF -> MG13X12, MG13X12SK -> MG13X12
+        import re
+        match = re.match(r'^(.+\d+)([A-Z]{2})$', profilo_id)
+        if match:
+            profilo_id = match.group(1)
+            print(f"[DEBUG TAPPI] Profilo outdoor, trimmed da '{profilo_id}{match.group(2)}' a '{profilo_id}'")
+
+        print(f"[DEBUG TAPPI] Profilo ID finale per query: '{profilo_id}'")
+
         if not profilo_id:
             return jsonify({'success': False, 'message': 'Profilo ID mancante'})
 
@@ -2179,7 +2192,11 @@ def verifica_tappi_profilo():
             .select('*')\
             .eq('prf_riferimento', profilo_id)\
             .execute()
-        
+
+        print(f"[DEBUG TAPPI] Query result: {len(tappi_result.data) if tappi_result.data else 0} tappi trovati")
+        if tappi_result.data:
+            print(f"[DEBUG TAPPI] Tappi disponibili: {[t.get('codice') for t in tappi_result.data]}")
+
         if tappi_result.data and len(tappi_result.data) > 0:
             tappi_disponibili = []
             for tappo in tappi_result.data:
@@ -2261,8 +2278,21 @@ def verifica_staffe_profilo():
         data = request.json
         profilo_id = data.get('profilo_id')
 
+        print(f"[DEBUG STAFFE] Profilo ID ricevuto: '{profilo_id}'")
+        print(f"[DEBUG STAFFE] Tipo: {type(profilo_id)}")
+
+        # First split by underscore (for indoor profiles like "PROFILE_123")
         profilo_id = profilo_id.split('_')[0]
-        print(f"Verifica staffe per profilo: {profilo_id}")
+
+        # For outdoor profiles: trim last 2 letters if they follow numbers
+        # e.g., MG13X12PF -> MG13X12, MG13X12SK -> MG13X12
+        import re
+        match = re.match(r'^(.+\d+)([A-Z]{2})$', profilo_id)
+        if match:
+            profilo_id = match.group(1)
+            print(f"[DEBUG STAFFE] Profilo outdoor, trimmed da '{profilo_id}{match.group(2)}' a '{profilo_id}'")
+
+        print(f"[DEBUG STAFFE] Profilo ID finale per query: '{profilo_id}'")
 
         if not profilo_id:
             return jsonify({'success': False, 'message': 'Profilo ID mancante'})
@@ -2272,6 +2302,10 @@ def verifica_staffe_profilo():
             .eq('prf_riferimento', profilo_id)\
             .eq('incluso', False)\
             .execute()
+
+        print(f"[DEBUG STAFFE] Query result: {len(staffe_result.data) if staffe_result.data else 0} staffe trovate")
+        if staffe_result.data:
+            print(f"[DEBUG STAFFE] Staffe disponibili: {[s.get('codice') for s in staffe_result.data]}")
 
         if staffe_result.data and len(staffe_result.data) > 0:
             staffa = staffe_result.data[0]

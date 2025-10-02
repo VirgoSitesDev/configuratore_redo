@@ -554,8 +554,12 @@ export function preparePersonalizzazioneListeners() {
 
 async function verificaEMostraTappi() {
   if (!configurazione.profiloSelezionato) {
+    console.log('[DEBUG TAPPI] Nessun profilo selezionato');
     return;
   }
+
+  console.log('[DEBUG TAPPI] Verificando tappi per profilo:', configurazione.profiloSelezionato);
+  console.log('[DEBUG TAPPI] isFlussoProfiliEsterni:', configurazione.isFlussoProfiliEsterni);
 
   try {
     // Verifica se esistono tappi per questo profilo
@@ -567,6 +571,8 @@ async function verificaEMostraTappi() {
         profilo_id: configurazione.profiloSelezionato
       })
     });
+
+    console.log('[DEBUG TAPPI] Response:', response);
 
     if (response.success && response.has_tappi) {
       mostraSezioneConfigurazioneTappi(response.tappi_disponibili);
@@ -754,14 +760,20 @@ function mostraSceltaTipoTappi(tappiDisponibili) {
   };
 
   const finituraRichiesta = configurazione.finituraSelezionata;
-  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta]) 
-    ? finituraMapping[finituraRichiesta] 
+  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta])
+    ? finituraMapping[finituraRichiesta]
     : [finituraMapping[finituraRichiesta]];
 
   // Filtra tappi per finitura
-  const tappiFiltrati = tappiDisponibili.filter(tappo => 
+  let tappiFiltrati = tappiDisponibili.filter(tappo =>
     finitureCompatibili.includes(tappo.finitura)
   );
+
+  // Se non ci sono tappi filtrati (outdoor profiles), usa tutti i tappi disponibili
+  if (tappiFiltrati.length === 0) {
+    console.log('[DEBUG TAPPI] Nessun tappo trovato per finitura, usando tutti i tappi disponibili');
+    tappiFiltrati = tappiDisponibili;
+  }
 
   // Verifica disponibilità di tappi ciechi e forati
   const haForati = tappiFiltrati.some(t => t.forati === true);
@@ -837,13 +849,19 @@ function selezionaTappoAutomatico(tappiDisponibili, forati) {
   };
 
   const finituraRichiesta = configurazione.finituraSelezionata;
-  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta]) 
-    ? finituraMapping[finituraRichiesta] 
+  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta])
+    ? finituraMapping[finituraRichiesta]
     : [finituraMapping[finituraRichiesta]];
 
-  const tappoCompatibile = tappiDisponibili.find(tappo => 
+  let tappoCompatibile = tappiDisponibili.find(tappo =>
     finitureCompatibili.includes(tappo.finitura) && tappo.forati === forati
   );
+
+  // Se non trova tappo con finitura, cerca solo per tipo (forati/ciechi)
+  if (!tappoCompatibile) {
+    console.log('[DEBUG TAPPI] Nessun tappo trovato per finitura, cercando solo per tipo');
+    tappoCompatibile = tappiDisponibili.find(tappo => tappo.forati === forati);
+  }
 
   if (tappoCompatibile) {
     configurazione.tappiSelezionati = tappoCompatibile;
@@ -1056,8 +1074,12 @@ function calcolaQuantitaDiffusore() {
 
 async function verificaEMostraStaffe() {
   if (!configurazione.profiloSelezionato) {
+    console.log('[DEBUG STAFFE] Nessun profilo selezionato');
     return;
   }
+
+  console.log('[DEBUG STAFFE] Verificando staffe per profilo:', configurazione.profiloSelezionato);
+  console.log('[DEBUG STAFFE] isFlussoProfiliEsterni:', configurazione.isFlussoProfiliEsterni);
 
   try {
     const response = await $.ajax({
@@ -1068,6 +1090,8 @@ async function verificaEMostraStaffe() {
         profilo_id: configurazione.profiloSelezionato
       })
     });
+
+    console.log('[DEBUG STAFFE] Response:', response);
 
     if (response.success && response.has_staffa) {
       mostraSezioneConfigurazioneStaffe(response.staffa);
