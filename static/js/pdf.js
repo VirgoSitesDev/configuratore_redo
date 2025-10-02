@@ -395,7 +395,15 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		}
 		
 		datiTabella.push(['Strip LED', stripText]);
-		
+
+		// Add double strip row if applicable
+		if (configurazione.doppiaStripSelezionata && configurazione.moltiplicatoreStrip === 2) {
+		  const lunghezzaTotale = configurazione.lunghezzaTotale || configurazione.lunghezzaRichiesta || 0;
+		  const lunghezzaDoppiaM = (lunghezzaTotale / 1000 * 2).toFixed(2);
+		  const lunghezzaDoppiaMm = (lunghezzaTotale * 2).toFixed(0);
+		  datiTabella.push(['Lunghezza totale doppia strip LED', `${lunghezzaDoppiaM}m (${lunghezzaDoppiaMm}mm)`]);
+		}
+
 		if (configurazione.tipologiaStripSelezionata) {
 		  let tipologiaText = configurazione.tipologiaStripSelezionata;
 		  if (configurazione.tipologiaStripSelezionata === 'COB') {

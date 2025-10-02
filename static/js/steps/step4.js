@@ -167,9 +167,10 @@ export function vaiAllAlimentazione() {
     if (potenzaMatch) {
       const potenzaPerMetro = parseFloat(potenzaMatch[1]);
       const lunghezzaMetri = configurazione.lunghezzaRichiestaMetri;
-      const potenzaTotale = potenzaPerMetro * lunghezzaMetri * 1.2;
+      const moltiplicatore = configurazione.moltiplicatoreStrip || 1;
+      const potenzaTotale = potenzaPerMetro * lunghezzaMetri * moltiplicatore * 1.2;
       const potenzaConsigliata = Math.max(20, Math.ceil(potenzaTotale / 5) * 5);
-      
+
       configurazione.potenzaConsigliataAlimentatore = potenzaConsigliata;
 
       $('#potenza-consigliata').text(potenzaConsigliata);

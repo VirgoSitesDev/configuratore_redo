@@ -2,7 +2,7 @@ import { configurazione, mappaTipologieVisualizzazione, mappaTensioneVisualizzaz
 import { formatTemperatura, getTemperaturaColor, checkParametriCompletion, checkStep2Completion, updateProgressBar, checkPersonalizzazioneCompletion } from './utils.js';
 import { initRiepilogoOperationsListeners } from './steps/step7.js';
 import { calcolaCodiceProdottoCompleto, calcolaCodiceProfilo } from './codici_prodotto.js';
-import { renderizzaOpzioniPotenza } from './steps/step3.js'
+import { renderizzaOpzioniPotenza, verificaDoppiaStrip } from './steps/step3.js'
 
 export function caricaProfili(categoria) {
   
@@ -753,20 +753,22 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
         const stripId = data.strip_led[0].id;
         const nomeCommerciale = data.strip_led[0].nomeCommerciale || '';
         const lunghezzaMassima = data.strip_led[0].lunghezzaMassima || 5000;
-        
+
         configurazione.stripLedSceltaFinale = stripId;
         configurazione.nomeCommercialeStripLed = nomeCommerciale;
         configurazione.stripLedSelezionata = stripId;
         configurazione.lunghezzaMassimaStripLed = lunghezzaMassima;
-        
+
         $('.strip-led-compatibile-card').addClass('selected');
-        $('#btn-continua-step3').prop('disabled', false);
+
+        // Check if double strip is available
+        verificaDoppiaStrip(stripId);
       }
 
       $('.strip-led-compatibile-card').on('click', function() {
         $('.strip-led-compatibile-card').removeClass('selected');
         $(this).addClass('selected');
-        
+
         const stripId = $(this).data('strip-id');
         const nomeCommerciale = $(this).data('nome-commerciale') || '';
         const lunghezzaMassima = $(this).data('lunghezza-massima') || 5000;
@@ -776,7 +778,8 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
         configurazione.stripLedSelezionata = stripId;
         configurazione.lunghezzaMassimaStripLed = lunghezzaMassima;
 
-        $('#btn-continua-step3').prop('disabled', false);
+        // Check if double strip is available
+        verificaDoppiaStrip(stripId);
       });
     },
     error: function(error) {
@@ -1044,7 +1047,10 @@ export function caricaFinitureDisponibili(profiloId) {
 }
 
 export function finalizzaConfigurazione() {
-  
+  console.log('[DEBUG FINALIZZA] finalizzaConfigurazione chiamata');
+  console.log('[DEBUG FINALIZZA] moltiplicatoreStrip:', configurazione.moltiplicatoreStrip);
+  console.log('[DEBUG FINALIZZA] doppiaStripSelezionata:', configurazione.doppiaStripSelezionata);
+
   $('#riepilogo-container').html('<div class="text-center my-5"><div class="spinner-border" role="status"></div><p class="mt-3">Generazione riepilogo...</p></div>');
   
   $("#step6-proposte").fadeOut(300, function() {
@@ -1085,19 +1091,27 @@ export function finalizzaConfigurazione() {
       configurazione.alimentazioneText = mappaAlimentazioneText[configurazione.alimentazioneSelezionata] || configurazione.alimentazioneSelezionata;
     }
     
+    const dataToSend = {
+      ...configurazione,
+      tappiSelezionati: configurazione.tappiSelezionati,
+      quantitaTappi: configurazione.quantitaTappi,
+      diffusoreSelezionato: configurazione.diffusoreSelezionato,
+      quantitaDiffusore: configurazione.quantitaDiffusore,
+      staffaSelezionata: configurazione.staffaSelezionata,
+      quantitaStaffe: configurazione.quantitaStaffe
+    };
+
+    console.log('[DEBUG FINALIZZA] Inviando dati al backend:', {
+      moltiplicatoreStrip: dataToSend.moltiplicatoreStrip,
+      doppiaStripSelezionata: dataToSend.doppiaStripSelezionata,
+      lunghezzaRichiesta: dataToSend.lunghezzaRichiesta
+    });
+
     $.ajax({
       url: '/finalizza_configurazione',
       method: 'POST',
       contentType: 'application/json',
-      data: JSON.stringify({
-        ...configurazione,
-        tappiSelezionati: configurazione.tappiSelezionati,
-        quantitaTappi: configurazione.quantitaTappi,
-        diffusoreSelezionato: configurazione.diffusoreSelezionato,
-        quantitaDiffusore: configurazione.quantitaDiffusore,
-        staffaSelezionata: configurazione.staffaSelezionata,
-        quantitaStaffe: configurazione.quantitaStaffe
-      }),
+      data: JSON.stringify(dataToSend),
       success: function(data) {
         
         if (!data.success) {
@@ -1114,6 +1128,10 @@ export function finalizzaConfigurazione() {
         configurazione.lunghezzaMassimaProfilo = data.lunghezzaMassimaProfilo || 3000;
         configurazione.lunghezzaMassimaStripLed = data.lunghezzaMassimaStripLed || 5000;
         configurazione.lunghezzaTotale = data.lunghezzaTotale || 0;
+
+        console.log('[DEBUG RIEPILOGO] Quantità strip ricevuta dal backend:', data.quantitaStripLed);
+        console.log('[DEBUG RIEPILOGO] Moltiplicatore strip:', configurazione.moltiplicatoreStrip);
+        console.log('[DEBUG RIEPILOGO] Doppia strip selezionata:', configurazione.doppiaStripSelezionata);
 
         // Set staffe quantity equal to profile quantity
         if (configurazione.staffaSelezionata) {
@@ -1211,6 +1229,12 @@ export function finalizzaConfigurazione() {
                           <th scope="row">Strip LED</th>
                           <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed * 1000}mm cad.)` : ''} - ${tuttiCodici.stripLed}</td>
                         </tr>
+                        ${configurazione.doppiaStripSelezionata && configurazione.moltiplicatoreStrip === 2 ? `
+                        <tr>
+                          <th scope="row">Lunghezza totale doppia strip LED</th>
+                          <td>${(configurazione.lunghezzaRichiestaMetri * 2).toFixed(2)}m (${configurazione.lunghezzaRichiesta * 2}mm)</td>
+                        </tr>
+                        ` : ''}
                         <tr>
                           <th scope="row">Lunghezza</th>
                           <td>${configurazione.lunghezzaRichiestaMetri}m</td>
@@ -1418,6 +1442,15 @@ export function finalizzaConfigurazione() {
                         <td>${configurazione.quantitaStripLed > 1 ? configurazione.quantitaStripLed + 'x ' : ''}${nomeStripLed}${configurazione.quantitaStripLed > 1 ? ` (${configurazione.lunghezzaMassimaStripLed * 1000}mm cad.)` : ''} - ${tuttiCodici["stripLed"]}</td>
                       </tr>
           `;
+
+          if (configurazione.doppiaStripSelezionata && configurazione.moltiplicatoreStrip === 2) {
+            riepilogoHtml += `
+                      <tr>
+                        <th scope="row">Lunghezza totale doppia strip LED</th>
+                        <td>${(configurazione.lunghezzaTotale / 1000 * 2).toFixed(2)}m (${configurazione.lunghezzaTotale * 2}mm)</td>
+                      </tr>
+            `;
+          }
 
           if (riepilogo.tipologiaStripSelezionata) {
             let tipologiaStripText = mappaTipologiaStripVisualizzazione[riepilogo.tipologiaStripSelezionata] || riepilogo.tipologiaStripSelezionata;

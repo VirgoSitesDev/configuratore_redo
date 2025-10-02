@@ -50,7 +50,9 @@ const configurazione = {
     quantitaTappi: null,
     lunghezzaEffettivaProfilo: null,
     lunghezzaOriginalePreTappi: undefined,
-	tipoTappiSelezionato: null
+	tipoTappiSelezionato: null,
+	doppiaStripSelezionata: false,
+	moltiplicatoreStrip: 1
 };
 
   const mappaCategorieVisualizzazione = {

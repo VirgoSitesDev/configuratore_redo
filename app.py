@@ -705,6 +705,11 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
 @app.route('/finalizza_configurazione', methods=['POST'])
 def finalizza_configurazione():
     configurazione = request.json
+    print("="*80)
+    print("[DEBUG] FINALIZZA_CONFIGURAZIONE CHIAMATA!")
+    print(f"[DEBUG] moltiplicatoreStrip: {configurazione.get('moltiplicatoreStrip', 'NOT FOUND')}")
+    print(f"[DEBUG] doppiaStripSelezionata: {configurazione.get('doppiaStripSelezionata', 'NOT FOUND')}")
+    print("="*80)
 
     def calcola_codici_prodotto():
         codici = {
@@ -751,7 +756,12 @@ def finalizza_configurazione():
         except ValueError:
             lunghezza_in_metri = 0
     
-    potenza_totale = potenza_per_metro * lunghezza_in_metri
+    # Get strip multiplier (1 or 2) for double strip
+    moltiplicatore_strip = configurazione.get('moltiplicatoreStrip', 1)
+    logging.info(f"[DEBUG DOPPIA STRIP BACKEND] Moltiplicatore ricevuto: {moltiplicatore_strip}")
+    logging.info(f"[DEBUG DOPPIA STRIP BACKEND] doppiaStripSelezionata: {configurazione.get('doppiaStripSelezionata', False)}")
+
+    potenza_totale = potenza_per_metro * lunghezza_in_metri * moltiplicatore_strip
 
     quantita_profilo = 1
     quantita_strip_led = 1
@@ -764,6 +774,12 @@ def finalizza_configurazione():
         lunghezza_totale = sum(v for v in configurazione['lunghezzeMultiple'].values() if v and v > 0)
     elif 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
         lunghezza_totale = float(configurazione['lunghezzaRichiesta'])
+
+    # Apply multiplier to total length for strip calculations
+    lunghezza_totale_strip = lunghezza_totale * moltiplicatore_strip
+    print(f"[DEBUG] lunghezza_totale: {lunghezza_totale}")
+    print(f"[DEBUG] moltiplicatore_strip: {moltiplicatore_strip}")
+    print(f"[DEBUG] lunghezza_totale_strip: {lunghezza_totale_strip}")
 
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
@@ -797,15 +813,17 @@ def finalizza_configurazione():
                 .eq('id', configurazione['stripLedSelezionata'])\
                 .single()\
                 .execute()
-            
+
             if strip_data.data and strip_data.data.get('lunghezza'):
                 lunghezza_massima_strip = strip_data.data['lunghezza']
-                logging.info(f"Lunghezza massima strip: {lunghezza_massima_strip}mm")
+                print(f"[DEBUG] Lunghezza massima strip: {lunghezza_massima_strip}mm")
 
-                if lunghezza_totale > 0:
-                    quantita_strip_led = math.ceil(lunghezza_totale / (lunghezza_massima_strip * 1000))
+                if lunghezza_totale_strip > 0:
+                    quantita_strip_led = math.ceil(lunghezza_totale_strip / (lunghezza_massima_strip * 1000))
+                    print(f"[DEBUG] Quantità strip calcolata: {quantita_strip_led}")
+                    print(f"[DEBUG] Calcolo: ceil({lunghezza_totale_strip} / ({lunghezza_massima_strip} * 1000))")
         except Exception as e:
-            logging.error(f"Errore nel recupero lunghezza strip: {str(e)}")
+            print(f"[DEBUG] ERRORE nel recupero lunghezza strip: {str(e)}")
 
     modalita = configurazione.get('modalitaConfigurazione', '')
     
@@ -833,7 +851,7 @@ def finalizza_configurazione():
         temperatura_strip=configurazione.get('temperaturaSelezionata') or configurazione.get('temperaturaColoreSelezionata'),
         potenza_strip=configurazione.get('potenzaSelezionata'),
         quantita_profilo=configurazione.get('quantitaProfilo', 1),
-        quantita_strip=configurazione.get('quantitaStripLed', 1),
+        quantita_strip=quantita_strip_led,
         lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
         tappi_selezionati=configurazione.get('tappiSelezionati'),
         quantita_tappi=configurazione.get('quantitaTappi', 0),
@@ -1924,6 +1942,13 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         nome_strip += prezzo_strip_text
 
         html += f"<tr><th>Strip LED</th><td>{nome_strip}</td></tr>"
+
+        # Add double strip row if applicable
+        if configurazione.get('doppiaStripSelezionata') and configurazione.get('moltiplicatoreStrip') == 2:
+            lunghezza_totale = configurazione.get('lunghezzaTotale', configurazione.get('lunghezzaRichiesta', 0))
+            lunghezza_doppia_m = (lunghezza_totale / 1000 * 2)
+            lunghezza_doppia_mm = lunghezza_totale * 2
+            html += f"<tr><th>Lunghezza totale doppia strip LED</th><td>{lunghezza_doppia_m:.2f}m ({lunghezza_doppia_mm:.0f}mm)</td></tr>"
     else:
         html += f"<tr><th>Strip LED</th><td>Senza Strip LED</td></tr>"
 
@@ -2348,6 +2373,89 @@ def verifica_staffe_profilo():
 
     except Exception as e:
         logging.error(f"Errore in verifica_staffe_profilo: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/verifica_doppia_strip', methods=['POST'])
+def verifica_doppia_strip():
+    try:
+        data = request.json
+        profilo_id = data.get('profilo_id')
+        strip_id = data.get('strip_id')
+
+        print(f"[DEBUG DOPPIA STRIP] Profilo ID ricevuto: '{profilo_id}', Strip ID: '{strip_id}'")
+
+        # Trim profile ID at underscore as usual
+        profilo_id_trimmed = profilo_id.split('_')[0]
+
+        # For outdoor profiles: trim last 2 letters if they follow numbers
+        import re
+        match = re.match(r'^(.+\d+)([A-Z]{2})$', profilo_id_trimmed)
+        if match:
+            profilo_id_trimmed = match.group(1)
+            print(f"[DEBUG DOPPIA STRIP] Profilo outdoor, trimmed to '{profilo_id_trimmed}'")
+
+        print(f"[DEBUG DOPPIA STRIP] Profilo ID finale: '{profilo_id_trimmed}'")
+
+        if not profilo_id_trimmed or not strip_id:
+            return jsonify({'success': False, 'message': 'Profilo ID o Strip ID mancante'})
+
+        # Check if profile has entry in profili_doppia_strip
+        doppia_strip_result = db.supabase.table('profili_doppia_strip')\
+            .select('*')\
+            .eq('profilo_id', profilo_id_trimmed)\
+            .execute()
+
+        if not doppia_strip_result.data or len(doppia_strip_result.data) == 0:
+            print(f"[DEBUG DOPPIA STRIP] Nessuna entry trovata per profilo '{profilo_id_trimmed}'")
+            return jsonify({
+                'success': True,
+                'can_double': False
+            })
+
+        profilo_doppia_data = doppia_strip_result.data[0]
+        print(f"[DEBUG DOPPIA STRIP] Entry trovata: {profilo_doppia_data}")
+
+        # Get strip width from strip_led table
+        strip_result = db.supabase.table('strip_led')\
+            .select('larghezza')\
+            .eq('id', strip_id)\
+            .execute()
+
+        if not strip_result.data or len(strip_result.data) == 0:
+            print(f"[DEBUG DOPPIA STRIP] Strip non trovata: '{strip_id}'")
+            return jsonify({
+                'success': True,
+                'can_double': False
+            })
+
+        strip_larghezza = float(strip_result.data[0].get('larghezza', 0))
+        print(f"[DEBUG DOPPIA STRIP] Larghezza strip: {strip_larghezza}")
+
+        profilo_larghezza = float(profilo_doppia_data.get('larghezza', 0))
+        adiacente = profilo_doppia_data.get('adiacente', False)
+
+        print(f"[DEBUG DOPPIA STRIP] Profilo larghezza: {profilo_larghezza}, Adiacente: {adiacente}")
+
+        # Check conditions:
+        # If adiacente is False, always allow double strip
+        # If adiacente is True, check if profilo_larghezza >= strip_larghezza * 2
+        can_double = False
+        if not adiacente:
+            can_double = True
+            print(f"[DEBUG DOPPIA STRIP] Adiacente=False, can_double=True")
+        elif profilo_larghezza >= (strip_larghezza * 2):
+            can_double = True
+            print(f"[DEBUG DOPPIA STRIP] Larghezza check passed ({profilo_larghezza} >= {strip_larghezza * 2}), can_double=True")
+        else:
+            print(f"[DEBUG DOPPIA STRIP] Larghezza check failed ({profilo_larghezza} < {strip_larghezza * 2}), can_double=False")
+
+        return jsonify({
+            'success': True,
+            'can_double': can_double
+        })
+
+    except Exception as e:
+        logging.error(f"Errore in verifica_doppia_strip: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':

@@ -1857,7 +1857,8 @@ export function saltaAlimentazionePerEsterni() {
   if (configurazione.potenzaSelezionata && configurazione.lunghezzaRichiesta) {
       const potenzaPerMetro = parseFloat(configurazione.potenzaSelezionata.split('W/m')[0]) || 0;
       const lunghezzaMetri = configurazione.lunghezzaRichiesta / 1000;
-      const potenzaTotale = potenzaPerMetro * lunghezzaMetri * 1.2;
+      const moltiplicatore = configurazione.moltiplicatoreStrip || 1;
+      const potenzaTotale = potenzaPerMetro * lunghezzaMetri * moltiplicatore * 1.2;
 
       configurazione.potenzaConsigliataAlimentatore = Math.ceil(potenzaTotale / 10) * 10;
   }

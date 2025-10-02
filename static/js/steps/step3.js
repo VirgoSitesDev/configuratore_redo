@@ -195,7 +195,8 @@ function caricaStripLedFiltrate() {
             configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
             configurazione.stripLedSelezionata = stripSelezionata.id;
 
-            $('#btn-continua-step3').prop('disabled', false);
+            // Check if double strip is available
+            verificaDoppiaStrip(stripSelezionata.id);
           }, 100);
         }
       } else {
@@ -271,14 +272,82 @@ export function initPotenzaListener() {
   $(document).off('click', '.strip-led-compatibile-card').on('click', '.strip-led-compatibile-card', function() {
     $('.strip-led-compatibile-card').removeClass('selected');
     $(this).addClass('selected');
-    
+
     const stripId = $(this).data('strip-id');
     const nomeCommerciale = $(this).data('nome-commerciale') || '';
 
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
- 
+
+    // Check if double strip is available for this profile and strip
+    verificaDoppiaStrip(stripId);
+  });
+
+  $(document).off('click', '.doppia-strip-card').on('click', '.doppia-strip-card', function() {
+    $('.doppia-strip-card').removeClass('selected');
+    $(this).addClass('selected');
+
+    const scelta = $(this).data('scelta');
+    configurazione.doppiaStripSelezionata = (scelta === 'si');
+    configurazione.moltiplicatoreStrip = (scelta === 'si') ? 2 : 1;
+
     $('#btn-continua-step3').prop('disabled', false);
+  });
+}
+
+export function verificaDoppiaStrip(stripId) {
+  console.log('[DEBUG DOPPIA STRIP] verificaDoppiaStrip chiamata con stripId:', stripId);
+  console.log('[DEBUG DOPPIA STRIP] profiloSelezionato:', configurazione.profiloSelezionato);
+
+  if (!configurazione.profiloSelezionato || !stripId) {
+    console.log('[DEBUG DOPPIA STRIP] Missing profilo or strip, hiding section');
+    $('#doppia-strip-section').hide();
+    $('#btn-continua-step3').prop('disabled', false);
+    return;
+  }
+
+  console.log('[DEBUG DOPPIA STRIP] Chiamando endpoint con:', {
+    profilo_id: configurazione.profiloSelezionato,
+    strip_id: stripId
+  });
+
+  $.ajax({
+    url: '/verifica_doppia_strip',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      profilo_id: configurazione.profiloSelezionato,
+      strip_id: stripId
+    }),
+    success: function(response) {
+      console.log('[DEBUG DOPPIA STRIP] Response ricevuta:', response);
+
+      if (response.success && response.can_double) {
+        console.log('[DEBUG DOPPIA STRIP] Can double = TRUE, mostrando sezione');
+        // Reset selection
+        $('.doppia-strip-card').removeClass('selected');
+        configurazione.doppiaStripSelezionata = false;
+        configurazione.moltiplicatoreStrip = 1;
+
+        // Show section
+        $('#doppia-strip-section').fadeIn(300);
+        $('#btn-continua-step3').prop('disabled', true);
+      } else {
+        console.log('[DEBUG DOPPIA STRIP] Can double = FALSE, nascondendo sezione');
+        // Hide section and enable continue button
+        $('#doppia-strip-section').hide();
+        configurazione.doppiaStripSelezionata = false;
+        configurazione.moltiplicatoreStrip = 1;
+        $('#btn-continua-step3').prop('disabled', false);
+      }
+    },
+    error: function(error) {
+      console.error("[DEBUG DOPPIA STRIP] Errore verifica doppia strip:", error);
+      $('#doppia-strip-section').hide();
+      configurazione.doppiaStripSelezionata = false;
+      configurazione.moltiplicatoreStrip = 1;
+      $('#btn-continua-step3').prop('disabled', false);
+    }
   });
 }
