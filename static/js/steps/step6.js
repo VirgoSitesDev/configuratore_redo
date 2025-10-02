@@ -84,7 +84,8 @@ function calcolaProposte(lunghezzaRichiesta) {
       lunghezzaRichiesta: lunghezzaRichiesta,
       stripLedSelezionata: configurazione.stripLedSelezionata || configurazione.stripLedSceltaFinale,
       potenzaSelezionata: configurazione.potenzaSelezionata,
-      formaDiTaglioSelezionata: configurazione.formaDiTaglioSelezionata
+      formaDiTaglioSelezionata: configurazione.formaDiTaglioSelezionata,
+      tappiSelezionati: configurazione.tappiSelezionati
     };
 
     if (configurazione.formaDiTaglioSelezionata !== 'DRITTO_SEMPLICE' && configurazione.lunghezzeMultiple) {
@@ -209,8 +210,19 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
   const coincideConProposta1 = lunghezzaOriginale === data.proposte.proposta1;
   const coincideConProposta2 = lunghezzaOriginale === data.proposte.proposta2;
   const coincideConProposte = coincideConProposta1 || coincideConProposta2;
-  let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2 ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + 5 : Math.abs(lunghezzaOriginale - data.proposte.proposta2) + 5;
-  if (data.formaDiTaglioSelezionata == null) spazioBuio -= 5;
+
+  // OLD FORMULA (Fixed value of 5mm):
+  // let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2 ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + 5 : Math.abs(lunghezzaOriginale - data.proposte.proposta2) + 5;
+  // if (data.formaDiTaglioSelezionata == null) spazioBuio -= 5;
+
+  // NEW FORMULA (Using lunghezza_interna from selected end cap, or 0 if no caps):
+  const extraSpace = (configurazione.tappiSelezionati && configurazione.tappiSelezionati.lunghezza_interna)
+    ? configurazione.tappiSelezionati.lunghezza_interna
+    : 0;
+  let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2
+    ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + extraSpace
+    : Math.abs(lunghezzaOriginale - data.proposte.proposta2) + extraSpace;
+  if (data.formaDiTaglioSelezionata == null) spazioBuio -= extraSpace;
   const proposte = [];
 
   proposte.push({

@@ -501,9 +501,29 @@ def calcola_lunghezze():
             logging.error(f"Errore nella ricerca della strip {strip_id}: {str(e)}")
 
     def calcola_proposte_singole(lunghezza):
+        # OLD FORMULA (Fixed value of 5mm):
+        # if lunghezza > 0:
+        #     proposta1 = ((lunghezza - 5) // taglio_minimo * taglio_minimo) + 5
+        #     proposta2 = ((((lunghezza - 5) + taglio_minimo - 0.01) // taglio_minimo) * taglio_minimo) + 5
+        #     if proposta2 <= proposta1:
+        #         proposta2 = (proposta1 + taglio_minimo)
+        # else:
+        #     proposta1 = 0
+        #     proposta2 = 0
+        # if data.get('formaDiTaglioSelezionata') is None:
+        #     proposta1 -= 5
+        #     proposta2 -= 5
+        # return proposta1, proposta2
+
+        # NEW FORMULA (Using lunghezza_interna from selected end cap, or 0 if no caps):
+        tappi = data.get('tappiSelezionati')
+        print(tappi)
+        extra_space = tappi.get('lunghezza_interna', 0) if tappi else 0
+        print("SPAZIO EXTRA: " + str(extra_space))
+
         if lunghezza > 0:
-            proposta1 = ((lunghezza - 5) // taglio_minimo * taglio_minimo) + 5
-            proposta2 = ((((lunghezza - 5) + taglio_minimo - 0.01) // taglio_minimo) * taglio_minimo) + 5
+            proposta1 = ((lunghezza - extra_space) // taglio_minimo * taglio_minimo) + extra_space
+            proposta2 = ((((lunghezza - extra_space) + taglio_minimo - 0.01) // taglio_minimo) * taglio_minimo) + extra_space
 
             if proposta2 <= proposta1:
                 proposta2 = (proposta1 + taglio_minimo)
@@ -512,8 +532,8 @@ def calcola_lunghezze():
             proposta2 = 0
 
         if data.get('formaDiTaglioSelezionata') is None:
-            proposta1 -= 5
-            proposta2 -= 5
+            proposta1 -= extra_space
+            proposta2 -= extra_space
         return proposta1, proposta2
 
     def calcola_spazio_buio_lato(valore_originale, proposta1, proposta2):
