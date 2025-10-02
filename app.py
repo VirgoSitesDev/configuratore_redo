@@ -1984,7 +1984,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('potenzaTotale'):
         html += f"<tr><th>Potenza totale</th><td>{configurazione['potenzaTotale']}W</td></tr>"
 
-    if configurazione.get('tappiSelezionati') and configurazione.get('quantitaTappi', 0) > 0:
+    # Only show tappi in riepilogo if they are not automatically included
+    if configurazione.get('tappiSelezionati') and configurazione.get('quantitaTappi', 0) > 0 and not configurazione.get('tappiInclusi', False):
         tappo = configurazione['tappiSelezionati']
         quantita_selezionata = configurazione['quantitaTappi']
         prezzo_tappi = prezzi.get('tappi', 0)

@@ -601,10 +601,52 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
     return;
   }
 
+  // Check if any tappo has inclusi=true
+  const tappoIncluso = tappiDisponibili.find(tappo => tappo.inclusi === true);
+
+  if (tappoIncluso) {
+    // Only show note for custom length (taglio_misura), not for standard length (profilo_intero)
+    if (configurazione.tipologiaSelezionata === 'taglio_misura') {
+      // Show note about automatic inclusion with calculation
+      const lunghezzaSelezionata = configurazione.lunghezzaRichiesta || 0;
+      const lunghezzaEsternatappi = tappoIncluso.lunghezza_esterna || 0;
+      const lunghezzaRisultante = lunghezzaSelezionata - lunghezzaEsternatappi;
+
+      const tappiHtml = `
+        <div class="container mb-5" id="tappi-container">
+          <h3 class="mb-3">Configurazione Tappi</h3>
+          <div class="alert alert-info" id="tappi-inclusi-note">
+            <p>Per questo profilo i tappi verranno inclusi in automatico e la lunghezza risultante del profilo sarà <strong><span id="lunghezza-risultante-tappi">${lunghezzaRisultante}</span>mm</strong> (<span id="lunghezza-input-tappi">${lunghezzaSelezionata}</span>mm - ${lunghezzaEsternatappi}mm dei tappi)</p>
+          </div>
+        </div>
+      `;
+
+      insertAfter.after(tappiHtml);
+
+      // Update the note when user changes the length input
+      $('#lunghezza-personalizzata').off('input.tappi').on('input.tappi', function() {
+        const nuovaLunghezza = parseInt($(this).val(), 10) || 0;
+        const nuovaLunghezzaRisultante = nuovaLunghezza - lunghezzaEsternatappi;
+        $('#lunghezza-input-tappi').text(nuovaLunghezza);
+        $('#lunghezza-risultante-tappi').text(nuovaLunghezzaRisultante);
+        configurazione.lunghezzaEffettivaProfilo = nuovaLunghezzaRisultante;
+      });
+
+      configurazione.lunghezzaEffettivaProfilo = lunghezzaRisultante;
+    }
+
+    // Store included tappo info without adding to quote
+    configurazione.tappiSelezionati = tappoIncluso;
+    configurazione.tappiInclusi = true;
+    configurazione.quantitaTappi = 0; // Not counted in quote
+
+    return;
+  }
+
   const tappiHtml = `
     <div class="container mb-5" id="tappi-container">
       <h3 class="mb-3">Configurazione Tappi</h3>
-      
+
       <div class="mb-4">
         <h5 class="mb-3">Vuoi aggiungere i tappi al profilo?</h5>
         <div class="row" id="tappi-scelta-container">
@@ -647,7 +689,7 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
           <div class="row">
             <div class="col-md-6">
               <label for="quantita-tappi" class="form-label">Quantità (multipli di <span id="tappo-quantita-minima"></span>):</label>
-              <input type="number" class="form-control" id="quantita-tappi" 
+              <input type="number" class="form-control" id="quantita-tappi"
                      min="0" step="1" value="0">
               <small class="text-muted">La quantità deve essere un multiplo di <span id="tappo-quantita-minima-text"></span></small>
             </div>
@@ -655,8 +697,8 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
         </div>
 
         <div class="alert alert-warning" id="tappi-lunghezza-warning" style="display: none;">
-          <strong>ATTENZIONE:</strong> La lunghezza effettiva del profilo sarà 
-          <strong><span id="lunghezza-effettiva-profilo"></span>mm</strong> 
+          <strong>ATTENZIONE:</strong> La lunghezza effettiva del profilo sarà
+          <strong><span id="lunghezza-effettiva-profilo"></span>mm</strong>
           (lunghezza selezionata - <span id="lunghezza-esterna-tappi"></span>mm dei tappi)
         </div>
       </div>
@@ -667,14 +709,15 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
 
   // Salva i dati dei tappi disponibili
   window.tappiDisponibili = tappiDisponibili;
+  configurazione.tappiInclusi = false;
 
   // Event listeners per scelta Sì/No
   $('.tappi-scelta-card').on('click', function() {
     $('.tappi-scelta-card').removeClass('selected');
     $(this).addClass('selected');
-    
+
     const scelta = $(this).data('scelta');
-    
+
     if (scelta === 'si') {
       mostraSceltaTipoTappi(tappiDisponibili);
       $('#tappi-tipo-section').slideDown(300);
