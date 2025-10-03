@@ -757,7 +757,7 @@ def finalizza_configurazione():
             lunghezza_in_metri = 0
     
     # Get strip multiplier (1 or 2) for double strip
-    moltiplicatore_strip = configurazione.get('moltiplicatoreStrip', 1)
+    moltiplicatore_strip = configurazione.get('moltiplicatoreStrip') or 1
     logging.info(f"[DEBUG DOPPIA STRIP BACKEND] Moltiplicatore ricevuto: {moltiplicatore_strip}")
     logging.info(f"[DEBUG DOPPIA STRIP BACKEND] doppiaStripSelezionata: {configurazione.get('doppiaStripSelezionata', False)}")
 
