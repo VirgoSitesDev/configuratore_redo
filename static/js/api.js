@@ -239,6 +239,11 @@ export function caricaOpzioniParametri(profiloId, potenza = null) {
     url += `/${configurazione.lunghezzaMassimaLato}`;
   }
 
+  // Add special subfamily as query parameter if SPECIAL tipo is selected
+  if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+    url += `?special=${configurazione.specialStripSelezionata}`;
+  }
+
   $.ajax({
     url: url,
     method: 'GET',
@@ -311,6 +316,11 @@ export function caricaOpzioniIP(profiloId, tensione) {
     url += `/${configurazione.lunghezzaMassimaLato}`;
   }
 
+  // Add special subfamily as query parameter if SPECIAL tipo is selected
+  if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+    url += `?special=${configurazione.specialStripSelezionata}`;
+  }
+
   $.ajax({
     url: url,
     method: 'GET',
@@ -377,6 +387,11 @@ export function caricaOpzioniTemperaturaIniziale(profiloId, tensione, ip) {
   // For INDOOR flow, add max side length to filter by giuntabile (not total length)
   if (configurazione.lunghezzaMassimaLato && profiloId !== 'ESTERNI') {
     url += `/${configurazione.lunghezzaMassimaLato}`;
+  }
+
+  // Add special subfamily as query parameter if SPECIAL tipo is selected
+  if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+    url += `?special=${configurazione.specialStripSelezionata}`;
   }
 
   $.ajax({
@@ -1210,55 +1225,23 @@ export function finalizzaConfigurazione() {
         }
 
         function generaCodiceProfilo(lunghezza) {
-          const profiloBase = configurazione.profiloSelezionato;
-          
-          const isSabProfile = [
-            "PRF016_200SET",
-            "PRF011_300"
-          ].includes(profiloBase);
+          // Get code from backend using profili_test table
+          let codiceProfilo = '';
 
-          const isOpqProfile = [
-            "PRF120_300",
-            "PRF080_200"
-          ].includes(profiloBase);
-
-          // Check if this is a special profile (ending with PF or SK after stripping numbers)
-          const profiloBaseTrimmed = profiloBase.split('_')[0];
-          const isSpecialProfile = profiloBaseTrimmed.match(/^(.+\d+)(PF|SK)$/);
-
-          const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
-
-          let codiceProfilo;
-
-          if (isSpecialProfile) {
-            // For special profiles ending with SK, don't add /100
-            if (profiloBaseTrimmed.endsWith('SK')) {
-              codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
-            } else {
-              // For special profiles ending with PF, add /100
-              const baseCode = profiloBaseTrimmed.replace(/_/g, '/');
-              codiceProfilo = baseCode + '/100';
+          $.ajax({
+            url: `/get_codice_profilo/${configurazione.profiloSelezionato}/${configurazione.finituraSelezionata}/${lunghezza}`,
+            method: 'GET',
+            async: false,
+            success: function(response) {
+              if (response.success && response.codice) {
+                codiceProfilo = response.codice;
+              }
+            },
+            error: function(error) {
+              console.error('Error getting profile code for riepilogo:', error);
             }
-          } else {
-            let colorCode = '';
-            if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';
-            else if (configurazione.finituraSelezionata == "BIANCO") colorCode = 'WH';
-            else if (configurazione.finituraSelezionata == "ALLUMINIO" && isAl) colorCode = 'AL';
+          });
 
-            if (isOpqProfile) colorCode = "M" + colorCode;
-            else if (isSabProfile) colorCode = "S" + colorCode;
-
-            const lunghezzaInCm = lunghezza / 10;
-            let profiloConLunghezza = profiloBase.replace(/_/g, '/');
-
-            profiloConLunghezza = profiloConLunghezza.replace(/\/\d+/, `/${lunghezzaInCm}`);
-            
-            if (colorCode) {
-              codiceProfilo = profiloConLunghezza + ' ' + colorCode;
-            } else {
-              codiceProfilo = profiloConLunghezza;
-            }
-          }
           return codiceProfilo;
         }
         

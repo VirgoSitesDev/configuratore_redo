@@ -87,13 +87,76 @@
     </div>
 </div>
 
+<!-- Row per accessori -->
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-secondary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                            Tappi
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.tappi or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-dark shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                            Staffe
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.staffe or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-link-45deg fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-light shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1" style="color: #6c757d !important;">
+                            Diffusori
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.diffusori or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-sun fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <!-- Menu rapido -->
     <div class="col-lg-6 mb-4">
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">
-                    <i class="bi bi-lightning-charge me-2"></i>Azioni Rapide
+                    <i class="bi bi-lightning-charge me-2"></i>Azioni Rapide - Prodotti
                 </h6>
             </div>
             <div class="card-body">
@@ -110,7 +173,31 @@
                     <a href="{{ url_for('admin.dimmer') }}" class="btn btn-outline-warning">
                         <i class="bi bi-sliders me-2"></i>Gestisci Dimmer
                     </a>
-                    <a href="{{ url_for('admin.categorie') }}" class="btn btn-outline-secondary">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu accessori -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-box-seam me-2"></i>Azioni Rapide - Accessori
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.tappi') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-box me-2"></i>Gestisci Tappi
+                    </a>
+                    <a href="{{ url_for('admin.staffe') }}" class="btn btn-outline-dark">
+                        <i class="bi bi-link-45deg me-2"></i>Gestisci Staffe
+                    </a>
+                    <a href="{{ url_for('admin.diffusori') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-sun me-2"></i>Gestisci Diffusori
+                    </a>
+                    <a href="{{ url_for('admin.categorie') }}" class="btn btn-outline-primary">
                         <i class="bi bi-tags me-2"></i>Gestisci Categorie
                     </a>
                 </div>
@@ -177,6 +264,15 @@
     }
     .border-left-warning {
         border-left: 0.25rem solid #ffc107 !important;
+    }
+    .border-left-secondary {
+        border-left: 0.25rem solid #6c757d !important;
+    }
+    .border-left-dark {
+        border-left: 0.25rem solid #343a40 !important;
+    }
+    .border-left-light {
+        border-left: 0.25rem solid #adb5bd !important;
     }
     .text-xs {
         font-size: 0.7rem;

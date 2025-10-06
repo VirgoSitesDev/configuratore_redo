@@ -45,8 +45,8 @@ def dashboard():
         # Statistiche generali
         stats = {}
 
-        # Conta profili (from profili_prezzi table - shows actual entries displayed in admin)
-        profili = db.supabase.table('profili_prezzi').select('*').execute()
+        # Conta profili (from profili_test table - shows actual entries displayed in admin)
+        profili = db.supabase.table('profili_test').select('*').execute()
         stats['profili'] = len(profili.data) if profili.data else 0
 
         # Conta strip LED (from strip_prezzi table - shows actual entries displayed in admin)
@@ -64,6 +64,16 @@ def dashboard():
         # Conta categorie
         categorie = db.supabase.table('categorie').select('*').execute()
         stats['categorie'] = len(categorie.data) if categorie.data else 0
+
+        # Conta accessori
+        tappi = db.supabase.table('tappi').select('*').execute()
+        stats['tappi'] = len(tappi.data) if tappi.data else 0
+
+        staffe = db.supabase.table('staffe').select('*').execute()
+        stats['staffe'] = len(staffe.data) if staffe.data else 0
+
+        diffusori = db.supabase.table('diffusori').select('*').execute()
+        stats['diffusori'] = len(diffusori.data) if diffusori.data else 0
 
         return render_template('admin/dashboard.html', stats=stats)
         
@@ -142,52 +152,41 @@ def profili():
         return auth_check
 
     try:
-        # Fetch profili base data and categories
-        profili = db.supabase.table('profili').select('*').execute()
+        # Fetch categories for dropdown
         categorie = db.supabase.table('categorie').select('*').execute()
 
-        # Fetch all profili_prezzi entries (main source with all combinations)
-        prezzi = db.supabase.table('profili_prezzi').select('*').execute()
+        # Fetch all profili_test entries (this is now the single source of truth)
+        profili_test = db.supabase.table('profili_test').select('*').execute()
 
-        # Create a lookup map for profili base info
-        profili_map = {p['id']: p for p in (profili.data or [])}
-
-        # Build combined list
+        # Build list directly from profili_test with all fields
         profili_combinati = []
-        for prezzo in (prezzi.data or []):
-            codice_listino = prezzo.get('codice_listino', '')
-            profilo_id = prezzo.get('profilo_id')
+        for item in (profili_test.data or []):
+            famiglia = item.get('famiglia', 'N/A')
 
-            # Extract profile code from codice_listino (part before '/')
-            profile_code = codice_listino.split('/')[0] if '/' in codice_listino else codice_listino
-
-            # First try to get info from profilo_id
-            profilo_info = profili_map.get(profilo_id, {})
-
-            # If no info found with profilo_id, try to find by nome matching profile_code
-            if not profilo_info or not profilo_info.get('nome'):
-                profilo_info = next((p for p in (profili.data or []) if p.get('nome') == profile_code), {})
+            # Generate image path from famiglia name
+            img_path = f"/static/img/{famiglia.lower()}.jpg"
 
             profili_combinati.append({
-                'prezzo_id': prezzo.get('id'),  # ID from profili_prezzi table
-                'profilo_id': profilo_id,
-                'nome': profilo_info.get('nome', profile_code or 'N/A'),
-                'categoria': profilo_info.get('categoria', 'N/A'),
-                'immagine': profilo_info.get('immagine'),
-                'finitura': prezzo.get('finitura'),  # Get finitura directly from profili_prezzi
-                'lunghezza': prezzo.get('lunghezza_mm'),  # Get length from lunghezza_mm column
-                'codice_listino': codice_listino,
-                'prezzo': prezzo.get('prezzo_euro')  # Get price from prezzo_euro column
+                'codice_listino': item.get('codice_listino'),  # Primary key
+                'profilo_id': famiglia,  # famiglia is the profile ID
+                'nome': famiglia,
+                'categoria': item.get('categoria', 'N/A'),
+                'immagine': item.get('immagine') or img_path,  # Use DB value or generate from famiglia (handles empty strings)
+                'finitura': item.get('finitura'),
+                'lunghezza': item.get('lunghezza'),
+                'larghezza': item.get('larghezza'),  # New field
+                'descrizione': item.get('descrizione'),
+                'due_tagli': item.get('due_tagli'),
+                'prezzo': item.get('prezzo')
             })
 
         return render_template('admin/profili.html',
                              profili_combinati=profili_combinati,
-                             profili_base=profili.data or [],
                              categorie=categorie.data or [])
     except Exception as e:
         logging.error(f"Errore caricamento profili: {str(e)}")
         flash('Errore nel caricamento dei profili', 'error')
-        return render_template('admin/profili.html', profili_combinati=[], profili_base=[], categorie=[])
+        return render_template('admin/profili.html', profili_combinati=[], categorie=[])
 
 @admin_bp.route('/profili/add_complete', methods=['POST'])
 def add_profilo_complete():
@@ -196,12 +195,21 @@ def add_profilo_complete():
         return auth_check
 
     try:
-        nome = request.form.get('nome')
+        nome = request.form.get('nome')  # This is the famiglia
         categoria = request.form.get('categoria')
         codice_listino = request.form.get('codice_listino')
         finitura = request.form.get('finitura')
         lunghezza_mm = request.form.get('lunghezza_mm')
+        larghezza_mm = request.form.get('larghezza_mm')
         prezzo_euro = request.form.get('prezzo_euro')
+        descrizione = request.form.get('descrizione', '')
+
+        # Handle tipologie checkboxes
+        # profilo_intero checkbox determines due_tagli value
+        # due_tagli = True -> both "profilo_intero" and "taglio_misura"
+        # due_tagli = False -> only "taglio_misura"
+        profilo_intero_checked = request.form.get('profilo_intero') == 'true'
+        due_tagli = profilo_intero_checked
 
         # Handle file upload
         immagine_url = None
@@ -229,77 +237,26 @@ def add_profilo_complete():
                 # Store relative URL for database
                 immagine_url = f"/static/img/profili/{filename}"
 
-        # Check if profile already exists in profili table by nome
-        existing_profile = db.supabase.table('profili').select('*').eq('nome', nome).execute()
-
-        if existing_profile.data and len(existing_profile.data) > 0:
-            # Profile exists, use its id (which is a string like PRF014_200SET)
-            profilo_id = existing_profile.data[0]['id']
-        else:
-            # Profile doesn't exist, create it in profili table
-            # profili.id is a STRING, use nome as the id
-            # Table: profili (id=STRING, nome, categoria, note, immagine, lunghezza_massima)
-            profilo_data = {
-                'id': nome,  # id is a string, same as nome (e.g., PRF005, MG13X12PF)
-                'nome': nome,
-                'categoria': categoria,
-                'lunghezza_massima': int(lunghezza_mm)
-            }
-            if immagine_url:
-                profilo_data['immagine'] = immagine_url
-
-            profilo_result = db.supabase.table('profili').insert(profilo_data).execute()
-            profilo_id = profilo_result.data[0]['id']
-
-        # Insert into profili_tipologie (profilo_id, tipologia) - two rows
-        try:
-            db.supabase.table('profili_tipologie').insert({
-                'profilo_id': profilo_id,
-                'tipologia': 'profilo_intero'
-            }).execute()
-        except Exception as e:
-            logging.warning(f"Tipologia profilo_intero might already exist: {str(e)}")
-
-        try:
-            db.supabase.table('profili_tipologie').insert({
-                'profilo_id': profilo_id,
-                'tipologia': 'taglio_misura'
-            }).execute()
-        except Exception as e:
-            logging.warning(f"Tipologia taglio_misura might already exist: {str(e)}")
-
-        # Insert into profili_finiture (profilo_id, finitura)
-        try:
-            db.supabase.table('profili_finiture').insert({
-                'profilo_id': profilo_id,
-                'finitura': finitura
-            }).execute()
-        except Exception as e:
-            # Ignore if already exists
-            logging.warning(f"Finitura might already exist: {str(e)}")
-
-        # Insert into profili_lunghezze (profilo_id, lunghezza)
-        try:
-            db.supabase.table('profili_lunghezze').insert({
-                'profilo_id': profilo_id,
-                'lunghezza': int(lunghezza_mm)
-            }).execute()
-        except Exception as e:
-            # Ignore if already exists
-            logging.warning(f"Lunghezza might already exist: {str(e)}")
-
-        # Insert into profili_prezzi (id, profilo_id, finitura, lunghezza_mm, prezzo_euro, codice_listino)
-        prezzo_data = {
-            'profilo_id': profilo_id,
-            'codice_listino': codice_listino,
+        # Insert into profili_test table (simplified approach)
+        profilo_test_data = {
+            'codice_listino': codice_listino,  # Primary key
+            'famiglia': nome,
+            'categoria': categoria,
+            'descrizione': descrizione,
             'finitura': finitura,
-            'lunghezza_mm': int(lunghezza_mm),
-            'prezzo_euro': float(prezzo_euro)
+            'lunghezza': int(lunghezza_mm),
+            'larghezza': float(larghezza_mm) if larghezza_mm else 0,
+            'prezzo': float(prezzo_euro),
+            'due_tagli': due_tagli  # True = both tipologie, False = only taglio_misura
         }
 
-        prezzo_result = db.supabase.table('profili_prezzi').insert(prezzo_data).execute()
+        # Add image URL to profili_test if provided
+        if immagine_url:
+            profilo_test_data['immagine'] = immagine_url
 
-        return jsonify({'success': True, 'data': prezzo_result.data})
+        test_result = db.supabase.table('profili_test').insert(profilo_test_data).execute()
+
+        return jsonify({'success': True, 'data': test_result.data})
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
@@ -347,16 +304,16 @@ def delete_profilo(profilo_id):
         logging.error(f"Errore eliminazione profilo: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-# Routes for profili_prezzi (individual price entries)
-@admin_bp.route('/profili/prezzi/update/<int:prezzo_id>', methods=['PUT'])
-def update_profilo_prezzo(prezzo_id):
+# Routes for profili_test (individual price entries)
+@admin_bp.route('/profili/prezzi/update/<path:codice_listino>', methods=['PUT'])
+def update_profilo_prezzo(codice_listino):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
         data = request.json
-        result = db.supabase.table('profili_prezzi').update(data).eq('id', prezzo_id).execute()
+        result = db.supabase.table('profili_test').update(data).eq('codice_listino', codice_listino).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiornamento prezzo: {str(e)}")
@@ -370,79 +327,23 @@ def add_profilo_prezzo():
 
     try:
         data = request.json
-        result = db.supabase.table('profili_prezzi').insert(data).execute()
+        result = db.supabase.table('profili_test').insert(data).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiunta prezzo: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@admin_bp.route('/profili/prezzi/delete/<int:prezzo_id>', methods=['DELETE'])
-def delete_profilo_prezzo(prezzo_id):
+@admin_bp.route('/profili/prezzi/delete/<path:codice_listino>', methods=['DELETE'])
+def delete_profilo_prezzo(codice_listino):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
-        result = db.supabase.table('profili_prezzi').delete().eq('id', prezzo_id).execute()
+        result = db.supabase.table('profili_test').delete().eq('codice_listino', codice_listino).execute()
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione prezzo: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-# Routes for profili_finiture
-@admin_bp.route('/profili/finiture/add', methods=['POST'])
-def add_profilo_finitura():
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        data = request.json
-        result = db.supabase.table('profili_finiture').insert(data).execute()
-        return jsonify({'success': True, 'data': result.data})
-    except Exception as e:
-        logging.error(f"Errore aggiunta finitura: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@admin_bp.route('/profili/finiture/delete/<int:finitura_id>', methods=['DELETE'])
-def delete_profilo_finitura(finitura_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        result = db.supabase.table('profili_finiture').delete().eq('id', finitura_id).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        logging.error(f"Errore eliminazione finitura: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-# Routes for profili_lunghezze
-@admin_bp.route('/profili/lunghezze/add', methods=['POST'])
-def add_profilo_lunghezza():
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        data = request.json
-        result = db.supabase.table('profili_lunghezze').insert(data).execute()
-        return jsonify({'success': True, 'data': result.data})
-    except Exception as e:
-        logging.error(f"Errore aggiunta lunghezza: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@admin_bp.route('/profili/lunghezze/delete/<int:lunghezza_id>', methods=['DELETE'])
-def delete_profilo_lunghezza(lunghezza_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        result = db.supabase.table('profili_lunghezze').delete().eq('id', lunghezza_id).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        logging.error(f"Errore eliminazione lunghezza: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================
@@ -795,30 +696,219 @@ def delete_configurazione(config_id):
 # OPERAZIONI IN BLOCCO
 # =========================
 
+# =========================
+# GESTIONE TAPPI
+# =========================
+
+@admin_bp.route('/tappi')
+def tappi():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        tappi = db.supabase.table('tappi').select('*').execute()
+        return render_template('admin/tappi.html', tappi=tappi.data or [])
+    except Exception as e:
+        logging.error(f"Errore caricamento tappi: {str(e)}")
+        flash('Errore nel caricamento dei tappi', 'error')
+        return render_template('admin/tappi.html', tappi=[])
+
+@admin_bp.route('/tappi/add', methods=['POST'])
+def add_tappo():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('tappi').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta tappo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/tappi/update/<codice>', methods=['PUT'])
+def update_tappo(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('tappi').update(data).eq('codice', codice).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento tappo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/tappi/delete/<codice>', methods=['DELETE'])
+def delete_tappo(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('tappi').delete().eq('codice', codice).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione tappo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# =========================
+# GESTIONE STAFFE
+# =========================
+
+@admin_bp.route('/staffe')
+def staffe():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        staffe = db.supabase.table('staffe').select('*').execute()
+        return render_template('admin/staffe.html', staffe=staffe.data or [])
+    except Exception as e:
+        logging.error(f"Errore caricamento staffe: {str(e)}")
+        flash('Errore nel caricamento delle staffe', 'error')
+        return render_template('admin/staffe.html', staffe=[])
+
+@admin_bp.route('/staffe/add', methods=['POST'])
+def add_staffa():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('staffe').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta staffa: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/staffe/update/<codice>', methods=['PUT'])
+def update_staffa(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('staffe').update(data).eq('codice', codice).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento staffa: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/staffe/delete/<codice>', methods=['DELETE'])
+def delete_staffa(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('staffe').delete().eq('codice', codice).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione staffa: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# =========================
+# GESTIONE DIFFUSORI
+# =========================
+
+@admin_bp.route('/diffusori')
+def diffusori():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        diffusori = db.supabase.table('diffusori').select('*').execute()
+        return render_template('admin/diffusori.html', diffusori=diffusori.data or [])
+    except Exception as e:
+        logging.error(f"Errore caricamento diffusori: {str(e)}")
+        flash('Errore nel caricamento dei diffusori', 'error')
+        return render_template('admin/diffusori.html', diffusori=[])
+
+@admin_bp.route('/diffusori/add', methods=['POST'])
+def add_diffusore():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('diffusori').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta diffusore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/diffusori/update/<codice>', methods=['PUT'])
+def update_diffusore(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('diffusori').update(data).eq('codice', codice).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento diffusore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/diffusori/delete/<codice>', methods=['DELETE'])
+def delete_diffusore(codice):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('diffusori').delete().eq('codice', codice).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione diffusore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# =========================
+# OPERAZIONI IN BLOCCO
+# =========================
+
 @admin_bp.route('/bulk-delete', methods=['POST'])
 def bulk_delete():
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         data = request.json
         table = data.get('table')
         ids = data.get('ids', [])
-        
+
         if not table or not ids:
             return jsonify({'success': False, 'error': 'Parametri mancanti'})
-        
+
         # Validazione tabella per sicurezza
-        allowed_tables = ['categorie', 'profili', 'strip_led', 'alimentatori', 'dimmer', 'configurazioni_salvate']
+        allowed_tables = ['categorie', 'profili', 'profili_test', 'strip_led', 'alimentatori', 'dimmer', 'configurazioni_salvate', 'tappi', 'staffe', 'diffusori']
         if table not in allowed_tables:
             return jsonify({'success': False, 'error': 'Tabella non valida'})
-        
+
+        # profili_test uses codice_listino as primary key, accessories use codice, others use id
+        if table == 'profili_test':
+            id_field = 'codice_listino'
+        elif table in ['tappi', 'staffe', 'diffusori']:
+            id_field = 'codice'
+        else:
+            id_field = 'id'
+
         for item_id in ids:
-            db.supabase.table(table).delete().eq('id', item_id).execute()
-        
+            db.supabase.table(table).delete().eq(id_field, item_id).execute()
+
         return jsonify({'success': True, 'deleted_count': len(ids)})
-        
+
     except Exception as e:
         logging.error(f"Errore eliminazione in blocco: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})

@@ -1,81 +1,53 @@
 import { configurazione } from './config.js';
 
 export function calcolaCodiceProfilo() {
-  if (!configurazione.profiloSelezionato) return '';
-  
-  const isSabProfile = [
-    "PRF016_200SET",
-    "PRF011_300"
-  ].includes(configurazione.profiloSelezionato);
+  if (!configurazione.profiloSelezionato || !configurazione.finituraSelezionata) return '';
 
-  const isOpqProfile = [
-    "PRF120_300",
-    "PRF080_200"
-  ].includes(configurazione.profiloSelezionato);
+  // Determine the length to use - preserve existing quantity/combination logic
+  let lunghezzaDaUsare = configurazione.lunghezzaRichiesta;
 
-  // Check if this is an outdoor profile (ending with PF or SK)
-  const profiloBaseTrimmed = configurazione.profiloSelezionato.split('_')[0];
-  const isOutdoorProfile = profiloBaseTrimmed.match(/^(.+)(PF|SK)$/);
+  if (configurazione.combinazioneProfiloOttimale && configurazione.combinazioneProfiloOttimale.length > 0) {
+    const lunghezze = configurazione.combinazioneProfiloOttimale.map(combo => combo.lunghezza);
+    lunghezzaDaUsare = Math.max(...lunghezze);
+  }
 
-  const isAl = (configurazione.profiloSelezionato.includes("PRFIT") || configurazione.profiloSelezionato.includes("PRF120")) && !configurazione.profiloSelezionato.includes("PRFIT321");
+  // Round up to nearest available standard length if applicable
+  if (lunghezzaDaUsare && lunghezzaDaUsare > 0) {
+    if (configurazione.lunghezzeDisponibili && configurazione.lunghezzeDisponibili.length > 0) {
+      const lunghezzeOrdinate = [...configurazione.lunghezzeDisponibili].sort((a, b) => a - b);
+      const lunghezzaPerEccesso = lunghezzeOrdinate.find(l => l >= lunghezzaDaUsare);
 
-  let codiceProfilo;
-
-  if (isOutdoorProfile) {
-    // For outdoor profiles ending with SK or PF, use base code only (no length suffix)
-    codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
-  } else {
-    let colorCode = '';
-    if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';
-    else if (configurazione.finituraSelezionata == "BIANCO") colorCode = 'WH';
-    else if (configurazione.finituraSelezionata == "ALLUMINIO" && isAl) colorCode = 'AL';
-
-    if (isOpqProfile && colorCode) colorCode = "M" + colorCode;
-    else if (isSabProfile && colorCode) colorCode = "S" + colorCode;
-
-    let codiceBase = configurazione.profiloSelezionato.replace(/_/g, '/');
-
-    let lunghezzaDaUsare = configurazione.lunghezzaRichiesta;
-
-    if (configurazione.combinazioneProfiloOttimale && configurazione.combinazioneProfiloOttimale.length > 0) {
-      const lunghezze = configurazione.combinazioneProfiloOttimale.map(combo => combo.lunghezza);
-      lunghezzaDaUsare = Math.max(...lunghezze);
-    }
-    
-    if (lunghezzaDaUsare && lunghezzaDaUsare > 0) {
-      let lunghezzaStandardDaUsare = lunghezzaDaUsare;
-
-      if (configurazione.lunghezzeDisponibili && configurazione.lunghezzeDisponibili.length > 0) {
-        const lunghezzeOrdinate = [...configurazione.lunghezzeDisponibili].sort((a, b) => a - b);
-
-        const lunghezzaPerEccesso = lunghezzeOrdinate.find(l => l >= lunghezzaDaUsare);
-        
-        if (lunghezzaPerEccesso) {
-          lunghezzaStandardDaUsare = lunghezzaPerEccesso;
-        } else {
-          lunghezzaStandardDaUsare = Math.max(...lunghezzeOrdinate);
-        }
-        
-        console.log(`Lunghezza richiesta: ${lunghezzaDaUsare}mm, Lunghezze disponibili: [${lunghezzeOrdinate.join(', ')}], Lunghezza scelta: ${lunghezzaStandardDaUsare}mm`);
-      }
-      
-      const lunghezzaInCm = Math.round(lunghezzaStandardDaUsare / 10);
-      const lunghezzaFormattata = lunghezzaInCm.toString().padStart(3, '0');
-
-      if (codiceBase.match(/\/\d+/)) {
-        codiceBase = codiceBase.replace(/\/\d+/, `/${lunghezzaFormattata}`);
+      if (lunghezzaPerEccesso) {
+        lunghezzaDaUsare = lunghezzaPerEccesso;
       } else {
-        codiceBase += `/${lunghezzaFormattata}`;
+        lunghezzaDaUsare = Math.max(...lunghezzeOrdinate);
       }
-    }
 
-    if (colorCode) {
-      codiceProfilo = `${codiceBase} ${colorCode}`;
-    } else {
-      codiceProfilo = codiceBase;
+      console.log(`Lunghezza richiesta: ${configurazione.lunghezzaRichiesta}mm, Lunghezze disponibili: [${lunghezzeOrdinate.join(', ')}], Lunghezza scelta: ${lunghezzaDaUsare}mm`);
     }
   }
-  
+
+  // Get the code from backend using profili_test table
+  let codiceProfilo = '';
+
+  if (lunghezzaDaUsare) {
+    $.ajax({
+      url: `/get_codice_profilo/${configurazione.profiloSelezionato}/${configurazione.finituraSelezionata}/${lunghezzaDaUsare}`,
+      method: 'GET',
+      async: false,
+      success: function(response) {
+        if (response.success && response.codice) {
+          codiceProfilo = response.codice;
+        } else {
+          console.error('Failed to get profile code from backend');
+        }
+      },
+      error: function(error) {
+        console.error('Error getting profile code:', error);
+      }
+    });
+  }
+
   return codiceProfilo;
 }
 

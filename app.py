@@ -84,15 +84,22 @@ def get_profili(categoria):
 @app.route('/get_opzioni_profilo/<profilo_id>')
 def get_opzioni_profilo(profilo_id):
     try:
-        profilo_data = db.supabase.table('profili').select('*').eq('id', profilo_id).single().execute().data
-        
-        if not profilo_data:
+        # Get due_tagli value from profili_test table for this famiglia
+        profili_test_data = db.supabase.table('profili_test').select('due_tagli').eq('famiglia', profilo_id).limit(1).execute().data
+
+        if not profili_test_data:
             return jsonify({'tipologie': []})
-            
-        tipologie = db.supabase.table('profili_tipologie').select('tipologia').eq('profilo_id', profilo_id).execute().data
-        
+
+        # Derive tipologie from due_tagli
+        # due_tagli = True -> both "profilo_intero" and "taglio_misura"
+        # due_tagli = False -> only "taglio_misura"
+        due_tagli = profili_test_data[0].get('due_tagli', False)
+        tipologie = ['taglio_misura']
+        if due_tagli:
+            tipologie.append('profilo_intero')
+
         return jsonify({
-            'tipologie': [t['tipologia'] for t in tipologie]
+            'tipologie': tipologie
         })
     except Exception as e:
         return jsonify({'tipologie': []})
@@ -102,24 +109,34 @@ def get_opzioni_profilo(profilo_id):
 @app.route('/get_opzioni_tensione/<profilo_id>/<tipologia_strip>/<int:lunghezza>')
 def get_opzioni_tensione(profilo_id, tipologia_strip=None, lunghezza=None):
     try:
+        # Get special subfamily from query parameters (optional, for filtering SPECIAL strips)
+        special_subfamily = request.args.get('special')
+
         if profilo_id == 'ESTERNI':
             voltaggi_disponibili = ['24V', '48V', '220V']
             if tipologia_strip == 'SPECIAL':
                 voltaggi_disponibili = ['24V']
             return jsonify({'success': True, 'voltaggi': voltaggi_disponibili})
 
-        strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
-        strip_ids = [s['strip_id'] for s in strip_compatibili]
+        # Use new compatibility logic
+        strip_ids = db.get_compatible_strip_ids(profilo_id, tipologia_strip)
+
+        # Filter by special subfamily if provided (e.g., ZIG_ZAG, XSNAKE)
+        if tipologia_strip == 'SPECIAL' and special_subfamily:
+            # Map frontend subfamily names to strip ID patterns
+            special_map = {
+                'ZIG_ZAG': 'ZIGZAG',
+                'XSNAKE': 'XSNAKE',
+                'XFLEX': 'XFLEX',
+                'XMAGIS': 'XMAGIS'
+            }
+            pattern = special_map.get(special_subfamily, special_subfamily)
+            strip_ids = [sid for sid in strip_ids if pattern.upper() in sid.upper()]
 
         if not strip_ids:
             return jsonify({'success': True, 'voltaggi': []})
 
-        query = db.supabase.table('strip_led').select('tensione, giuntabile, lunghezza')
-
-        if tipologia_strip:
-            query = query.eq('tipo', tipologia_strip)
-
-        strips = query.in_('id', strip_ids).execute().data
+        strips = db.supabase.table('strip_led').select('tensione, giuntabile, lunghezza').in_('id', strip_ids).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -137,18 +154,27 @@ def get_opzioni_tensione(profilo_id, tipologia_strip=None, lunghezza=None):
 @app.route('/get_opzioni_ip/<profilo_id>/<tensione>/<tipologia_strip>/<int:lunghezza>')
 def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None, lunghezza=None):
     try:
-        strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
-        strip_ids = [s['strip_id'] for s in strip_compatibili]
+        # Get special subfamily from query parameters (optional, for filtering SPECIAL strips)
+        special_subfamily = request.args.get('special')
+
+        # Use new compatibility logic
+        strip_ids = db.get_compatible_strip_ids(profilo_id, tipologia_strip)
+
+        # Filter by special subfamily if provided
+        if tipologia_strip == 'SPECIAL' and special_subfamily:
+            special_map = {
+                'ZIG_ZAG': 'ZIGZAG',
+                'XSNAKE': 'XSNAKE',
+                'XFLEX': 'XFLEX',
+                'XMAGIS': 'XMAGIS'
+            }
+            pattern = special_map.get(special_subfamily, special_subfamily)
+            strip_ids = [sid for sid in strip_ids if pattern.upper() in sid.upper()]
 
         if not strip_ids:
             return jsonify({'success': True, 'ip': []})
 
-        query = db.supabase.table('strip_led').select('ip, giuntabile, lunghezza').eq('tensione', tensione)
-
-        if tipologia_strip:
-            query = query.eq('tipo', tipologia_strip)
-
-        strips = query.in_('id', strip_ids).execute().data
+        strips = db.supabase.table('strip_led').select('ip, giuntabile, lunghezza').eq('tensione', tensione).in_('id', strip_ids).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -166,8 +192,22 @@ def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None, lunghezza=None):
 @app.route('/get_opzioni_temperatura_iniziale/<profilo_id>/<tensione>/<ip>/<tipologia_strip>/<int:lunghezza>')
 def get_opzioni_temperatura_iniziale(profilo_id, tensione, ip, tipologia_strip=None, lunghezza=None):
     try:
-        strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
-        strip_ids = [s['strip_id'] for s in strip_compatibili]
+        # Get special subfamily from query parameters (optional, for filtering SPECIAL strips)
+        special_subfamily = request.args.get('special')
+
+        # Use new compatibility logic
+        strip_ids = db.get_compatible_strip_ids(profilo_id, tipologia_strip)
+
+        # Filter by special subfamily if provided
+        if tipologia_strip == 'SPECIAL' and special_subfamily:
+            special_map = {
+                'ZIG_ZAG': 'ZIGZAG',
+                'XSNAKE': 'XSNAKE',
+                'XFLEX': 'XFLEX',
+                'XMAGIS': 'XMAGIS'
+            }
+            pattern = special_map.get(special_subfamily, special_subfamily)
+            strip_ids = [sid for sid in strip_ids if pattern.upper() in sid.upper()]
 
         if not strip_ids:
             return jsonify({'success': True, 'temperature': []})
@@ -251,8 +291,14 @@ def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=N
 @app.route('/get_strip_led_filtrate/<profilo_id>/<tensione>/<ip>/<temperatura>/<potenza>/<tipologia>/<int:lunghezza>')
 def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia=None, lunghezza=None):
     try:
-        if potenza:
+        # Convert "null" string to None
+        if potenza and potenza.lower() in ['null', 'none', '']:
+            potenza = None
+        elif potenza:
             potenza = potenza.replace('-', ' ').replace('_', '/')
+
+        if tipologia and tipologia.lower() in ['null', 'none', '']:
+            tipologia = None
 
         if profilo_id == 'ESTERNI':
             strips = db.get_all_strip_led_filtrate(tensione, ip, temperatura, potenza, tipologia)
@@ -330,27 +376,17 @@ def get_dimmer_compatibili(strip_id):
 @app.route('/get_finiture/<profilo_id>/<int:lunghezza_mm>')
 def get_finiture(profilo_id, lunghezza_mm=None):
     try:
-        # Check if this is an outdoor profile (ends with PF or SK)
-        is_outdoor_profile = profilo_id.endswith('PF') or profilo_id.endswith('SK')
+        # Use profili_test table to get finiture for this famiglia
+        query = db.supabase.table('profili_test').select('finitura').eq('famiglia', profilo_id)
 
-        if is_outdoor_profile:
-            # Outdoor profiles - use profili_finiture table
-            finiture = db.supabase.table('profili_finiture').select('finitura').eq('profilo_id', profilo_id).execute().data
-            finiture_list = [f['finitura'] for f in finiture]
-        else:
-            # Indoor profiles - use profili_prezzi
-            base_profilo = profilo_id.split('_')[0].replace('/', '')
+        # If length is specified, filter by that length
+        if lunghezza_mm:
+            query = query.eq('lunghezza', lunghezza_mm)
 
-            query = db.supabase.table('profili_prezzi').select('finitura').ilike('profilo_id', f'{base_profilo}_%')
+        finiture = query.execute().data
 
-            # If length is specified, filter by that length
-            if lunghezza_mm:
-                query = query.eq('lunghezza_mm', lunghezza_mm)
-
-            finiture = query.execute().data
-
-            # Get unique finiture
-            finiture_list = sorted(list(set([f['finitura'] for f in finiture if f['finitura']])))
+        # Get unique finiture
+        finiture_list = sorted(list(set([f['finitura'] for f in finiture if f['finitura']])))
 
         mappatura_finiture = {
             'ALLUMINIO_ANODIZZATO': 'Alluminio anodizzato',
@@ -369,6 +405,16 @@ def get_finiture(profilo_id, lunghezza_mm=None):
 
         return jsonify({'success': True, 'finiture': finiture_formattate})
     except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_codice_profilo/<profilo_id>/<finitura>/<int:lunghezza_mm>')
+def get_codice_profilo_endpoint(profilo_id, finitura, lunghezza_mm):
+    """Get the profile code (codice_listino) from profili_test table"""
+    try:
+        codice = db.get_codice_profilo(profilo_id, finitura, lunghezza_mm)
+        return jsonify({'success': True, 'codice': codice})
+    except Exception as e:
+        logging.error(f"Error getting profile code: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/calcola_potenza_alimentatore', methods=['POST'])
@@ -827,45 +873,29 @@ def finalizza_configurazione():
         try:
             # Check if outdoor profile (ends with PF or SK)
             profilo_id = configurazione['profiloSelezionato']
-            is_outdoor = profilo_id.endswith('PF') or profilo_id.endswith('SK')
+            # Use profili_test table to get available lengths
+            finitura_selezionata = configurazione.get('finituraSelezionata')
 
-            if is_outdoor:
-                # OLD LOGIC for outdoor profiles - use profili_lunghezze table
-                lunghezze_profilo = db.supabase.table('profili_lunghezze')\
-                    .select('lunghezza')\
-                    .eq('profilo_id', profilo_id)\
-                    .execute().data
-            else:
-                # NEW LOGIC for indoor profiles - use profili_prezzi table
-                base_profilo = profilo_id.split('_')[0].replace('/', '')
-                finitura_selezionata = configurazione.get('finituraSelezionata')
+            query = db.supabase.table('profili_test')\
+                .select('lunghezza')\
+                .eq('famiglia', profilo_id)
 
-                query = db.supabase.table('profili_prezzi')\
-                    .select('lunghezza_mm')\
-                    .ilike('profilo_id', f'{base_profilo}_%')
+            # Filter by finitura if selected
+            if finitura_selezionata:
+                query = query.eq('finitura', finitura_selezionata)
 
-                # Filter by finitura if selected
-                if finitura_selezionata:
-                    query = query.eq('finitura', finitura_selezionata)
-
-                lunghezze_profilo = query.execute().data
+            lunghezze_profilo = query.execute().data
 
             if lunghezze_profilo and lunghezza_totale > 0:
-                # Get unique lengths (field name differs: 'lunghezza' for outdoor, 'lunghezza_mm' for indoor)
-                if is_outdoor:
-                    lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
-                else:
-                    lunghezze_list = sorted(list(set([l['lunghezza_mm'] for l in lunghezze_profilo])))
+                # Get unique lengths
+                lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
                 lunghezza_massima_profilo = max(lunghezze_list)
                 combinazione_ottimale = ottimizza_quantita_profilo(lunghezza_totale, lunghezze_list)
                 quantita_profilo = sum(item['quantita'] for item in combinazione_ottimale)
 
             elif lunghezze_profilo:
-                # Get unique lengths (field name differs: 'lunghezza' for outdoor, 'lunghezza_mm' for indoor)
-                if is_outdoor:
-                    lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
-                else:
-                    lunghezze_list = sorted(list(set([l['lunghezza_mm'] for l in lunghezze_profilo])))
+                # Get unique lengths
+                lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
                 lunghezza_massima_profilo = max(lunghezze_list)
                 quantita_profilo = 1
                 combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': 1}]
@@ -1846,8 +1876,8 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             try:
                 codici_email['profilo'] = db.get_codice_profilo(profilo_id, finitura, int(lunghezza) if lunghezza else None)
             except Exception as e:
-                logging.error(f"Errore recupero codice profilo: {str(e)}")
-                codici_email['profilo'] = profilo_id.replace('_', '/')
+                logging.error(f"Errore recupero codice profilo per email: {str(e)}")
+                codici_email['profilo'] = ""
 
         strip_id = (configurazione.get('stripLedSelezionata') or 
             configurazione.get('stripLedSceltaFinale') or 

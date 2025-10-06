@@ -52,6 +52,7 @@
                         <th>Categoria</th>
                         <th>Finitura</th>
                         <th>Lunghezza (mm)</th>
+                        <th>Larghezza (mm)</th>
                         <th>Codice Listino</th>
                         <th>Prezzo (€)</th>
                         <th>Immagine</th>
@@ -60,10 +61,10 @@
                 </thead>
                 <tbody>
                     {% for item in profili_combinati %}
-                    <tr data-prezzo-id="{{ item.prezzo_id }}" data-profilo-id="{{ item.profilo_id }}">
+                    <tr data-codice-listino="{{ item.codice_listino }}" data-profilo-id="{{ item.profilo_id }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
-                                   value="{{ item.prezzo_id }}" onchange="toggleBulkActions()">
+                                   value="{{ item.codice_listino }}" onchange="toggleBulkActions()">
                         </td>
                         <td><strong>{{ item.nome or 'N/A' }}</strong></td>
                         <td><span class="badge bg-secondary">{{ item.categoria or 'N/A' }}</span></td>
@@ -74,6 +75,10 @@
                         <td class="editable-cell" data-field="lunghezza_mm" data-original="{{ item.lunghezza or '' }}">
                             <span class="cell-value">{{ item.lunghezza or '-' }}</span>
                             <input type="number" class="cell-input form-control form-control-sm" value="{{ item.lunghezza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="larghezza_mm" data-original="{{ item.larghezza or '' }}">
+                            <span class="cell-value">{{ item.larghezza or '-' }}</span>
+                            <input type="number" step="0.1" class="cell-input form-control form-control-sm" value="{{ item.larghezza or '' }}" style="display: none;">
                         </td>
                         <td class="editable-cell" data-field="codice_listino" data-original="{{ item.codice_listino or '' }}">
                             <span class="cell-value"><code class="small">{{ item.codice_listino or '-' }}</code></span>
@@ -97,7 +102,7 @@
                                     <i class="bi bi-check"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger"
-                                        onclick="deletePrezzo({{ item.prezzo_id }})">
+                                        onclick="deletePrezzo('{{ item.codice_listino }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -182,17 +187,46 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="add_complete_lunghezza" class="form-label">Lunghezza (mm) *</label>
                                 <input type="number" class="form-control" id="add_complete_lunghezza" name="lunghezza_mm" required>
                                 <div class="form-text">Es: 2000, 3000</div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_complete_larghezza" class="form-label">Larghezza (mm) *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_complete_larghezza" name="larghezza_mm" required>
+                                <div class="form-text">Es: 4.0, 8.0, 12.0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="add_complete_prezzo" class="form-label">Prezzo (€) *</label>
                                 <input type="number" step="0.01" class="form-control" id="add_complete_prezzo" name="prezzo_euro" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="mb-3 border-bottom pb-2 mt-4">Tipologie Disponibili</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_complete_profilo_intero" name="profilo_intero" value="true">
+                                <label class="form-check-label" for="add_complete_profilo_intero">
+                                    <strong>Profilo Intero</strong>
+                                    <div class="form-text">Il profilo può essere venduto intero</div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_complete_taglio_misura" name="taglio_misura" value="true" checked>
+                                <label class="form-check-label" for="add_complete_taglio_misura">
+                                    <strong>Taglio a Misura</strong>
+                                    <div class="form-text">Il profilo può essere tagliato a misura (sempre disponibile)</div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -220,18 +254,18 @@
             </div>
             <form id="editPrezzoForm" onsubmit="updatePrezzo(event)">
                 <div class="modal-body">
-                    <input type="hidden" id="edit_prezzo_id" name="prezzo_id">
+                    <input type="hidden" id="edit_prezzo_codice" name="codice_listino">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_prezzo_profilo_id" class="form-label">Profilo *</label>
-                                <input type="text" class="form-control" id="edit_prezzo_profilo_id" name="profilo_id" readonly>
+                                <label for="edit_prezzo_profilo_id" class="form-label">Profilo (Famiglia)</label>
+                                <input type="text" class="form-control" id="edit_prezzo_profilo_id" name="famiglia" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_prezzo_codice" class="form-label">Codice Listino *</label>
-                                <input type="text" class="form-control" id="edit_prezzo_codice" name="codice_listino" required>
+                                <label for="edit_prezzo_finitura" class="form-label">Finitura *</label>
+                                <input type="text" class="form-control" id="edit_prezzo_finitura" name="finitura" required>
                             </div>
                         </div>
                     </div>
@@ -239,14 +273,14 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="edit_prezzo_finitura" class="form-label">Finitura *</label>
-                                <input type="text" class="form-control" id="edit_prezzo_finitura" name="finitura" required>
+                                <label for="edit_prezzo_lunghezza" class="form-label">Lunghezza (mm) *</label>
+                                <input type="number" class="form-control" id="edit_prezzo_lunghezza" name="lunghezza_mm" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="edit_prezzo_lunghezza" class="form-label">Lunghezza (mm) *</label>
-                                <input type="number" class="form-control" id="edit_prezzo_lunghezza" name="lunghezza_mm" required>
+                                <label for="edit_prezzo_larghezza" class="form-label">Larghezza (mm) *</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_prezzo_larghezza" name="larghezza_mm" required>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -336,11 +370,11 @@ function cancelEdit(row) {
 
 function saveRow(button) {
     const row = $(button).closest('tr');
-    const prezzoId = row.data('prezzo-id');
+    const codiceListino = row.data('codice-listino');
     const profiloId = row.data('profilo-id');
 
     const data = {
-        profilo_id: profiloId
+        famiglia: profiloId
     };
 
     // Collect edited values
@@ -350,16 +384,18 @@ function saveRow(button) {
         const value = cell.find('.cell-input').val();
 
         if (field === 'lunghezza_mm') {
-            data[field] = parseInt(value) || 0;
+            data['lunghezza'] = parseInt(value) || 0;
+        } else if (field === 'larghezza_mm') {
+            data['larghezza'] = parseFloat(value) || 0;
         } else if (field === 'prezzo_euro') {
-            data[field] = parseFloat(value) || 0;
+            data['prezzo'] = parseFloat(value) || 0;
         } else {
             data[field] = value;
         }
     });
 
     $.ajax({
-        url: `{{ url_for("admin.update_profilo_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
+        url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -409,14 +445,22 @@ function updatePrezzo(event) {
 
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
-    const prezzoId = data.prezzo_id;
-    delete data.prezzo_id;
+    const codiceListino = data.codice_listino;
 
-    if (data.lunghezza_mm) data.lunghezza_mm = parseInt(data.lunghezza_mm);
-    if (data.prezzo_euro) data.prezzo_euro = parseFloat(data.prezzo_euro);
+    // Remove codice_listino from data since it's in the URL
+    delete data.codice_listino;
+
+    if (data.lunghezza_mm) data.lunghezza = parseInt(data.lunghezza_mm);
+    if (data.larghezza_mm) data.larghezza = parseFloat(data.larghezza_mm);
+    if (data.prezzo_euro) data.prezzo = parseFloat(data.prezzo_euro);
+
+    // Clean up the old field names
+    delete data.lunghezza_mm;
+    delete data.larghezza_mm;
+    delete data.prezzo_euro;
 
     $.ajax({
-        url: `{{ url_for("admin.update_profilo_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
+        url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -433,13 +477,13 @@ function updatePrezzo(event) {
     });
 }
 
-function deletePrezzo(id) {
+function deletePrezzo(codiceListino) {
     if (!confirmDelete('Sei sicuro di voler eliminare questa variante prezzo?\nQuesta azione non può essere annullata.')) {
         return;
     }
 
     $.ajax({
-        url: `{{ url_for("admin.delete_profilo_prezzo", prezzo_id=0) }}`.replace('0', id),
+        url: `{{ url_for("admin.delete_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
         method: 'DELETE',
         success: function(response) {
             if (response.success) {
@@ -471,7 +515,7 @@ function bulkDeletePrezzi() {
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
-            table: 'profili_prezzi',
+            table: 'profili_test',
             ids: selectedIds
         }),
         success: function(response) {

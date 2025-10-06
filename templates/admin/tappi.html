@@ -1,0 +1,435 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestione Tappi - Admin{% endblock %}
+{% block page_title %}Gestione Tappi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+    }
+    .editable-cell:hover:not(.editing) {
+        background-color: #f0f8ff;
+    }
+    .editable-cell.editing {
+        background-color: #fff3cd;
+    }
+    .cell-input {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTappoModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuovo Tappo
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-box me-2"></i>Elenco Tappi ({{ tappi|length }})
+        </h6>
+        <div class="bulk-actions" style="display: none;">
+            <button class="btn btn-danger btn-sm" onclick="bulkDeleteItems()">
+                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if tappi %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" class="form-check-input" onchange="selectAllItems(this)">
+                        </th>
+                        <th>Codice</th>
+                        <th>Profilo Riferimento</th>
+                        <th>Finitura</th>
+                        <th>Lungh. Interna (mm)</th>
+                        <th>Lungh. Esterna (mm)</th>
+                        <th>Quantità</th>
+                        <th>Forati</th>
+                        <th>Inclusi</th>
+                        <th>Prezzo (€)</th>
+                        <th width="120">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in tappi %}
+                    <tr data-codice="{{ item.codice }}">
+                        <td>
+                            <input type="checkbox" class="form-check-input item-checkbox"
+                                   value="{{ item.codice }}" onchange="toggleBulkActions()">
+                        </td>
+                        <td><code>{{ item.codice }}</code></td>
+                        <td class="editable-cell" data-field="prf_riferimento" data-original="{{ item.prf_riferimento }}">
+                            <span class="cell-value"><strong>{{ item.prf_riferimento }}</strong></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ item.prf_riferimento }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="finitura" data-original="{{ item.finitura }}">
+                            <span class="cell-value"><span class="badge bg-info">{{ item.finitura }}</span></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ item.finitura }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="lunghezza_interna" data-original="{{ item.lunghezza_interna }}">
+                            <span class="cell-value">{{ item.lunghezza_interna }}</span>
+                            <input type="number" step="0.1" class="cell-input form-control form-control-sm" value="{{ item.lunghezza_interna }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="lunghezza_esterna" data-original="{{ item.lunghezza_esterna }}">
+                            <span class="cell-value">{{ item.lunghezza_esterna }}</span>
+                            <input type="number" step="0.1" class="cell-input form-control form-control-sm" value="{{ item.lunghezza_esterna }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="quantita" data-original="{{ item.quantita }}">
+                            <span class="cell-value">{{ item.quantita }}</span>
+                            <input type="number" class="cell-input form-control form-control-sm" value="{{ item.quantita }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="forati" data-original="{{ item.forati }}">
+                            <span class="cell-value">
+                                {% if item.forati %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </span>
+                            <select class="cell-input form-control form-control-sm" style="display: none;">
+                                <option value="true" {% if item.forati %}selected{% endif %}>Sì</option>
+                                <option value="false" {% if not item.forati %}selected{% endif %}>No</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="inclusi" data-original="{{ item.inclusi }}">
+                            <span class="cell-value">
+                                {% if item.inclusi %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </span>
+                            <select class="cell-input form-control form-control-sm" style="display: none;">
+                                <option value="true" {% if item.inclusi %}selected{% endif %}>Sì</option>
+                                <option value="false" {% if not item.inclusi %}selected{% endif %}>No</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="prezzo" data-original="{{ item.prezzo }}">
+                            <span class="cell-value"><strong>€{{ '%.2f'|format(item.prezzo|float) }}</strong></span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ item.prezzo }}" style="display: none;">
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger"
+                                        onclick="deleteItem('{{ item.codice }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Nessun tappo trovato</h4>
+            <p class="text-muted">Inizia aggiungendo il tuo primo tappo.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTappoModal">
+                <i class="bi bi-plus-circle me-2"></i>Aggiungi Tappo
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal Aggiungi Tappo -->
+<div class="modal fade" id="addTappoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Nuovo Tappo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addForm" onsubmit="addItem(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_codice" class="form-label">Codice *</label>
+                                <input type="text" class="form-control" id="add_codice" name="codice" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_prf_riferimento" class="form-label">Profilo Riferimento *</label>
+                                <input type="text" class="form-control" id="add_prf_riferimento" name="prf_riferimento" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_finitura" class="form-label">Finitura *</label>
+                                <input type="text" class="form-control" id="add_finitura" name="finitura" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_prezzo" class="form-label">Prezzo (€) *</label>
+                                <input type="number" step="0.01" class="form-control" id="add_prezzo" name="prezzo" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_lunghezza_interna" class="form-label">Lunghezza Interna (mm) *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_lunghezza_interna" name="lunghezza_interna" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_lunghezza_esterna" class="form-label">Lunghezza Esterna (mm) *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_lunghezza_esterna" name="lunghezza_esterna" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_quantita" class="form-label">Quantità *</label>
+                                <input type="number" class="form-control" id="add_quantita" name="quantita" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_forati" name="forati" value="true">
+                                <label class="form-check-label" for="add_forati">
+                                    Forati
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_inclusi" name="inclusi" value="true">
+                                <label class="form-check-label" for="add_inclusi">
+                                    Inclusi
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Salva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Inline editing functionality
+$(document).ready(function() {
+    // Make cells editable on click
+    $('.editable-cell').on('click', function(e) {
+        e.stopPropagation();
+        const cell = $(this);
+        if (cell.hasClass('editing')) return;
+
+        cell.addClass('editing');
+        cell.find('.cell-value').hide();
+        cell.find('.cell-input').show().focus();
+
+        // Show save button for this row
+        cell.closest('tr').find('.save-btn').show();
+    });
+
+    // Handle Enter key to save
+    $('.cell-input').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            saveRow($(this).closest('tr').find('.save-btn'));
+        }
+    });
+
+    // Handle Escape key to cancel
+    $('.cell-input').on('keyup', function(e) {
+        if (e.which === 27) {
+            cancelEdit($(this).closest('tr'));
+        }
+    });
+
+    // Prevent input click from closing edit mode
+    $('.cell-input').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Click anywhere else to cancel edit
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.editable-cell').length &&
+            !$(e.target).closest('.save-btn').length) {
+            $('tr').each(function() {
+                if ($(this).find('.editable-cell.editing').length > 0) {
+                    cancelEdit($(this));
+                }
+            });
+        }
+    });
+});
+
+function cancelEdit(row) {
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        cell.removeClass('editing');
+        cell.find('.cell-input').hide();
+        cell.find('.cell-value').show();
+        const original = cell.data('original');
+        cell.find('.cell-input').val(original);
+    });
+    row.find('.save-btn').hide();
+}
+
+function saveRow(button) {
+    const row = $(button).closest('tr');
+    const codice = row.data('codice');
+    const data = {};
+
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        const field = cell.data('field');
+        const value = cell.find('.cell-input').val();
+
+        if (field === 'lunghezza_interna' || field === 'lunghezza_esterna') {
+            data[field] = parseFloat(value) || 0;
+        } else if (field === 'quantita') {
+            data[field] = parseInt(value) || 0;
+        } else if (field === 'prezzo') {
+            data[field] = parseFloat(value) || 0;
+        } else if (field === 'forati' || field === 'inclusi') {
+            data[field] = value === 'true';
+        } else {
+            data[field] = value;
+        }
+    });
+
+    $.ajax({
+        url: `{{ url_for("admin.update_tappo", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', codice),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Modifiche salvate con successo!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+                cancelEdit(row);
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+            cancelEdit(row);
+        }
+    });
+}
+
+function addItem(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    // Convert numeric fields
+    data.prezzo = parseFloat(data.prezzo);
+    data.lunghezza_interna = parseFloat(data.lunghezza_interna);
+    data.lunghezza_esterna = parseFloat(data.lunghezza_esterna);
+    data.quantita = parseInt(data.quantita);
+    data.forati = data.forati === 'true';
+    data.inclusi = data.inclusi === 'true';
+
+    $.ajax({
+        url: '{{ url_for("admin.add_tappo") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Tappo aggiunto con successo!', 'success');
+                $('#addTappoModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function deleteItem(codice) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questo tappo?\nQuesta azione non può essere annullata.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `{{ url_for("admin.delete_tappo", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', codice),
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Tappo eliminato con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function bulkDeleteItems() {
+    const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+                            .map(cb => cb.value);
+
+    if (selectedIds.length === 0) {
+        showAlert('Nessun elemento selezionato', 'warning');
+        return;
+    }
+
+    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} tappi selezionati?\nQuesta azione non può essere annullata.`)) {
+        return;
+    }
+
+    $.ajax({
+        url: '{{ url_for("admin.bulk_delete") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: 'tappi',
+            ids: selectedIds
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`${response.deleted_count} tappi eliminati con successo!`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+</script>
+{% endblock %}

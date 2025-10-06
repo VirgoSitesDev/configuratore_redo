@@ -1329,7 +1329,7 @@ export function updateIstruzioniMisurazione(forma) {
           <label for="lunghezza-personalizzata">Lunghezza richiesta (mm):</label>
           <input type="number" class="form-control" id="lunghezza-personalizzata"
                  placeholder="Inserisci la lunghezza in millimetri" min="100" ${maxAttr}>
-          <p class="assembly-warning mt-2">NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le stip 220v è 50mt</p>
+          <p class="assembly-warning mt-2">NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le strip 220v è 50mt</p>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
@@ -1546,7 +1546,7 @@ function mostraNonAssemblatoWarning() {
   if ($('#non-assemblato-warning').length === 0) {
     const warningHtml = `
       <div id="non-assemblato-warning" class="assembly-warning mt-0 mb-4">
-        <p>NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le stip 220v è 50mt</p>
+        <p>NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le strip 220v è 50mt</p>
         <strong>IMPORTANTE:</strong> I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata.
       </div>
     `;
@@ -1640,6 +1640,11 @@ export function caricaOpzioniParametriFiltrate() {
     // For INDOOR flow, add max side length to filter by giuntabile (not total length)
     if (configurazione.lunghezzaMassimaLato) {
       url += `/${configurazione.lunghezzaMassimaLato}`;
+    }
+
+    // Add special subfamily as query parameter if SPECIAL tipo is selected
+    if (configurazione.tipologiaStripSelezionata === 'SPECIAL' && configurazione.specialStripSelezionata) {
+      url += `?special=${configurazione.specialStripSelezionata}`;
     }
 
     $.ajax({

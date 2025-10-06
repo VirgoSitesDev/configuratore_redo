@@ -341,39 +341,28 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		}
 
 		const parti = configurazione.combinazioneProfiloOttimale.map(combo => {
+			// Get code from backend using profili_test table (synchronous for PDF generation)
 			let codiceProfilo = '';
 
 			if (configurazione.finituraSelezionata && configurazione.profiloSelezionato) {
-			const profiloBase = configurazione.profiloSelezionato;
-			const lunghezzaInCm = combo.lunghezza / 10;
-			
-			let colorCode = '';
-			if (configurazione.finituraSelezionata === "NERO") colorCode = 'BK';
-			else if (configurazione.finituraSelezionata === "BIANCO") colorCode = 'WH';
-			else if (configurazione.finituraSelezionata === "ALLUMINIO") colorCode = 'AL';
-
-			const isOpqProfile = ["PRF120_300", "PRF080_200"].includes(profiloBase);
-			const isSabProfile = ["PRF016_200SET", "PRF011_300"].includes(profiloBase);
-			const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
-			// Check if this is an outdoor profile (ending with PF or SK)
-			const profiloBaseTrimmed = profiloBase.split('_')[0];
-			const isOutdoorProfile = profiloBaseTrimmed.match(/^(.+)(PF|SK)$/);
-
-			if (isOutdoorProfile) {
-				// For outdoor profiles ending with SK or PF, use base code only (no length suffix)
-				codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
-			} else {
-				if (isOpqProfile) colorCode = "M" + colorCode;
-				else if (isSabProfile) colorCode = "S" + colorCode;
-
-				const profiloFormattato = profiloBase.replace(/_/g, '/').replace(/\/\d+/, `/${lunghezzaInCm}`);
-				codiceProfilo = colorCode ? `${profiloFormattato} ${colorCode}` : profiloFormattato;
+				$.ajax({
+					url: `/get_codice_profilo/${configurazione.profiloSelezionato}/${configurazione.finituraSelezionata}/${combo.lunghezza}`,
+					method: 'GET',
+					async: false,
+					success: function(response) {
+						if (response.success && response.codice) {
+							codiceProfilo = response.codice;
+						}
+					},
+					error: function(error) {
+						console.error('Error getting profile code for PDF:', error);
+					}
+				});
 			}
-			}
-			
+
 			return `${combo.quantita}x ${configurazione.nomeModello || codiceProdotto} (${combo.lunghezza}mm cad.)${codiceProfilo ? ' - ' + codiceProfilo : ''}`;
 		});
-		
+
 		return parti.join(' + ');
 		}
 
