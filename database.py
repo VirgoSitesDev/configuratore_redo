@@ -109,11 +109,44 @@ class DatabaseManager:
             .in_('profilo_id', profili_ids)\
             .execute().data
 
-        lunghezze_data = self.supabase.table('profili_lunghezze')\
-            .select('profilo_id, lunghezza')\
-            .in_('profilo_id', profili_ids)\
-            .order('lunghezza')\
-            .execute().data
+        # OLD: Using profili_lunghezze table (kept for fallback)
+        # lunghezze_data = self.supabase.table('profili_lunghezze')\
+        #     .select('profilo_id, lunghezza')\
+        #     .in_('profilo_id', profili_ids)\
+        #     .order('lunghezza')\
+        #     .execute().data
+
+        # Use profili_prezzi for indoor, profili_lunghezze for outdoor
+        is_outdoor = categoria in ['esterni', 'wall_washer_ext']
+
+        lunghezze_data = []
+        for profilo_id in profili_ids:
+            # Check if this specific profile is outdoor (ends with PF or SK)
+            is_outdoor_profile = profilo_id.endswith('PF') or profilo_id.endswith('SK')
+
+            if is_outdoor_profile:
+                # Outdoor: use profili_lunghezze
+                outdoor_data = self.supabase.table('profili_lunghezze')\
+                    .select('profilo_id, lunghezza')\
+                    .eq('profilo_id', profilo_id)\
+                    .order('lunghezza')\
+                    .execute().data
+                # Convert to unified format
+                for item in outdoor_data:
+                    lunghezze_data.append({
+                        'profilo_id': item['profilo_id'],
+                        'lunghezza_mm': item['lunghezza'],
+                        'finitura': None
+                    })
+            else:
+                # Indoor: use profili_prezzi
+                base_profilo = profilo_id.split('_')[0].replace('/', '')
+                variants = self.supabase.table('profili_prezzi')\
+                    .select('profilo_id, lunghezza_mm, finitura')\
+                    .ilike('profilo_id', f'{base_profilo}_%')\
+                    .order('lunghezza_mm')\
+                    .execute().data
+                lunghezze_data.extend(variants)
 
         strip_compatibili_data = self.supabase.table('profili_strip_compatibili')\
             .select('profilo_id, strip_id')\
@@ -134,12 +167,35 @@ class DatabaseManager:
                 finiture_map[pid] = []
             finiture_map[pid].append(f['finitura'])
         
+        # OLD: Simple list of lengths
+        # lunghezze_map = {}
+        # for l in lunghezze_data:
+        #     pid = l['profilo_id']
+        #     if pid not in lunghezze_map:
+        #         lunghezze_map[pid] = []
+        #     lunghezze_map[pid].append(l['lunghezza'])
+
+        # Map lengths - unified approach for both indoor and outdoor
         lunghezze_map = {}
-        for l in lunghezze_data:
-            pid = l['profilo_id']
-            if pid not in lunghezze_map:
-                lunghezze_map[pid] = []
-            lunghezze_map[pid].append(l['lunghezza'])
+        for original_pid in profili_ids:
+            is_outdoor_profile = original_pid.endswith('PF') or original_pid.endswith('SK')
+
+            if is_outdoor_profile:
+                # Outdoor: direct mapping
+                lengths_for_profile = set()
+                for l in lunghezze_data:
+                    if l['profilo_id'] == original_pid:
+                        lengths_for_profile.add(l['lunghezza_mm'])
+                lunghezze_map[original_pid] = sorted(list(lengths_for_profile))
+            else:
+                # Indoor: map variants back to base profile
+                base_profilo = original_pid.split('_')[0].replace('/', '')
+                lengths_for_profile = set()
+                for l in lunghezze_data:
+                    variant_base = l['profilo_id'].split('_')[0]
+                    if variant_base == base_profilo:
+                        lengths_for_profile.add(l['lunghezza_mm'])
+                lunghezze_map[original_pid] = sorted(list(lengths_for_profile))
         
         strip_map = {}
         for s in strip_compatibili_data:
@@ -728,14 +784,29 @@ class DatabaseManager:
             lunghezza_standard_da_usare = lunghezza_mm
 
             try:
-                lunghezze_data = self.supabase.table('profili_lunghezze')\
-                    .select('lunghezza')\
-                    .eq('profilo_id', profilo_id)\
-                    .order('lunghezza')\
+                # OLD: Using profili_lunghezze table (kept for fallback)
+                # lunghezze_data = self.supabase.table('profili_lunghezze')\
+                #     .select('lunghezza')\
+                #     .eq('profilo_id', profilo_id)\
+                #     .order('lunghezza')\
+                #     .execute().data
+
+                # NEW: Using profili_prezzi table to get available lengths
+                # Extract base profile to match all variants
+                base_profilo = profilo_id.split('_')[0].replace('/', '')  # Get PRF005 from PRF005_200SET
+                print(f"[DEBUG get_codice_profilo] base_profilo: {base_profilo}")
+
+                lunghezze_data = self.supabase.table('profili_prezzi')\
+                    .select('lunghezza_mm')\
+                    .ilike('profilo_id', f'{base_profilo}_%')\
+                    .order('lunghezza_mm')\
                     .execute().data
 
+                print(f"[DEBUG get_codice_profilo] Found {len(lunghezze_data)} lengths")
+
                 if lunghezze_data:
-                    lunghezze_disponibili = sorted([l['lunghezza'] for l in lunghezze_data])
+                    # Get unique lengths
+                    lunghezze_disponibili = sorted(list(set([l['lunghezza_mm'] for l in lunghezze_data])))
                     lunghezza_per_eccesso = next((l for l in lunghezze_disponibili if l >= lunghezza_mm), None)
 
                     if lunghezza_per_eccesso:

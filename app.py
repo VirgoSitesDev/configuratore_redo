@@ -327,18 +327,38 @@ def get_dimmer_compatibili(strip_id):
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_finiture/<profilo_id>')
-def get_finiture(profilo_id):
+@app.route('/get_finiture/<profilo_id>/<int:lunghezza_mm>')
+def get_finiture(profilo_id, lunghezza_mm=None):
     try:
-        finiture = db.supabase.table('profili_finiture').select('finitura').eq('profilo_id', profilo_id).execute().data
-        finiture_list = [f['finitura'] for f in finiture]
-        
+        # Check if this is an outdoor profile (ends with PF or SK)
+        is_outdoor_profile = profilo_id.endswith('PF') or profilo_id.endswith('SK')
+
+        if is_outdoor_profile:
+            # Outdoor profiles - use profili_finiture table
+            finiture = db.supabase.table('profili_finiture').select('finitura').eq('profilo_id', profilo_id).execute().data
+            finiture_list = [f['finitura'] for f in finiture]
+        else:
+            # Indoor profiles - use profili_prezzi
+            base_profilo = profilo_id.split('_')[0].replace('/', '')
+
+            query = db.supabase.table('profili_prezzi').select('finitura').ilike('profilo_id', f'{base_profilo}_%')
+
+            # If length is specified, filter by that length
+            if lunghezza_mm:
+                query = query.eq('lunghezza_mm', lunghezza_mm)
+
+            finiture = query.execute().data
+
+            # Get unique finiture
+            finiture_list = sorted(list(set([f['finitura'] for f in finiture if f['finitura']])))
+
         mappatura_finiture = {
             'ALLUMINIO_ANODIZZATO': 'Alluminio anodizzato',
             'BIANCO': 'Bianco',
             'NERO': 'Nero',
             'ALLUMINIO': 'Alluminio'
         }
-        
+
         finiture_formattate = [
             {
                 'id': finitura,
@@ -346,7 +366,7 @@ def get_finiture(profilo_id):
             }
             for finitura in finiture_list
         ]
-        
+
         return jsonify({'success': True, 'finiture': finiture_formattate})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -732,11 +752,6 @@ def ottimizza_quantita_profilo(lunghezza_richiesta, lunghezze_disponibili):
 @app.route('/finalizza_configurazione', methods=['POST'])
 def finalizza_configurazione():
     configurazione = request.json
-    print("="*80)
-    print("[DEBUG] FINALIZZA_CONFIGURAZIONE CHIAMATA!")
-    print(f"[DEBUG] moltiplicatoreStrip: {configurazione.get('moltiplicatoreStrip', 'NOT FOUND')}")
-    print(f"[DEBUG] doppiaStripSelezionata: {configurazione.get('doppiaStripSelezionata', 'NOT FOUND')}")
-    print("="*80)
 
     def calcola_codici_prodotto():
         codici = {
@@ -810,23 +825,51 @@ def finalizza_configurazione():
 
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
-            lunghezze_profilo = db.supabase.table('profili_lunghezze')\
-                .select('lunghezza')\
-                .eq('profilo_id', configurazione['profiloSelezionato'])\
-                .execute().data
-            
+            # Check if outdoor profile (ends with PF or SK)
+            profilo_id = configurazione['profiloSelezionato']
+            is_outdoor = profilo_id.endswith('PF') or profilo_id.endswith('SK')
+
+            if is_outdoor:
+                # OLD LOGIC for outdoor profiles - use profili_lunghezze table
+                lunghezze_profilo = db.supabase.table('profili_lunghezze')\
+                    .select('lunghezza')\
+                    .eq('profilo_id', profilo_id)\
+                    .execute().data
+            else:
+                # NEW LOGIC for indoor profiles - use profili_prezzi table
+                base_profilo = profilo_id.split('_')[0].replace('/', '')
+                finitura_selezionata = configurazione.get('finituraSelezionata')
+
+                query = db.supabase.table('profili_prezzi')\
+                    .select('lunghezza_mm')\
+                    .ilike('profilo_id', f'{base_profilo}_%')
+
+                # Filter by finitura if selected
+                if finitura_selezionata:
+                    query = query.eq('finitura', finitura_selezionata)
+
+                lunghezze_profilo = query.execute().data
+
             if lunghezze_profilo and lunghezza_totale > 0:
-                lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
+                # Get unique lengths (field name differs: 'lunghezza' for outdoor, 'lunghezza_mm' for indoor)
+                if is_outdoor:
+                    lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
+                else:
+                    lunghezze_list = sorted(list(set([l['lunghezza_mm'] for l in lunghezze_profilo])))
                 lunghezza_massima_profilo = max(lunghezze_list)
                 combinazione_ottimale = ottimizza_quantita_profilo(lunghezza_totale, lunghezze_list)
                 quantita_profilo = sum(item['quantita'] for item in combinazione_ottimale)
-                
+
             elif lunghezze_profilo:
-                lunghezze_list = [l['lunghezza'] for l in lunghezze_profilo]
+                # Get unique lengths (field name differs: 'lunghezza' for outdoor, 'lunghezza_mm' for indoor)
+                if is_outdoor:
+                    lunghezze_list = sorted(list(set([l['lunghezza'] for l in lunghezze_profilo])))
+                else:
+                    lunghezze_list = sorted(list(set([l['lunghezza_mm'] for l in lunghezze_profilo])))
                 lunghezza_massima_profilo = max(lunghezze_list)
                 quantita_profilo = 1
                 combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': 1}]
-                
+
         except Exception as e:
             logging.error(f"Errore nel calcolo ottimizzato quantità profilo: {str(e)}")
             if lunghezza_totale > 0:
@@ -1895,7 +1938,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     <body>
         <div class="header">
             <h1>Richiesta Preventivo REDO</h1>
-            <h2>Codice Prodotto: {codice_prodotto}</h2>
             <p>Data richiesta: {data_corrente}</p>
         </div>
 

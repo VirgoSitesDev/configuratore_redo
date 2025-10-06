@@ -13,16 +13,17 @@ export function calcolaCodiceProfilo() {
     "PRF080_200"
   ].includes(configurazione.profiloSelezionato);
 
-  const isSpecialProfile = [
-    "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
-  ].includes(configurazione.profiloSelezionato);
+  // Check if this is an outdoor profile (ending with PF or SK)
+  const profiloBaseTrimmed = configurazione.profiloSelezionato.split('_')[0];
+  const isOutdoorProfile = profiloBaseTrimmed.match(/^(.+)(PF|SK)$/);
 
   const isAl = (configurazione.profiloSelezionato.includes("PRFIT") || configurazione.profiloSelezionato.includes("PRF120")) && !configurazione.profiloSelezionato.includes("PRFIT321");
 
   let codiceProfilo;
 
-  if (isSpecialProfile) {
-    codiceProfilo = configurazione.profiloSelezionato.replace(/_/g, '/');
+  if (isOutdoorProfile) {
+    // For outdoor profiles ending with SK or PF, use base code only (no length suffix)
+    codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
   } else {
     let colorCode = '';
     if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';

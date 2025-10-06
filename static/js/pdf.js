@@ -355,14 +355,17 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 			const isOpqProfile = ["PRF120_300", "PRF080_200"].includes(profiloBase);
 			const isSabProfile = ["PRF016_200SET", "PRF011_300"].includes(profiloBase);
 			const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
-			const isSpecialProfile = ["FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"].includes(profiloBase);
-			
-			if (isSpecialProfile) {
-				codiceProfilo = profiloBase.replace(/_/g, '/');
+			// Check if this is an outdoor profile (ending with PF or SK)
+			const profiloBaseTrimmed = profiloBase.split('_')[0];
+			const isOutdoorProfile = profiloBaseTrimmed.match(/^(.+)(PF|SK)$/);
+
+			if (isOutdoorProfile) {
+				// For outdoor profiles ending with SK or PF, use base code only (no length suffix)
+				codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
 			} else {
 				if (isOpqProfile) colorCode = "M" + colorCode;
 				else if (isSabProfile) colorCode = "S" + colorCode;
-				
+
 				const profiloFormattato = profiloBase.replace(/_/g, '/').replace(/\/\d+/, `/${lunghezzaInCm}`);
 				codiceProfilo = colorCode ? `${profiloFormattato} ${colorCode}` : profiloFormattato;
 			}
@@ -558,15 +561,6 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
   
 	  const finalY = doc.lastAutoTable.finalY + 10;
 	  doc.setFontSize(10);
-	  doc.setFont('helvetica', 'normal');
-  
-	  if (configurazione.categoriaSelezionata === 'esterni' || configurazione.categoriaSelezionata === 'wall_washer_ext') {
-	  doc.text('ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.', 15, finalY);
-	  }
-  
-	  doc.setFont('helvetica', 'bold');
-	  doc.setTextColor(194, 59, 34);
-	  doc.text('ATTENZIONE: eventuali staffe aggiuntive non incluse.', 15, finalY + 8);
 	  doc.setTextColor(0, 0, 0);
 	  doc.setFont('helvetica', 'normal');
   

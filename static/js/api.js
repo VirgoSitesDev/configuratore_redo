@@ -192,6 +192,11 @@ function mostraOpzioniLunghezzaProfilo() {
     configurazione.lunghezzaProfiloIntero = lunghezzaSelezionata;
     configurazione.lunghezzaSelezionata = lunghezzaSelezionata;
 
+    // Reload finiture based on selected length
+    if (configurazione.profiloSelezionato) {
+      caricaFinitureDisponibili(configurazione.profiloSelezionato, lunghezzaSelezionata);
+    }
+
     checkStep2Completion();
   });
 
@@ -202,6 +207,12 @@ function mostraOpzioniLunghezzaProfilo() {
       configurazione.lunghezzaRichiesta = lunghezzeOrdinate[0];
       configurazione.lunghezzaProfiloIntero = lunghezzeOrdinate[0];
       configurazione.lunghezzaSelezionata = lunghezzeOrdinate[0];
+
+      // Reload finiture based on selected length
+      if (configurazione.profiloSelezionato) {
+        caricaFinitureDisponibili(configurazione.profiloSelezionato, lunghezzeOrdinate[0]);
+      }
+
       checkStep2Completion();
     }, 100);
   }
@@ -1024,29 +1035,35 @@ export function caricaPotenzeAlimentatore(alimentatoreId) {
   });
 }
 
-export function caricaFinitureDisponibili(profiloId) {
-  
+export function caricaFinitureDisponibili(profiloId, lunghezzaMm = null) {
+
   $('.finitura-card').removeClass('selected');
   configurazione.finituraSelezionata = null;
-  
+
+  // Build URL with optional length parameter
+  let url = `/get_finiture/${profiloId}`;
+  if (lunghezzaMm) {
+    url += `/${lunghezzaMm}`;
+  }
+
   $.ajax({
-    url: `/get_finiture/${profiloId}`,
+    url: url,
     method: 'GET',
     success: function(data) {
-      
+
       if (!data.success) {
         $('.finitura-card').parent().show();
         return;
       }
-      
+
       const finitureDisponibili = data.finiture.map(f => f.id);
-      
+
       $('.finitura-card').parent().hide();
-      
+
       finitureDisponibili.forEach(function(finituraId) {
         $(`.finitura-card[data-finitura="${finituraId}"]`).parent().show();
       });
-      
+
       if (finitureDisponibili.length === 0) {
         $('.finitura-card').parent().show();
       }
@@ -1205,16 +1222,23 @@ export function finalizzaConfigurazione() {
             "PRF080_200"
           ].includes(profiloBase);
 
-          const isSpecialProfile = [
-            "FWPF", "MG13X12PF", "MG12X17PF", "SNK6X12PF", "SNK10X10PF", "SNK12X20PF"
-          ].includes(profiloBase);
+          // Check if this is a special profile (ending with PF or SK after stripping numbers)
+          const profiloBaseTrimmed = profiloBase.split('_')[0];
+          const isSpecialProfile = profiloBaseTrimmed.match(/^(.+\d+)(PF|SK)$/);
 
           const isAl = (profiloBase.includes("PRFIT") || profiloBase.includes("PRF120")) && !profiloBase.includes("PRFIT321");
 
           let codiceProfilo;
 
           if (isSpecialProfile) {
-            codiceProfilo = profiloBase.replace(/_/g, '/');
+            // For special profiles ending with SK, don't add /100
+            if (profiloBaseTrimmed.endsWith('SK')) {
+              codiceProfilo = profiloBaseTrimmed.replace(/_/g, '/');
+            } else {
+              // For special profiles ending with PF, add /100
+              const baseCode = profiloBaseTrimmed.replace(/_/g, '/');
+              codiceProfilo = baseCode + '/100';
+            }
           } else {
             let colorCode = '';
             if (configurazione.finituraSelezionata == "NERO") colorCode = 'BK';
@@ -1243,7 +1267,6 @@ export function finalizzaConfigurazione() {
             <div class="card">
               <div class="card-header bg-primary text-white">
                 <h4>Riepilogo della configurazione - Solo Strip LED</h4>
-                <h6>Codice prodotto: ${codiceProdotto}</h6>
               </div>
               <div class="card-body">
                 <div class="row">
@@ -1292,9 +1315,6 @@ export function finalizzaConfigurazione() {
                 </div>
 
                 <div class="text-center mt-4">
-                  <div class="alert alert-warning mt-3">
-                    <strong>Attenzione:</strong> eventuali staffe aggiuntive non incluse.
-                  </div>
                   <div class="row mt-4">
                     <div class="col-md-6 text-center">
                       <button class="btn btn-success btn-lg w-100" id="btn-salva-configurazione">
@@ -1346,7 +1366,6 @@ export function finalizzaConfigurazione() {
                       </div>
                       <div class="alert alert-info">
                         <strong>Riepilogo configurazione:</strong><br>
-                        Codice prodotto: ${codiceProdotto}<br>
                         Il preventivo completo sarà inviato via email.
                       </div>
                     </form>
@@ -1374,7 +1393,6 @@ export function finalizzaConfigurazione() {
           <div class="card">
             <div class="card-header bg-primary text-white">
               <h4>Riepilogo della configurazione</h4>
-              <h6>Codice prodotto: ${codiceProdotto}</h6>
             </div>
             <div class="card-body">
               <div class="row">
@@ -1685,24 +1703,8 @@ export function finalizzaConfigurazione() {
           </div>
           
           <div class="text-center mt-4">`;
-
-        if (riepilogo.categoriaSelezionata === 'esterni' || riepilogo.categoriaSelezionata === 'wall_washer_ext') {
-          riepilogoHtml += `
-            <div class="alert alert-info">
-              <p class="mb-0"><strong>ATTENZIONE:</strong> la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
-            </div>`;
-        }
-        else {
-          riepilogoHtml += `
-            <div class="alert alert-info">
-              <p mb-0><strong>NOTA:</strong> Verrà aggiunto automaticamente uno spazio di 5mm per i tappi e la saldatura.</p>
-            </div>`;
-        }
         
 riepilogoHtml += `
-            <div class="alert alert-warning mt-3">
-              <strong>Attenzione:</strong> eventuali staffe aggiuntive non incluse.
-            </div>
             <div class="row mt-4">
               <div class="col-md-6 text-center">
                 <button class="btn btn-success btn-lg w-100" id="btn-salva-configurazione">
@@ -1756,7 +1758,6 @@ riepilogoHtml += `
                     </div>
                     <div class="alert alert-info">
                       <strong>Riepilogo configurazione:</strong><br>
-                      Codice prodotto: ${codiceProdotto}<br>
                       Il preventivo completo sarà inviato via email.
                     </div>
                   </form>

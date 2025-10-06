@@ -233,13 +233,17 @@ def add_profilo_complete():
         existing_profile = db.supabase.table('profili').select('*').eq('nome', nome).execute()
 
         if existing_profile.data and len(existing_profile.data) > 0:
-            # Profile exists, use its ID
+            # Profile exists, use its id (which is a string like PRF014_200SET)
             profilo_id = existing_profile.data[0]['id']
         else:
-            # Profile doesn't exist, create it
+            # Profile doesn't exist, create it in profili table
+            # profili.id is a STRING, use nome as the id
+            # Table: profili (id=STRING, nome, categoria, note, immagine, lunghezza_massima)
             profilo_data = {
+                'id': nome,  # id is a string, same as nome (e.g., PRF005, MG13X12PF)
                 'nome': nome,
-                'categoria': categoria
+                'categoria': categoria,
+                'lunghezza_massima': int(lunghezza_mm)
             }
             if immagine_url:
                 profilo_data['immagine'] = immagine_url
@@ -247,7 +251,44 @@ def add_profilo_complete():
             profilo_result = db.supabase.table('profili').insert(profilo_data).execute()
             profilo_id = profilo_result.data[0]['id']
 
-        # Now add the price variant
+        # Insert into profili_tipologie (profilo_id, tipologia) - two rows
+        try:
+            db.supabase.table('profili_tipologie').insert({
+                'profilo_id': profilo_id,
+                'tipologia': 'profilo_intero'
+            }).execute()
+        except Exception as e:
+            logging.warning(f"Tipologia profilo_intero might already exist: {str(e)}")
+
+        try:
+            db.supabase.table('profili_tipologie').insert({
+                'profilo_id': profilo_id,
+                'tipologia': 'taglio_misura'
+            }).execute()
+        except Exception as e:
+            logging.warning(f"Tipologia taglio_misura might already exist: {str(e)}")
+
+        # Insert into profili_finiture (profilo_id, finitura)
+        try:
+            db.supabase.table('profili_finiture').insert({
+                'profilo_id': profilo_id,
+                'finitura': finitura
+            }).execute()
+        except Exception as e:
+            # Ignore if already exists
+            logging.warning(f"Finitura might already exist: {str(e)}")
+
+        # Insert into profili_lunghezze (profilo_id, lunghezza)
+        try:
+            db.supabase.table('profili_lunghezze').insert({
+                'profilo_id': profilo_id,
+                'lunghezza': int(lunghezza_mm)
+            }).execute()
+        except Exception as e:
+            # Ignore if already exists
+            logging.warning(f"Lunghezza might already exist: {str(e)}")
+
+        # Insert into profili_prezzi (id, profilo_id, finitura, lunghezza_mm, prezzo_euro, codice_listino)
         prezzo_data = {
             'profilo_id': profilo_id,
             'codice_listino': codice_listino,
@@ -260,7 +301,9 @@ def add_profilo_complete():
 
         return jsonify({'success': True, 'data': prezzo_result.data})
     except Exception as e:
-        logging.error(f"Errore aggiunta profilo completo: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiunta profilo completo: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/profili/add', methods=['POST'])

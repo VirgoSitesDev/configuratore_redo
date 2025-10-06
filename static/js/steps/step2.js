@@ -466,7 +466,13 @@ export function vaiAllaPersonalizzazione() {
 }
 
 export function preparePersonalizzazioneListeners() {
-  caricaFinitureDisponibili(configurazione.profiloSelezionato);
+  // Load finiture with length filter ONLY for profilo_intero (standard length)
+  // For taglio_misura (custom length), show all finiture (no length filter)
+  let lunghezzaPerFiltro = null;
+  if (configurazione.tipologiaSelezionata === 'profilo_intero') {
+    lunghezzaPerFiltro = configurazione.lunghezzaRichiesta || configurazione.lunghezzaSelezionata || configurazione.lunghezzaProfiloIntero;
+  }
+  caricaFinitureDisponibili(configurazione.profiloSelezionato, lunghezzaPerFiltro);
 
   // For OUTDOOR flow: fetch strip data to get giuntabile and lunghezzaMassima
   if (configurazione.categoriaSelezionata === 'esterni' || configurazione.categoriaSelezionata === 'wall_washer_ext') {
