@@ -44,27 +44,27 @@ def dashboard():
     try:
         # Statistiche generali
         stats = {}
-        
-        # Conta configurazioni salvate
-        configs = db.supabase.table('configurazioni_salvate').select('*').execute()
-        stats['configurazioni'] = len(configs.data) if configs.data else 0
-        
-        # Conta profili
-        profili = db.supabase.table('profili').select('*').execute()
+
+        # Conta profili (from profili_prezzi table - shows actual entries displayed in admin)
+        profili = db.supabase.table('profili_prezzi').select('*').execute()
         stats['profili'] = len(profili.data) if profili.data else 0
-        
-        # Conta strip LED
-        strips = db.supabase.table('strip_led').select('*').execute()
+
+        # Conta strip LED (from strip_prezzi table - shows actual entries displayed in admin)
+        strips = db.supabase.table('strip_prezzi').select('*').execute()
         stats['strip_led'] = len(strips.data) if strips.data else 0
-        
-        # Conta alimentatori
-        alimentatori = db.supabase.table('alimentatori').select('*').execute()
+
+        # Conta alimentatori (from alimentatori_potenze table - shows actual entries displayed in admin)
+        alimentatori = db.supabase.table('alimentatori_potenze').select('*').execute()
         stats['alimentatori'] = len(alimentatori.data) if alimentatori.data else 0
-        
+
         # Conta dimmer
         dimmer = db.supabase.table('dimmer').select('*').execute()
         stats['dimmer'] = len(dimmer.data) if dimmer.data else 0
-        
+
+        # Conta categorie
+        categorie = db.supabase.table('categorie').select('*').execute()
+        stats['categorie'] = len(categorie.data) if categorie.data else 0
+
         return render_template('admin/dashboard.html', stats=stats)
         
     except Exception as e:
@@ -140,25 +140,135 @@ def profili():
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
+        # Fetch profili base data and categories
         profili = db.supabase.table('profili').select('*').execute()
         categorie = db.supabase.table('categorie').select('*').execute()
-        
-        return render_template('admin/profili.html', 
-                             profili=profili.data or [], 
+
+        # Fetch all profili_prezzi entries (main source with all combinations)
+        prezzi = db.supabase.table('profili_prezzi').select('*').execute()
+
+        # Create a lookup map for profili base info
+        profili_map = {p['id']: p for p in (profili.data or [])}
+
+        # Build combined list
+        profili_combinati = []
+        for prezzo in (prezzi.data or []):
+            codice_listino = prezzo.get('codice_listino', '')
+            profilo_id = prezzo.get('profilo_id')
+
+            # Extract profile code from codice_listino (part before '/')
+            profile_code = codice_listino.split('/')[0] if '/' in codice_listino else codice_listino
+
+            # First try to get info from profilo_id
+            profilo_info = profili_map.get(profilo_id, {})
+
+            # If no info found with profilo_id, try to find by nome matching profile_code
+            if not profilo_info or not profilo_info.get('nome'):
+                profilo_info = next((p for p in (profili.data or []) if p.get('nome') == profile_code), {})
+
+            profili_combinati.append({
+                'prezzo_id': prezzo.get('id'),  # ID from profili_prezzi table
+                'profilo_id': profilo_id,
+                'nome': profilo_info.get('nome', profile_code or 'N/A'),
+                'categoria': profilo_info.get('categoria', 'N/A'),
+                'immagine': profilo_info.get('immagine'),
+                'finitura': prezzo.get('finitura'),  # Get finitura directly from profili_prezzi
+                'lunghezza': prezzo.get('lunghezza_mm'),  # Get length from lunghezza_mm column
+                'codice_listino': codice_listino,
+                'prezzo': prezzo.get('prezzo_euro')  # Get price from prezzo_euro column
+            })
+
+        return render_template('admin/profili.html',
+                             profili_combinati=profili_combinati,
+                             profili_base=profili.data or [],
                              categorie=categorie.data or [])
     except Exception as e:
         logging.error(f"Errore caricamento profili: {str(e)}")
         flash('Errore nel caricamento dei profili', 'error')
-        return render_template('admin/profili.html', profili=[], categorie=[])
+        return render_template('admin/profili.html', profili_combinati=[], profili_base=[], categorie=[])
+
+@admin_bp.route('/profili/add_complete', methods=['POST'])
+def add_profilo_complete():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        nome = request.form.get('nome')
+        categoria = request.form.get('categoria')
+        codice_listino = request.form.get('codice_listino')
+        finitura = request.form.get('finitura')
+        lunghezza_mm = request.form.get('lunghezza_mm')
+        prezzo_euro = request.form.get('prezzo_euro')
+
+        # Handle file upload
+        immagine_url = None
+        if 'immagine' in request.files:
+            file = request.files['immagine']
+            if file and file.filename:
+                import os
+                from werkzeug.utils import secure_filename
+                import time
+
+                # Get the absolute path to static/img folder
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                upload_folder = os.path.join(base_dir, 'static', 'img', 'profili')
+                os.makedirs(upload_folder, exist_ok=True)
+
+                # Save file with secure filename and timestamp
+                filename = secure_filename(file.filename)
+                timestamp = str(int(time.time()))
+                name, ext = os.path.splitext(filename)
+                filename = f"{name}_{timestamp}{ext}"
+
+                file_path = os.path.join(upload_folder, filename)
+                file.save(file_path)
+
+                # Store relative URL for database
+                immagine_url = f"/static/img/profili/{filename}"
+
+        # Check if profile already exists in profili table by nome
+        existing_profile = db.supabase.table('profili').select('*').eq('nome', nome).execute()
+
+        if existing_profile.data and len(existing_profile.data) > 0:
+            # Profile exists, use its ID
+            profilo_id = existing_profile.data[0]['id']
+        else:
+            # Profile doesn't exist, create it
+            profilo_data = {
+                'nome': nome,
+                'categoria': categoria
+            }
+            if immagine_url:
+                profilo_data['immagine'] = immagine_url
+
+            profilo_result = db.supabase.table('profili').insert(profilo_data).execute()
+            profilo_id = profilo_result.data[0]['id']
+
+        # Now add the price variant
+        prezzo_data = {
+            'profilo_id': profilo_id,
+            'codice_listino': codice_listino,
+            'finitura': finitura,
+            'lunghezza_mm': int(lunghezza_mm),
+            'prezzo_euro': float(prezzo_euro)
+        }
+
+        prezzo_result = db.supabase.table('profili_prezzi').insert(prezzo_data).execute()
+
+        return jsonify({'success': True, 'data': prezzo_result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta profilo completo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/profili/add', methods=['POST'])
 def add_profilo():
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         data = request.json
         result = db.supabase.table('profili').insert(data).execute()
@@ -172,7 +282,7 @@ def update_profilo(profilo_id):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         data = request.json
         result = db.supabase.table('profili').update(data).eq('id', profilo_id).execute()
@@ -186,12 +296,110 @@ def delete_profilo(profilo_id):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         result = db.supabase.table('profili').delete().eq('id', profilo_id).execute()
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione profilo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# Routes for profili_prezzi (individual price entries)
+@admin_bp.route('/profili/prezzi/update/<int:prezzo_id>', methods=['PUT'])
+def update_profilo_prezzo(prezzo_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('profili_prezzi').update(data).eq('id', prezzo_id).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento prezzo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/profili/prezzi/add', methods=['POST'])
+def add_profilo_prezzo():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('profili_prezzi').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta prezzo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/profili/prezzi/delete/<int:prezzo_id>', methods=['DELETE'])
+def delete_profilo_prezzo(prezzo_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('profili_prezzi').delete().eq('id', prezzo_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione prezzo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# Routes for profili_finiture
+@admin_bp.route('/profili/finiture/add', methods=['POST'])
+def add_profilo_finitura():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('profili_finiture').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta finitura: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/profili/finiture/delete/<int:finitura_id>', methods=['DELETE'])
+def delete_profilo_finitura(finitura_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('profili_finiture').delete().eq('id', finitura_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione finitura: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# Routes for profili_lunghezze
+@admin_bp.route('/profili/lunghezze/add', methods=['POST'])
+def add_profilo_lunghezza():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('profili_lunghezze').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta lunghezza: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/profili/lunghezze/delete/<int:lunghezza_id>', methods=['DELETE'])
+def delete_profilo_lunghezza(lunghezza_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('profili_lunghezze').delete().eq('id', lunghezza_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione lunghezza: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================
@@ -203,10 +411,67 @@ def strip_led():
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
-        strips = db.supabase.table('strip_led').select('*').execute()
-        return render_template('admin/strip_led.html', strips=strips.data or [])
+        import re
+
+        # Fetch all strip_prezzi entries (main source)
+        prezzi = db.supabase.table('strip_prezzi').select('*').execute()
+
+        # Fetch strip_led base data for lookup
+        strips_base = db.supabase.table('strip_led').select('*').execute()
+
+        # Fetch all strip_potenze for power index lookup
+        potenze = db.supabase.table('strip_potenze').select('*').execute()
+
+        # Create a lookup map for strip_led base info
+        strips_map = {s['id']: s for s in (strips_base.data or [])}
+
+        # Create a lookup map for potenze indices: {strip_id: {potenza: indice}}
+        potenze_map = {}
+        for p in (potenze.data or []):
+            strip_id = p.get('strip_id')
+            if strip_id not in potenze_map:
+                potenze_map[strip_id] = {}
+            potenze_map[strip_id][p.get('potenza')] = p.get('indice', -1)
+
+        # Build combined list
+        strips_combinati = []
+        for prezzo in (prezzi.data or []):
+            strip_id = prezzo.get('strip_id')
+            potenza = prezzo.get('potenza')
+            strip_info = strips_map.get(strip_id, {})
+
+            # Get taglio_minimo for this specific power
+            taglio_minimo_val = '-'
+            tagli_minimi = strip_info.get('taglio_minimo', [])
+
+            if strip_id in potenze_map and potenza in potenze_map[strip_id]:
+                indice = potenze_map[strip_id][potenza]
+                if indice >= 0 and indice < len(tagli_minimi):
+                    taglio_minimo_str = tagli_minimi[indice]
+                    match = re.search(r'(\d+(?:[.,]\d+)?)', str(taglio_minimo_str))
+                    if match:
+                        taglio_minimo_val = match.group(1).replace(',', '.')
+
+            strips_combinati.append({
+                'prezzo_id': prezzo.get('id'),
+                'strip_id': strip_id,
+                'tipo': strip_info.get('tipo'),
+                'nome_commerciale': strip_info.get('nome_commerciale'),
+                'tensione': strip_info.get('tensione'),
+                'ip': strip_info.get('ip'),
+                'lunghezza': strip_info.get('lunghezza'),
+                'larghezza': strip_info.get('larghezza'),
+                'giuntabile': strip_info.get('giuntabile'),
+                'taglio_minimo': taglio_minimo_val,
+                'temperatura': prezzo.get('temperatura'),
+                'potenza': prezzo.get('potenza'),
+                'codice_completo': prezzo.get('codice_completo'),
+                'prezzo': prezzo.get('prezzo_euro')
+            })
+
+        return render_template('admin/strip_led.html', strips=strips_combinati)
     except Exception as e:
         logging.error(f"Errore caricamento strip LED: {str(e)}")
         flash('Errore nel caricamento delle strip LED', 'error')
@@ -217,7 +482,7 @@ def add_strip_led():
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         data = request.json
         result = db.supabase.table('strip_led').insert(data).execute()
@@ -231,7 +496,7 @@ def update_strip_led(strip_id):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         data = request.json
         result = db.supabase.table('strip_led').update(data).eq('id', strip_id).execute()
@@ -245,12 +510,211 @@ def delete_strip_led(strip_id):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
-    
+
     try:
         result = db.supabase.table('strip_led').delete().eq('id', strip_id).execute()
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione strip LED: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# Routes for strip_prezzi (individual price entries)
+@admin_bp.route('/strip_prezzi/update/<int:prezzo_id>', methods=['PUT'])
+def update_strip_prezzo(prezzo_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('strip_prezzi').update(data).eq('id', prezzo_id).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento strip prezzo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/strip_prezzi/delete/<int:prezzo_id>', methods=['DELETE'])
+def delete_strip_prezzo(prezzo_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('strip_prezzi').delete().eq('id', prezzo_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione strip prezzo: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# =========================
+# GESTIONE ALIMENTATORI
+# =========================
+
+@admin_bp.route('/alimentatori')
+def alimentatori():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        # Fetch all alimentatori_potenze entries (main source)
+        potenze = db.supabase.table('alimentatori_potenze').select('*').execute()
+
+        # Fetch alimentatori base data for lookup
+        alimentatori_base = db.supabase.table('alimentatori').select('*').execute()
+
+        # Create a lookup map for alimentatori base info
+        alimentatori_map = {a['id']: a for a in (alimentatori_base.data or [])}
+
+        # Build combined list
+        alimentatori_combinati = []
+        for potenza in (potenze.data or []):
+            alimentatore_id = potenza.get('alimentatore_id')
+            alimentatore_info = alimentatori_map.get(alimentatore_id, {})
+
+            alimentatori_combinati.append({
+                'potenza_id': potenza.get('id'),
+                'alimentatore_id': alimentatore_id,
+                'nome': alimentatore_info.get('nome'),
+                'tensione': alimentatore_info.get('tensione'),
+                'ip': alimentatore_info.get('ip'),
+                'potenza': potenza.get('potenza'),
+                'codice': potenza.get('codice'),
+                'prezzo': potenza.get('price')
+            })
+
+        return render_template('admin/alimentatori.html', alimentatori=alimentatori_combinati)
+    except Exception as e:
+        logging.error(f"Errore caricamento alimentatori: {str(e)}")
+        flash('Errore nel caricamento degli alimentatori', 'error')
+        return render_template('admin/alimentatori.html', alimentatori=[])
+
+@admin_bp.route('/alimentatori/add', methods=['POST'])
+def add_alimentatore():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('alimentatori').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta alimentatore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/alimentatori/update/<alimentatore_id>', methods=['PUT'])
+def update_alimentatore(alimentatore_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('alimentatori').update(data).eq('id', alimentatore_id).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento alimentatore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/alimentatori/delete/<alimentatore_id>', methods=['DELETE'])
+def delete_alimentatore(alimentatore_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('alimentatori').delete().eq('id', alimentatore_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione alimentatore: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# Routes for alimentatori_potenze (individual power entries)
+@admin_bp.route('/alimentatori_potenze/update/<int:potenza_id>', methods=['PUT'])
+def update_alimentatore_potenza(potenza_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('alimentatori_potenze').update(data).eq('id', potenza_id).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento alimentatore potenza: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/alimentatori_potenze/delete/<int:potenza_id>', methods=['DELETE'])
+def delete_alimentatore_potenza(potenza_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('alimentatori_potenze').delete().eq('id', potenza_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione alimentatore potenza: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# =========================
+# GESTIONE DIMMER
+# =========================
+
+@admin_bp.route('/dimmer')
+def dimmer():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        dimmer = db.supabase.table('dimmer').select('*').execute()
+        return render_template('admin/dimmer.html', dimmer=dimmer.data or [])
+    except Exception as e:
+        logging.error(f"Errore caricamento dimmer: {str(e)}")
+        flash('Errore nel caricamento dei dimmer', 'error')
+        return render_template('admin/dimmer.html', dimmer=[])
+
+@admin_bp.route('/dimmer/add', methods=['POST'])
+def add_dimmer():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('dimmer').insert(data).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiunta dimmer: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/dimmer/update/<dimmer_id>', methods=['PUT'])
+def update_dimmer(dimmer_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        result = db.supabase.table('dimmer').update(data).eq('id', dimmer_id).execute()
+        return jsonify({'success': True, 'data': result.data})
+    except Exception as e:
+        logging.error(f"Errore aggiornamento dimmer: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/dimmer/delete/<dimmer_id>', methods=['DELETE'])
+def delete_dimmer(dimmer_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        result = db.supabase.table('dimmer').delete().eq('id', dimmer_id).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Errore eliminazione dimmer: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================

@@ -10,18 +10,84 @@
         .sidebar {
             min-height: 100vh;
             background-color: #212529;
+            transition: all 0.3s ease;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 16.666667%; /* col-md-3 col-lg-2 equivalent */
+            z-index: 1000;
+        }
+        .sidebar.collapsed {
+            margin-left: -250px;
+        }
+        @media (min-width: 992px) {
+            .sidebar {
+                width: 16.666667%; /* col-lg-2 */
+            }
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+            .sidebar {
+                width: 25%; /* col-md-3 */
+            }
         }
         .sidebar .nav-link {
             color: #adb5bd;
+            white-space: nowrap;
         }
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             color: #fff;
             background-color: #e83f34;
         }
+        .sidebar-toggle {
+            background-color: transparent;
+            color: #adb5bd;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-toggle:hover {
+            color: #fff;
+            background-color: #e83f34;
+        }
+        .sidebar-toggle-text {
+            font-size: 0.9rem;
+        }
+        .sidebar.collapsed .sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            right: -40px;
+            background-color: #212529;
+            border-radius: 0 4px 4px 0;
+            width: auto;
+            padding: 8px 12px;
+        }
+        .sidebar.collapsed .sidebar-toggle-text {
+            display: none;
+        }
         .main-content {
             background-color: #f8f9fa;
             min-height: 100vh;
+            transition: all 0.3s ease;
+            margin-left: 16.666667%; /* col-lg-2 offset */
+            width: 83.333333%; /* remaining width */
+        }
+        .main-content.expanded {
+            margin-left: 0;
+            width: 100%;
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+            .main-content {
+                margin-left: 25%; /* col-md-3 offset */
+                width: 75%;
+            }
         }
         .card {
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -55,13 +121,13 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="adminSidebar">
                 <div class="position-sticky pt-3">
                     <div class="text-center mb-4">
                         <img src="{{ url_for('static', filename='img/logo-redo-nero.png') }}" alt="REDO" class="img-fluid" style="max-width: 120px; filter: invert(1);">
                         <div class="small text-muted mt-2">Admin Panel</div>
                     </div>
-                    
+
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
@@ -84,18 +150,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if request.endpoint == 'admin.alimentatori' %}active{% endif %}" href="{{ url_for('admin.alimentatori') }}">
                                 <i class="bi bi-battery-charging"></i> Alimentatori
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if request.endpoint == 'admin.dimmer' %}active{% endif %}" href="{{ url_for('admin.dimmer') }}">
                                 <i class="bi bi-sliders"></i> Dimmer
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'admin.configurazioni' %}active{% endif %}" href="{{ url_for('admin.configurazioni') }}">
-                                <i class="bi bi-file-earmark-text"></i> Configurazioni
                             </a>
                         </li>
                         <li class="nav-item mt-4">
@@ -103,11 +164,17 @@
                                 <i class="bi bi-box-arrow-right"></i> Logout
                             </a>
                         </li>
+                        <li class="nav-item mt-4">
+                            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                                <i class="bi bi-chevron-left"></i>
+                                <span class="sidebar-toggle-text">Chiudi barra laterale</span>
+                            </button>
+                        </li>
                     </ul>
                 </div>
             </nav>
 
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content" id="mainContent">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
@@ -172,8 +239,38 @@
             console.error('AJAX Error:', error);
             showAlert('Errore durante l\'operazione. Riprova più tardi.', 'danger');
         }
+
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const mainContent = document.getElementById('mainContent');
+            const toggleIcon = document.querySelector('#sidebarToggle i');
+
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+
+            // Change icon direction
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.classList.remove('bi-chevron-left');
+                toggleIcon.classList.add('bi-chevron-right');
+            } else {
+                toggleIcon.classList.remove('bi-chevron-right');
+                toggleIcon.classList.add('bi-chevron-left');
+            }
+
+            // Save state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // Restore sidebar state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarCollapsed) {
+                toggleSidebar();
+            }
+        });
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

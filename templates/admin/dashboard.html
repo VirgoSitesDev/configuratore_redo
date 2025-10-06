@@ -12,26 +12,6 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Configurazioni Salvate
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ stats.configurazioni or 0 }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="bi bi-file-earmark-text fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                             Profili Totali
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
@@ -47,11 +27,11 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+        <div class="card border-left-success shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                             Strip LED
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
@@ -67,11 +47,11 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card border-left-info shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                             Alimentatori
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
@@ -80,6 +60,26 @@
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-battery-charging fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Dimmer
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.dimmer or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-sliders fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -104,11 +104,14 @@
                     <a href="{{ url_for('admin.strip_led') }}" class="btn btn-outline-success">
                         <i class="bi bi-lightning me-2"></i>Gestisci Strip LED
                     </a>
-                    <a href="{{ url_for('admin.categorie') }}" class="btn btn-outline-info">
-                        <i class="bi bi-tags me-2"></i>Gestisci Categorie
+                    <a href="{{ url_for('admin.alimentatori') }}" class="btn btn-outline-info">
+                        <i class="bi bi-battery-charging me-2"></i>Gestisci Alimentatori
                     </a>
-                    <a href="{{ url_for('admin.configurazioni') }}" class="btn btn-outline-warning">
-                        <i class="bi bi-file-earmark-text me-2"></i>Vedi Configurazioni Utenti
+                    <a href="{{ url_for('admin.dimmer') }}" class="btn btn-outline-warning">
+                        <i class="bi bi-sliders me-2"></i>Gestisci Dimmer
+                    </a>
+                    <a href="{{ url_for('admin.categorie') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-tags me-2"></i>Gestisci Categorie
                     </a>
                 </div>
             </div>
@@ -127,18 +130,18 @@
                 <div class="row">
                     <div class="col-6 text-center">
                         <div class="border-right">
-                            <div class="text-lg font-weight-bold">{{ stats.dimmer or 0 }}</div>
-                            <div class="text-xs text-gray-500">Dimmer</div>
+                            <div class="text-lg font-weight-bold">{{ stats.categorie or 0 }}</div>
+                            <div class="text-xs text-gray-500">Categorie</div>
                         </div>
                     </div>
                     <div class="col-6 text-center">
                         <div class="text-lg font-weight-bold">
-                            {{ (stats.profili or 0) + (stats.strip_led or 0) + (stats.alimentatori or 0) }}
+                            {{ (stats.profili or 0) + (stats.strip_led or 0) + (stats.alimentatori or 0) + (stats.dimmer or 0) }}
                         </div>
                         <div class="text-xs text-gray-500">Prodotti Totali</div>
                     </div>
                 </div>
-                
+
                 <hr class="my-3">
             </div>
         </div>

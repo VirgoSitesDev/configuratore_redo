@@ -3,9 +3,27 @@
 {% block title %}Gestione Profili - Admin{% endblock %}
 {% block page_title %}Gestione Profili{% endblock %}
 
+{% block extra_css %}
+<style>
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+    }
+    .editable-cell:hover:not(.editing) {
+        background-color: #f0f8ff;
+    }
+    .editable-cell.editing {
+        background-color: #fff3cd;
+    }
+    .cell-input {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
 {% block page_actions %}
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloModal">
-    <i class="bi bi-plus-circle me-2"></i>Nuovo Profilo
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloCompleteModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuova Variante Profilo
 </button>
 {% endblock %}
 
@@ -13,69 +31,73 @@
 <div class="card shadow">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <h6 class="m-0 font-weight-bold text-primary">
-            <i class="bi bi-collection me-2"></i>Elenco Profili ({{ profili|length }})
+            <i class="bi bi-collection me-2"></i>Elenco Varianti Profili ({{ profili_combinati|length }})
         </h6>
         <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDelete('profili')">
+            <button class="btn btn-danger btn-sm" onclick="bulkDeletePrezzi()">
                 <i class="bi bi-trash me-1"></i>Elimina Selezionati
             </button>
         </div>
     </div>
     <div class="card-body">
-        {% if profili %}
+        {% if profili_combinati %}
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-bordered table-hover table-sm">
                 <thead class="table-light">
                     <tr>
                         <th width="50">
                             <input type="checkbox" class="form-check-input" onchange="selectAllItems(this)">
                         </th>
-                        <th>ID</th>
                         <th>Nome</th>
                         <th>Categoria</th>
-                        <th>Descrizione</th>
+                        <th>Finitura</th>
+                        <th>Lunghezza (mm)</th>
+                        <th>Codice Listino</th>
+                        <th>Prezzo (€)</th>
                         <th>Immagine</th>
-                        <th>Attivo</th>
                         <th width="120">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for profilo in profili %}
-                    <tr>
+                    {% for item in profili_combinati %}
+                    <tr data-prezzo-id="{{ item.prezzo_id }}" data-profilo-id="{{ item.profilo_id }}">
                         <td>
-                            <input type="checkbox" class="form-check-input item-checkbox" 
-                                   value="{{ profilo.id }}" onchange="toggleBulkActions()">
+                            <input type="checkbox" class="form-check-input item-checkbox"
+                                   value="{{ item.prezzo_id }}" onchange="toggleBulkActions()">
                         </td>
-                        <td><code>{{ profilo.id }}</code></td>
-                        <td><strong>{{ profilo.nome or 'N/A' }}</strong></td>
-                        <td>
-                            <span class="badge bg-secondary">{{ profilo.categoria or 'N/A' }}</span>
+                        <td><strong>{{ item.nome or 'N/A' }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ item.categoria or 'N/A' }}</span></td>
+                        <td class="editable-cell" data-field="finitura" data-original="{{ item.finitura or '' }}">
+                            <span class="cell-value badge bg-info">{{ item.finitura or '-' }}</span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ item.finitura or '' }}" style="display: none;">
                         </td>
-                        <td>{{ (profilo.descrizione or '-')[:50] }}{% if profilo.descrizione and profilo.descrizione|length > 50 %}...{% endif %}</td>
+                        <td class="editable-cell" data-field="lunghezza_mm" data-original="{{ item.lunghezza or '' }}">
+                            <span class="cell-value">{{ item.lunghezza or '-' }}</span>
+                            <input type="number" class="cell-input form-control form-control-sm" value="{{ item.lunghezza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="codice_listino" data-original="{{ item.codice_listino or '' }}">
+                            <span class="cell-value"><code class="small">{{ item.codice_listino or '-' }}</code></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ item.codice_listino or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="prezzo_euro" data-original="{{ item.prezzo or '' }}">
+                            <span class="cell-value"><strong>€{{ '%.2f'|format(item.prezzo|float) if item.prezzo else '-' }}</strong></span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ item.prezzo or '' }}" style="display: none;">
+                        </td>
                         <td>
-                            {% if profilo.immagine %}
-                                <img src="{{ profilo.immagine }}" alt="Immagine profilo" 
-                                     class="img-thumbnail" style="max-width: 60px; max-height: 40px;">
+                            {% if item.immagine %}
+                                <img src="{{ item.immagine }}" alt="Immagine"
+                                     class="img-thumbnail" style="max-width: 40px; max-height: 30px;">
                             {% else %}
-                                <span class="text-muted">Nessuna</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if profilo.attivo %}
-                                <span class="badge bg-success">Attivo</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Inattivo</span>
+                                <span class="text-muted small">-</span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary" 
-                                        onclick="editProfilo('{{ profilo.id }}', '{{ profilo.nome }}', '{{ profilo.categoria }}', '{{ profilo.descrizione}}', '{{ profilo.immagine}}', 'true')"
-                                        data-bs-toggle="modal" data-bs-target="#editProfiloModal">
-                                    <i class="bi bi-pencil"></i>
+                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
+                                    <i class="bi bi-check"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-danger" 
-                                        onclick="deleteProfilo('{{ profilo.id }}')">
+                                <button type="button" class="btn btn-outline-danger"
+                                        onclick="deletePrezzo({{ item.prezzo_id }})">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -88,10 +110,10 @@
         {% else %}
         <div class="text-center py-4">
             <i class="bi bi-inbox display-1 text-muted"></i>
-            <h4 class="text-muted mt-3">Nessun profilo trovato</h4>
-            <p class="text-muted">Inizia aggiungendo il tuo primo profilo.</p>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloModal">
-                <i class="bi bi-plus-circle me-2"></i>Aggiungi Profilo
+            <h4 class="text-muted mt-3">Nessuna variante profilo trovata</h4>
+            <p class="text-muted">Inizia aggiungendo la tua prima variante profilo.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfiloCompleteModal">
+                <i class="bi bi-plus-circle me-2"></i>Aggiungi Variante Profilo
             </button>
         </div>
         {% endif %}
@@ -100,39 +122,31 @@
 {% endblock %}
 
 {% block modals %}
-<!-- Modal Aggiungi Profilo -->
-<div class="modal fade" id="addProfiloModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<!-- Modal Aggiungi Variante Profilo Completa -->
+<div class="modal fade" id="addProfiloCompleteModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-plus-circle me-2"></i>Nuovo Profilo
+                    <i class="bi bi-plus-circle me-2"></i>Nuova Variante Profilo
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="addProfiloForm" onsubmit="addProfilo(event)">
+            <form id="addProfiloCompleteForm" onsubmit="addProfiloComplete(event)" enctype="multipart/form-data">
                 <div class="modal-body">
+                    <h6 class="mb-3 border-bottom pb-2">Informazioni Base Profilo</h6>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="add_profilo_id" class="form-label">ID Profilo *</label>
-                                <input type="text" class="form-control" id="add_profilo_id" name="id" required>
-                                <div class="form-text">Identificativo univoco del profilo</div>
+                                <label for="add_complete_nome" class="form-label">Nome Profilo *</label>
+                                <input type="text" class="form-control" id="add_complete_nome" name="nome" required>
+                                <div class="form-text">Es: PRF005</div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="add_profilo_nome" class="form-label">Nome *</label>
-                                <input type="text" class="form-control" id="add_profilo_nome" name="nome" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="add_profilo_categoria" class="form-label">Categoria *</label>
-                                <select class="form-select" id="add_profilo_categoria" name="categoria" required>
+                                <label for="add_complete_categoria" class="form-label">Categoria *</label>
+                                <select class="form-select" id="add_complete_categoria" name="categoria" required>
                                     <option value="">Seleziona categoria...</option>
                                     {% for categoria in categorie %}
                                         <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
@@ -140,31 +154,53 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="add_profilo_attivo" class="form-label">Stato</label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="add_profilo_attivo" name="attivo" checked>
-                                    <label class="form-check-label" for="add_profilo_attivo">Profilo attivo</label>
-                                </div>
+                                <label for="add_complete_immagine" class="form-label">Immagine</label>
+                                <input type="file" class="form-control" id="add_complete_immagine" name="immagine" accept="image/*">
+                                <div class="form-text">Carica un'immagine del profilo</div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="add_profilo_descrizione" class="form-label">Descrizione</label>
-                        <textarea class="form-control" id="add_profilo_descrizione" name="descrizione" rows="3"></textarea>
+
+                    <h6 class="mb-3 border-bottom pb-2 mt-4">Informazioni Variante</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_complete_codice" class="form-label">Codice Listino *</label>
+                                <input type="text" class="form-control" id="add_complete_codice" name="codice_listino" required>
+                                <div class="form-text">Es: PRF005/AL, PRF005/BI</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_complete_finitura" class="form-label">Finitura *</label>
+                                <input type="text" class="form-control" id="add_complete_finitura" name="finitura" required>
+                                <div class="form-text">Es: AL, BI, NE</div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="add_profilo_immagine" class="form-label">URL Immagine</label>
-                        <input type="url" class="form-control" id="add_profilo_immagine" name="immagine">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_complete_lunghezza" class="form-label">Lunghezza (mm) *</label>
+                                <input type="number" class="form-control" id="add_complete_lunghezza" name="lunghezza_mm" required>
+                                <div class="form-text">Es: 2000, 3000</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_complete_prezzo" class="form-label">Prezzo (€) *</label>
+                                <input type="number" step="0.01" class="form-control" id="add_complete_prezzo" name="prezzo_euro" required>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check me-2"></i>Salva Profilo
+                        <i class="bi bi-check me-2"></i>Salva Variante Profilo
                     </button>
                 </div>
             </form>
@@ -172,72 +208,59 @@
     </div>
 </div>
 
-<!-- Modal Modifica Profilo -->
-<div class="modal fade" id="editProfiloModal" tabindex="-1">
+<!-- Modal Modifica Variante Prezzo -->
+<div class="modal fade" id="editPrezzoModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-pencil me-2"></i>Modifica Profilo
+                    <i class="bi bi-pencil me-2"></i>Modifica Variante Prezzo
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="editProfiloForm" onsubmit="updateProfilo(event)">
+            <form id="editPrezzoForm" onsubmit="updatePrezzo(event)">
                 <div class="modal-body">
-                    <input type="hidden" id="edit_profilo_original_id" name="profilo_id">
+                    <input type="hidden" id="edit_prezzo_id" name="prezzo_id">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_profilo_id" class="form-label">ID Profilo *</label>
-                                <input type="text" class="form-control" id="edit_profilo_id" name="id" readonly>
-                                <div class="form-text">L'ID non può essere modificato</div>
+                                <label for="edit_prezzo_profilo_id" class="form-label">Profilo *</label>
+                                <input type="text" class="form-control" id="edit_prezzo_profilo_id" name="profilo_id" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_profilo_nome" class="form-label">Nome *</label>
-                                <input type="text" class="form-control" id="edit_profilo_nome" name="nome" required>
+                                <label for="edit_prezzo_codice" class="form-label">Codice Listino *</label>
+                                <input type="text" class="form-control" id="edit_prezzo_codice" name="codice_listino" required>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="edit_profilo_categoria" class="form-label">Categoria *</label>
-                                <select class="form-select" id="edit_profilo_categoria" name="categoria" required>
-                                    <option value="">Seleziona categoria...</option>
-                                    {% for categoria in categorie %}
-                                        <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
-                                    {% endfor %}
-                                </select>
+                                <label for="edit_prezzo_finitura" class="form-label">Finitura *</label>
+                                <input type="text" class="form-control" id="edit_prezzo_finitura" name="finitura" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="edit_profilo_attivo" class="form-label">Stato</label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="edit_profilo_attivo" name="attivo">
-                                    <label class="form-check-label" for="edit_profilo_attivo">Profilo attivo</label>
-                                </div>
+                                <label for="edit_prezzo_lunghezza" class="form-label">Lunghezza (mm) *</label>
+                                <input type="number" class="form-control" id="edit_prezzo_lunghezza" name="lunghezza_mm" required>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="edit_profilo_descrizione" class="form-label">Descrizione</label>
-                        <textarea class="form-control" id="edit_profilo_descrizione" name="descrizione" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="edit_profilo_immagine" class="form-label">URL Immagine</label>
-                        <input type="url" class="form-control" id="edit_profilo_immagine" name="immagine">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_prezzo_prezzo" class="form-label">Prezzo (€) *</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_prezzo_prezzo" name="prezzo_euro" required>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check me-2"></i>Aggiorna Profilo
+                        <i class="bi bi-check me-2"></i>Aggiorna Variante
                     </button>
                 </div>
             </form>
@@ -248,61 +271,130 @@
 
 {% block extra_js %}
 <script>
-function addProfilo(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
+// Inline editing functionality
+$(document).ready(function() {
+    // Make cells editable on click
+    $('.editable-cell').on('click', function(e) {
+        e.stopPropagation(); // Prevent document click from firing
+        const cell = $(this);
+        if (cell.hasClass('editing')) return; // Already editing
 
-    data.attivo = !!document.getElementById('add_profilo_attivo').checked;
-    
-    $.ajax({
-        url: '{{ url_for("admin.add_profilo") }}',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function(response) {
-            if (response.success) {
-                showAlert('Profilo aggiunto con successo!', 'success');
-                $('#addProfiloModal').modal('hide');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert('Errore: ' + response.error, 'danger');
-            }
-        },
-        error: handleAjaxError
+        cell.addClass('editing');
+        cell.find('.cell-value').hide();
+        cell.find('.cell-input').show().focus();
+
+        // Show save button for this row
+        cell.closest('tr').find('.save-btn').show();
     });
+
+    // Handle Enter key to save
+    $('.cell-input').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            saveRow($(this).closest('tr').find('.save-btn'));
+        }
+    });
+
+    // Handle Escape key to cancel
+    $('.cell-input').on('keyup', function(e) {
+        if (e.which === 27) {
+            cancelEdit($(this).closest('tr'));
+        }
+    });
+
+    // Prevent input click from closing edit mode
+    $('.cell-input').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Click anywhere else to cancel edit
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.editable-cell').length &&
+            !$(e.target).closest('.save-btn').length) {
+            // Cancel all editing rows
+            $('tr').each(function() {
+                if ($(this).find('.editable-cell.editing').length > 0) {
+                    cancelEdit($(this));
+                }
+            });
+        }
+    });
+});
+
+function cancelEdit(row) {
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        cell.removeClass('editing');
+        cell.find('.cell-input').hide();
+        cell.find('.cell-value').show();
+        // Reset to original value
+        const original = cell.data('original');
+        cell.find('.cell-input').val(original);
+    });
+    row.find('.save-btn').hide();
 }
 
-function editProfilo(id, nome, categoria, descrizione, immagine, attivo) {
-    $('#edit_profilo_original_id').val(id);
-    $('#edit_profilo_id').val(id);
-    $('#edit_profilo_nome').val(nome);
-    $('#edit_profilo_categoria').val(categoria);
-    $('#edit_profilo_descrizione').val(descrizione);
-    $('#edit_profilo_immagine').val(immagine);
-    $('#edit_profilo_attivo').prop('checked', attivo);
-}
+function saveRow(button) {
+    const row = $(button).closest('tr');
+    const prezzoId = row.data('prezzo-id');
+    const profiloId = row.data('profilo-id');
 
-function updateProfilo(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-    const profiloId = data.profilo_id;
-    delete data.profilo_id;
+    const data = {
+        profilo_id: profiloId
+    };
 
-    data.attivo = !!document.getElementById('edit_profilo_attivo').checked;
-    
+    // Collect edited values
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        const field = cell.data('field');
+        const value = cell.find('.cell-input').val();
+
+        if (field === 'lunghezza_mm') {
+            data[field] = parseInt(value) || 0;
+        } else if (field === 'prezzo_euro') {
+            data[field] = parseFloat(value) || 0;
+        } else {
+            data[field] = value;
+        }
+    });
+
     $.ajax({
-        url: `{{ url_for("admin.update_profilo", profilo_id="") }}${profiloId}`,
+        url: `{{ url_for("admin.update_profilo_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
         success: function(response) {
             if (response.success) {
-                showAlert('Profilo aggiornato con successo!', 'success');
-                $('#editProfiloModal').modal('hide');
+                showAlert('Modifiche salvate con successo!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+                cancelEdit(row);
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+            cancelEdit(row);
+        }
+    });
+}
+
+// Add complete profilo with all fields
+function addProfiloComplete(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    $.ajax({
+        url: '{{ url_for("admin.add_profilo_complete") }}',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                showAlert('Variante profilo aggiunta con successo!', 'success');
+                $('#addProfiloCompleteModal').modal('hide');
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
@@ -312,17 +404,46 @@ function updateProfilo(event) {
     });
 }
 
-function deleteProfilo(id) {
-    if (!confirmDelete('Sei sicuro di voler eliminare questo profilo?\nQuesta azione eliminerà anche tutte le relazioni associate.')) {
+function updatePrezzo(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    const prezzoId = data.prezzo_id;
+    delete data.prezzo_id;
+
+    if (data.lunghezza_mm) data.lunghezza_mm = parseInt(data.lunghezza_mm);
+    if (data.prezzo_euro) data.prezzo_euro = parseFloat(data.prezzo_euro);
+
+    $.ajax({
+        url: `{{ url_for("admin.update_profilo_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Variante prezzo aggiornata con successo!', 'success');
+                $('#editPrezzoModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function deletePrezzo(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questa variante prezzo?\nQuesta azione non può essere annullata.')) {
         return;
     }
-    
+
     $.ajax({
-        url: `{{ url_for("admin.delete_profilo", profilo_id="") }}${id}`,
+        url: `{{ url_for("admin.delete_profilo_prezzo", prezzo_id=0) }}`.replace('0', id),
         method: 'DELETE',
         success: function(response) {
             if (response.success) {
-                showAlert('Profilo eliminato con successo!', 'success');
+                showAlert('Variante prezzo eliminata con successo!', 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
@@ -332,30 +453,30 @@ function deleteProfilo(id) {
     });
 }
 
-function bulkDelete(table) {
+function bulkDeletePrezzi() {
     const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
                             .map(cb => cb.value);
-    
+
     if (selectedIds.length === 0) {
         showAlert('Nessun elemento selezionato', 'warning');
         return;
     }
-    
-    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} profili selezionati?\nQuesta azione non può essere annullata.`)) {
+
+    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} varianti prezzo selezionate?\nQuesta azione non può essere annullata.`)) {
         return;
     }
-    
+
     $.ajax({
         url: '{{ url_for("admin.bulk_delete") }}',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
-            table: table,
+            table: 'profili_prezzi',
             ids: selectedIds
         }),
         success: function(response) {
             if (response.success) {
-                showAlert(`${response.deleted_count} profili eliminati con successo!`, 'success');
+                showAlert(`${response.deleted_count} varianti prezzo eliminate con successo!`, 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');

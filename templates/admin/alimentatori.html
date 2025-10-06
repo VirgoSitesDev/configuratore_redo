@@ -1,0 +1,572 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestione Alimentatori - Admin{% endblock %}
+{% block page_title %}Gestione Alimentatori{% endblock %}
+
+{% block extra_css %}
+<style>
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+    }
+    .editable-cell:hover:not(.editing) {
+        background-color: #f0f8ff;
+    }
+    .editable-cell.editing {
+        background-color: #fff3cd;
+    }
+    .cell-input {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAlimentatoreModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuovo Alimentatore
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-battery-charging me-2"></i>Elenco Alimentatori ({{ alimentatori|length }})
+        </h6>
+        <div class="bulk-actions" style="display: none;">
+            <button class="btn btn-danger btn-sm" onclick="bulkDelete('alimentatori')">
+                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if alimentatori %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" class="form-check-input" onchange="selectAllItems(this)">
+                        </th>
+                        <th>Nome</th>
+                        <th>Tensione</th>
+                        <th>IP</th>
+                        <th>Potenza</th>
+                        <th>Codice</th>
+                        <th>Prezzo (€)</th>
+                        <th width="120">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alimentatore in alimentatori %}
+                    <tr data-potenza-id="{{ alimentatore.potenza_id }}" data-alimentatore-id="{{ alimentatore.alimentatore_id }}">
+                        <td>
+                            <input type="checkbox" class="form-check-input item-checkbox"
+                                   value="{{ alimentatore.potenza_id }}" onchange="toggleBulkActions()">
+                        </td>
+                        <td><strong>{{ alimentatore.nome or 'N/A' }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ alimentatore.tensione or '-' }}</span></td>
+                        <td><span class="badge bg-info">{{ alimentatore.ip or '-' }}</span></td>
+                        <td class="editable-cell" data-field="potenza" data-original="{{ alimentatore.potenza or '' }}">
+                            <span class="cell-value"><strong>{{ alimentatore.potenza or '-' }}W</strong></span>
+                            <input type="number" class="cell-input form-control form-control-sm" value="{{ alimentatore.potenza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="codice" data-original="{{ alimentatore.codice or '' }}">
+                            <span class="cell-value"><code class="small">{{ alimentatore.codice or '-' }}</code></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ alimentatore.codice or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="prezzo" data-original="{{ alimentatore.prezzo or '' }}">
+                            <span class="cell-value"><strong>€{{ '%.2f'|format(alimentatore.prezzo|float) if alimentatore.prezzo else '-' }}</strong></span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ alimentatore.prezzo or '' }}" style="display: none;">
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'alimentatori_potenze')" style="display: none;">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger"
+                                        onclick="deleteAlimentatorePotenza({{ alimentatore.potenza_id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Nessun alimentatore trovato</h4>
+            <p class="text-muted">Inizia aggiungendo il tuo primo alimentatore.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAlimentatoreModal">
+                <i class="bi bi-plus-circle me-2"></i>Aggiungi Alimentatore
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal Aggiungi Alimentatore -->
+<div class="modal fade" id="addAlimentatoreModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Nuovo Alimentatore
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addAlimentatoreForm" onsubmit="addAlimentatore(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_id" class="form-label">ID Alimentatore *</label>
+                                <input type="text" class="form-control" id="add_id" name="id" required>
+                                <div class="form-text">Identificativo univoco (es: ALIM_24V_100W)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="add_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_tipo" class="form-label">Tipo</label>
+                                <select class="form-select" id="add_tipo" name="tipo">
+                                    <option value="">Seleziona...</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="slim">Slim</option>
+                                    <option value="waterproof">Waterproof</option>
+                                    <option value="dimmable">Dimmable</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_prezzo" class="form-label">Prezzo (€)</label>
+                                <input type="number" step="0.01" class="form-control" id="add_prezzo" name="prezzo"
+                                       placeholder="es: 29.99">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_tensioneInput" class="form-label">Tensione Input *</label>
+                                <select class="form-select" id="add_tensioneInput" name="tensioneInput" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="110V">110V</option>
+                                    <option value="220V">220V</option>
+                                    <option value="230V">230V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_tensioneOutput" class="form-label">Tensione Output *</label>
+                                <select class="form-select" id="add_tensioneOutput" name="tensioneOutput" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="12V">12V</option>
+                                    <option value="24V">24V</option>
+                                    <option value="48V">48V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_potenzaMassima" class="form-label">Potenza Massima (W) *</label>
+                                <input type="number" class="form-control" id="add_potenzaMassima" name="potenzaMassima" required
+                                       placeholder="es: 100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="add_descrizione" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Salva Alimentatore
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Alimentatore -->
+<div class="modal fade" id="editAlimentatoreModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Alimentatore
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editAlimentatoreForm" onsubmit="updateAlimentatore(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_original_id" name="original_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_id" class="form-label">ID Alimentatore *</label>
+                                <input type="text" class="form-control" id="edit_id" name="id" readonly>
+                                <div class="form-text">L'ID non può essere modificato</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="edit_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_tipo" class="form-label">Tipo</label>
+                                <select class="form-select" id="edit_tipo" name="tipo">
+                                    <option value="">Seleziona...</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="slim">Slim</option>
+                                    <option value="waterproof">Waterproof</option>
+                                    <option value="dimmable">Dimmable</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_prezzo" class="form-label">Prezzo (€)</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_prezzo" name="prezzo">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_tensioneInput" class="form-label">Tensione Input *</label>
+                                <select class="form-select" id="edit_tensioneInput" name="tensioneInput" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="110V">110V</option>
+                                    <option value="220V">220V</option>
+                                    <option value="230V">230V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_tensioneOutput" class="form-label">Tensione Output *</label>
+                                <select class="form-select" id="edit_tensioneOutput" name="tensioneOutput" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="12V">12V</option>
+                                    <option value="24V">24V</option>
+                                    <option value="48V">48V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_potenzaMassima" class="form-label">Potenza Massima (W) *</label>
+                                <input type="number" class="form-control" id="edit_potenzaMassima" name="potenzaMassima" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_descrizione" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="edit_descrizione" name="descrizione" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Aggiorna Alimentatore
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Inline editing functionality
+$(document).ready(function() {
+    // Make cells editable on click
+    $('.editable-cell').on('click', function(e) {
+        e.stopPropagation();
+        const cell = $(this);
+        if (cell.hasClass('editing')) return;
+
+        cell.addClass('editing');
+        cell.find('.cell-value').hide();
+        cell.find('.cell-input').show().focus();
+
+        cell.closest('tr').find('.save-btn').show();
+    });
+
+    // Handle Enter key to save
+    $('.cell-input').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            const table = 'alimentatori';
+            saveRow($(this).closest('tr').find('.save-btn'), table);
+        }
+    });
+
+    // Handle Escape key to cancel
+    $('.cell-input').on('keyup', function(e) {
+        if (e.which === 27) {
+            cancelEdit($(this).closest('tr'));
+        }
+    });
+
+    // Prevent input click from closing edit mode
+    $('.cell-input').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Click anywhere else to cancel edit
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.editable-cell').length &&
+            !$(e.target).closest('.save-btn').length) {
+            $('tr').each(function() {
+                if ($(this).find('.editable-cell.editing').length > 0) {
+                    cancelEdit($(this));
+                }
+            });
+        }
+    });
+});
+
+function cancelEdit(row) {
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        cell.removeClass('editing');
+        cell.find('.cell-input').hide();
+        cell.find('.cell-value').show();
+        const original = cell.data('original');
+        cell.find('.cell-input').val(original);
+    });
+    row.find('.save-btn').hide();
+}
+
+function saveRow(button, table) {
+    const row = $(button).closest('tr');
+    const potenzaId = row.data('potenza-id');
+    const alimentatoreId = row.data('alimentatore-id');
+    const data = {
+        alimentatore_id: alimentatoreId
+    };
+
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        const field = cell.data('field');
+        let value = cell.find('.cell-input').val();
+
+        if (field === 'potenza') {
+            data[field] = value ? parseInt(value) : null;
+        } else if (field === 'prezzo') {
+            data['price'] = value ? parseFloat(value) : null;
+        } else {
+            data[field] = value || null;
+        }
+    });
+
+    $.ajax({
+        url: `{{ url_for("admin.update_alimentatore_potenza", potenza_id=0) }}`.replace('0', potenzaId),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Modifiche salvate con successo!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+                cancelEdit(row);
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+            cancelEdit(row);
+        }
+    });
+}
+
+function deleteAlimentatorePotenza(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questa variante alimentatore?\nQuesta azione non può essere annullata.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `{{ url_for("admin.delete_alimentatore_potenza", potenza_id=0) }}`.replace('0', id),
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Variante alimentatore eliminata con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function addAlimentatore(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    if (data.potenzaMassima) {
+        data.potenzaMassima = parseInt(data.potenzaMassima);
+    }
+    if (data.prezzo) {
+        data.prezzo = parseFloat(data.prezzo);
+    } else {
+        delete data.prezzo;
+    }
+    if (!data.tipo) delete data.tipo;
+    if (!data.descrizione) delete data.descrizione;
+
+    $.ajax({
+        url: '{{ url_for("admin.add_alimentatore") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Alimentatore aggiunto con successo!', 'success');
+                $('#addAlimentatoreModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function editAlimentatore(alimentatore) {
+    $('#edit_original_id').val(alimentatore.id);
+    $('#edit_id').val(alimentatore.id);
+    $('#edit_nome').val(alimentatore.nome);
+    $('#edit_tipo').val(alimentatore.tipo || '');
+    $('#edit_tensioneInput').val(alimentatore.tensioneInput || '');
+    $('#edit_tensioneOutput').val(alimentatore.tensioneOutput || '');
+    $('#edit_potenzaMassima').val(alimentatore.potenzaMassima || '');
+    $('#edit_prezzo').val(alimentatore.prezzo || '');
+    $('#edit_descrizione').val(alimentatore.descrizione || '');
+}
+
+function updateAlimentatore(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    const alimentatoreId = data.original_id;
+    delete data.original_id;
+
+    if (data.potenzaMassima) {
+        data.potenzaMassima = parseInt(data.potenzaMassima);
+    }
+    if (data.prezzo) {
+        data.prezzo = parseFloat(data.prezzo);
+    } else {
+        delete data.prezzo;
+    }
+    if (!data.tipo) delete data.tipo;
+    if (!data.descrizione) delete data.descrizione;
+
+    $.ajax({
+        url: `{{ url_for("admin.update_alimentatore", alimentatore_id="") }}${alimentatoreId}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Alimentatore aggiornato con successo!', 'success');
+                $('#editAlimentatoreModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function deleteAlimentatore(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questo alimentatore?\nQuesta azione non può essere annullata.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `{{ url_for("admin.delete_alimentatore", alimentatore_id="") }}${id}`,
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Alimentatore eliminato con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function bulkDelete(table) {
+    const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+                            .map(cb => cb.value);
+
+    if (selectedIds.length === 0) {
+        showAlert('Nessun elemento selezionato', 'warning');
+        return;
+    }
+
+    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} alimentatori selezionati?\nQuesta azione non può essere annullata.`)) {
+        return;
+    }
+
+    $.ajax({
+        url: '{{ url_for("admin.bulk_delete") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: table,
+            ids: selectedIds
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`${response.deleted_count} alimentatori eliminati con successo!`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+</script>
+{% endblock %}

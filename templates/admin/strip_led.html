@@ -1,0 +1,673 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestione Strip LED - Admin{% endblock %}
+{% block page_title %}Gestione Strip LED{% endblock %}
+
+{% block extra_css %}
+<style>
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+    }
+    .editable-cell:hover:not(.editing) {
+        background-color: #f0f8ff;
+    }
+    .editable-cell.editing {
+        background-color: #fff3cd;
+    }
+    .cell-input {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStripModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuova Strip LED
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-lightning me-2"></i>Elenco Strip LED ({{ strips|length }})
+        </h6>
+        <div class="bulk-actions" style="display: none;">
+            <button class="btn btn-danger btn-sm" onclick="bulkDelete('strip_led')">
+                <i class="bi bi-trash me-1"></i>Elimina Selezionate
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if strips %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" class="form-check-input" onchange="selectAllItems(this)">
+                        </th>
+                        <th>Nome Commerciale</th>
+                        <th>Tipo</th>
+                        <th>Tensione</th>
+                        <th>IP</th>
+                        <th>Lunghezza</th>
+                        <th>Larghezza</th>
+                        <th>Giuntabile</th>
+                        <th>Taglio Minimo</th>
+                        <th>Temperatura</th>
+                        <th>Potenza</th>
+                        <th>Codice Completo</th>
+                        <th>Prezzo (€)</th>
+                        <th width="120">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for strip in strips %}
+                    <tr data-prezzo-id="{{ strip.prezzo_id }}" data-strip-id="{{ strip.strip_id }}">
+                        <td>
+                            <input type="checkbox" class="form-check-input item-checkbox"
+                                   value="{{ strip.prezzo_id }}" onchange="toggleBulkActions()">
+                        </td>
+                        <td><strong>{{ strip.nome_commerciale or '-' }}</strong></td>
+                        <td><span class="badge bg-info">{{ strip.tipo or 'N/A' }}</span></td>
+                        <td><span class="badge bg-secondary">{{ strip.tensione or '-' }}</span></td>
+                        <td><span class="badge bg-secondary">{{ strip.ip or '-' }}</span></td>
+                        <td>{{ strip.lunghezza or '-' }}</td>
+                        <td>{{ strip.larghezza or '-' }}</td>
+                        <td>
+                            {% if strip.giuntabile %}
+                                <span class="badge bg-success">Sì</span>
+                            {% else %}
+                                <span class="badge bg-danger">No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ strip.taglio_minimo or '-' }}</td>
+                        <td class="editable-cell" data-field="temperatura" data-original="{{ strip.temperatura or '' }}">
+                            <span class="cell-value">{{ strip.temperatura or '-' }}</span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ strip.temperatura or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="potenza" data-original="{{ strip.potenza or '' }}">
+                            <span class="cell-value">{{ strip.potenza or '-' }}</span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ strip.potenza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="codice_completo" data-original="{{ strip.codice_completo or '' }}">
+                            <span class="cell-value"><code class="small">{{ strip.codice_completo or '-' }}</code></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ strip.codice_completo or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="prezzo" data-original="{{ strip.prezzo or '' }}">
+                            <span class="cell-value"><strong>€{{ '%.2f'|format(strip.prezzo|float) if strip.prezzo else '-' }}</strong></span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ strip.prezzo or '' }}" style="display: none;">
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'strip_prezzi')" style="display: none;">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger"
+                                        onclick="deleteStripPrezzo({{ strip.prezzo_id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Nessuna strip LED trovata</h4>
+            <p class="text-muted">Inizia aggiungendo la tua prima strip LED.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStripModal">
+                <i class="bi bi-plus-circle me-2"></i>Aggiungi Strip LED
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal Aggiungi Strip LED -->
+<div class="modal fade" id="addStripModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Nuova Strip LED
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addStripForm" onsubmit="addStrip(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_id" class="form-label">ID Strip *</label>
+                                <input type="text" class="form-control" id="add_id" name="id" required>
+                                <div class="form-text">Identificativo univoco (es: COB_24V_IP20_3000K_10W)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="add_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_nomeCommerciale" class="form-label">Nome Commerciale</label>
+                                <input type="text" class="form-control" id="add_nomeCommerciale" name="nomeCommerciale">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_tipologia" class="form-label">Tipologia *</label>
+                                <select class="form-select" id="add_tipologia" name="tipologia" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="COB">COB</option>
+                                    <option value="SMD">SMD</option>
+                                    <option value="SPECIAL">SPECIAL</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_special" class="form-label">Special (se applicabile)</label>
+                                <select class="form-select" id="add_special" name="special">
+                                    <option value="">Nessuno</option>
+                                    <option value="XFLEX">XFLEX</option>
+                                    <option value="XSNAKE">XSNAKE</option>
+                                    <option value="XMAGIS">XMAGIS</option>
+                                    <option value="ZIG_ZAG">ZIG ZAG</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_tensione" class="form-label">Tensione *</label>
+                                <select class="form-select" id="add_tensione" name="tensione" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="24V">24V</option>
+                                    <option value="48V">48V</option>
+                                    <option value="220V">220V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_ip" class="form-label">Grado IP *</label>
+                                <select class="form-select" id="add_ip" name="ip" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="IP20">IP20</option>
+                                    <option value="IP65">IP65</option>
+                                    <option value="IP66">IP66</option>
+                                    <option value="IP67">IP67</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_temperatura" class="form-label">Temperatura *</label>
+                                <select class="form-select" id="add_temperatura" name="temperatura" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="2700K">2700K</option>
+                                    <option value="3000K">3000K</option>
+                                    <option value="4000K">4000K</option>
+                                    <option value="6000K">6000K</option>
+                                    <option value="6500K">6500K</option>
+                                    <option value="CCT">CCT</option>
+                                    <option value="RGB">RGB</option>
+                                    <option value="RGBW">RGBW</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="add_potenza" class="form-label">Potenza *</label>
+                                <input type="text" class="form-control" id="add_potenza" name="potenza" required
+                                       placeholder="es: 10W, 15W">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_lunghezzaMassima" class="form-label">Lunghezza Massima (mm)</label>
+                                <input type="number" class="form-control" id="add_lunghezzaMassima" name="lunghezzaMassima"
+                                       placeholder="es: 5000">
+                                <div class="form-text">Inserire solo se la strip ha una lunghezza massima</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_giuntabile" class="form-label">Giuntabile</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="add_giuntabile" name="giuntabile" checked>
+                                    <label class="form-check-label" for="add_giuntabile">Strip giuntabile</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Salva Strip LED
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Strip LED -->
+<div class="modal fade" id="editStripModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Strip LED
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editStripForm" onsubmit="updateStrip(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_original_id" name="original_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_id" class="form-label">ID Strip *</label>
+                                <input type="text" class="form-control" id="edit_id" name="id" readonly>
+                                <div class="form-text">L'ID non può essere modificato</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_nome" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="edit_nome" name="nome" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_nomeCommerciale" class="form-label">Nome Commerciale</label>
+                                <input type="text" class="form-control" id="edit_nomeCommerciale" name="nomeCommerciale">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_tipologia" class="form-label">Tipologia *</label>
+                                <select class="form-select" id="edit_tipologia" name="tipologia" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="COB">COB</option>
+                                    <option value="SMD">SMD</option>
+                                    <option value="SPECIAL">SPECIAL</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_special" class="form-label">Special (se applicabile)</label>
+                                <select class="form-select" id="edit_special" name="special">
+                                    <option value="">Nessuno</option>
+                                    <option value="XFLEX">XFLEX</option>
+                                    <option value="XSNAKE">XSNAKE</option>
+                                    <option value="XMAGIS">XMAGIS</option>
+                                    <option value="ZIG_ZAG">ZIG ZAG</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_tensione" class="form-label">Tensione *</label>
+                                <select class="form-select" id="edit_tensione" name="tensione" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="24V">24V</option>
+                                    <option value="48V">48V</option>
+                                    <option value="220V">220V</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_ip" class="form-label">Grado IP *</label>
+                                <select class="form-select" id="edit_ip" name="ip" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="IP20">IP20</option>
+                                    <option value="IP65">IP65</option>
+                                    <option value="IP66">IP66</option>
+                                    <option value="IP67">IP67</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_temperatura" class="form-label">Temperatura *</label>
+                                <select class="form-select" id="edit_temperatura" name="temperatura" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="2700K">2700K</option>
+                                    <option value="3000K">3000K</option>
+                                    <option value="4000K">4000K</option>
+                                    <option value="6000K">6000K</option>
+                                    <option value="6500K">6500K</option>
+                                    <option value="CCT">CCT</option>
+                                    <option value="RGB">RGB</option>
+                                    <option value="RGBW">RGBW</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="edit_potenza" class="form-label">Potenza *</label>
+                                <input type="text" class="form-control" id="edit_potenza" name="potenza" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_lunghezzaMassima" class="form-label">Lunghezza Massima (mm)</label>
+                                <input type="number" class="form-control" id="edit_lunghezzaMassima" name="lunghezzaMassima">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_giuntabile" class="form-label">Giuntabile</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="edit_giuntabile" name="giuntabile">
+                                    <label class="form-check-label" for="edit_giuntabile">Strip giuntabile</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Aggiorna Strip LED
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addStrip(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    data.giuntabile = !!document.getElementById('add_giuntabile').checked;
+    if (data.lunghezzaMassima) {
+        data.lunghezzaMassima = parseInt(data.lunghezzaMassima);
+    } else {
+        delete data.lunghezzaMassima;
+    }
+    if (!data.special) delete data.special;
+
+    $.ajax({
+        url: '{{ url_for("admin.add_strip_led") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Strip LED aggiunta con successo!', 'success');
+                $('#addStripModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function editStrip(strip) {
+    $('#edit_original_id').val(strip.id);
+    $('#edit_id').val(strip.id);
+    $('#edit_nome').val(strip.nome);
+    $('#edit_nomeCommerciale').val(strip.nomeCommerciale || '');
+    $('#edit_tipologia').val(strip.tipologia || '');
+    $('#edit_special').val(strip.special || '');
+    $('#edit_tensione').val(strip.tensione || '');
+    $('#edit_ip').val(strip.ip || '');
+    $('#edit_temperatura').val(strip.temperatura || '');
+    $('#edit_potenza').val(strip.potenza || '');
+    $('#edit_lunghezzaMassima').val(strip.lunghezzaMassima || '');
+    $('#edit_giuntabile').prop('checked', strip.giuntabile !== false);
+}
+
+function updateStrip(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    const stripId = data.original_id;
+    delete data.original_id;
+
+    data.giuntabile = !!document.getElementById('edit_giuntabile').checked;
+    if (data.lunghezzaMassima) {
+        data.lunghezzaMassima = parseInt(data.lunghezzaMassima);
+    } else {
+        delete data.lunghezzaMassima;
+    }
+    if (!data.special) delete data.special;
+
+    $.ajax({
+        url: `{{ url_for("admin.update_strip_led", strip_id="") }}${stripId}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Strip LED aggiornata con successo!', 'success');
+                $('#editStripModal').modal('hide');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function deleteStrip(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questa strip LED?\nQuesta azione non può essere annullata.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `{{ url_for("admin.delete_strip_led", strip_id="") }}${id}`,
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Strip LED eliminata con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+// Inline editing functionality
+$(document).ready(function() {
+    // Make cells editable on click
+    $('.editable-cell').on('click', function(e) {
+        e.stopPropagation();
+        const cell = $(this);
+        if (cell.hasClass('editing')) return;
+
+        cell.addClass('editing');
+        cell.find('.cell-value').hide();
+        cell.find('.cell-input').show().focus();
+
+        cell.closest('tr').find('.save-btn').show();
+    });
+
+    // Handle Enter key to save
+    $('.cell-input').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            const table = 'strip_led';
+            saveRow($(this).closest('tr').find('.save-btn'), table);
+        }
+    });
+
+    // Handle Escape key to cancel
+    $('.cell-input').on('keyup', function(e) {
+        if (e.which === 27) {
+            cancelEdit($(this).closest('tr'));
+        }
+    });
+
+    // Prevent input click from closing edit mode
+    $('.cell-input').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Click anywhere else to cancel edit
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.editable-cell').length &&
+            !$(e.target).closest('.save-btn').length) {
+            $('tr').each(function() {
+                if ($(this).find('.editable-cell.editing').length > 0) {
+                    cancelEdit($(this));
+                }
+            });
+        }
+    });
+});
+
+function cancelEdit(row) {
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        cell.removeClass('editing');
+        cell.find('.cell-input').hide();
+        cell.find('.cell-value').show();
+        const original = cell.data('original');
+        cell.find('.cell-input').val(original);
+    });
+    row.find('.save-btn').hide();
+}
+
+function saveRow(button, table) {
+    const row = $(button).closest('tr');
+    const prezzoId = row.data('prezzo-id');
+    const stripId = row.data('strip-id');
+    const data = {
+        strip_id: stripId
+    };
+
+    row.find('.editable-cell').each(function() {
+        const cell = $(this);
+        const field = cell.data('field');
+        let value = cell.find('.cell-input').val();
+
+        if (field === 'potenza') {
+            data[field] = value ? parseFloat(value) : null;
+        } else if (field === 'prezzo') {
+            data['prezzo_euro'] = value ? parseFloat(value) : null;
+        } else {
+            data[field] = value || null;
+        }
+    });
+
+    $.ajax({
+        url: `{{ url_for("admin.update_strip_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Modifiche salvate con successo!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+                cancelEdit(row);
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+            cancelEdit(row);
+        }
+    });
+}
+
+function deleteStripPrezzo(id) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questa variante prezzo strip LED?\nQuesta azione non può essere annullata.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `{{ url_for("admin.delete_strip_prezzo", prezzo_id=0) }}`.replace('0', id),
+        method: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showAlert('Variante prezzo eliminata con successo!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function bulkDelete(table) {
+    const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+                            .map(cb => cb.value);
+
+    if (selectedIds.length === 0) {
+        showAlert('Nessun elemento selezionato', 'warning');
+        return;
+    }
+
+    if (!confirmDelete(`Sei sicuro di voler eliminare ${selectedIds.length} strip LED selezionate?\nQuesta azione non può essere annullata.`)) {
+        return;
+    }
+
+    $.ajax({
+        url: '{{ url_for("admin.bulk_delete") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: table,
+            ids: selectedIds
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`${response.deleted_count} strip LED eliminate con successo!`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+</script>
+{% endblock %}
