@@ -223,6 +223,10 @@ export function caricaOpzioniParametri(profiloId, potenza = null) {
   if (configurazione.tipologiaStripSelezionata) {
     url += `/${configurazione.tipologiaStripSelezionata}`;
   }
+  // For INDOOR flow, add max side length to filter by giuntabile (not total length)
+  if (configurazione.lunghezzaMassimaLato && profiloId !== 'ESTERNI') {
+    url += `/${configurazione.lunghezzaMassimaLato}`;
+  }
 
   $.ajax({
     url: url,
@@ -283,15 +287,21 @@ export function caricaOpzioniParametri(profiloId, potenza = null) {
 }
 
 export function caricaOpzioniIP(profiloId, tensione) {
-  
+
   $('#ip-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento opzioni IP...</p>');
   $('#temperatura-iniziale-options').empty();
-  
+
   configurazione.ipSelezionato = null;
   configurazione.temperaturaSelezionata = null;
-  
+
+  let url = `/get_opzioni_ip/${profiloId}/${tensione}/${configurazione.tipologiaStripSelezionata}`;
+  // For INDOOR flow, add max side length to filter by giuntabile (not total length)
+  if (configurazione.lunghezzaMassimaLato && profiloId !== 'ESTERNI') {
+    url += `/${configurazione.lunghezzaMassimaLato}`;
+  }
+
   $.ajax({
-    url: `/get_opzioni_ip/${profiloId}/${tensione}/${configurazione.tipologiaStripSelezionata}`,
+    url: url,
     method: 'GET',
     success: function(data) {
       
@@ -348,12 +358,18 @@ export function caricaOpzioniIP(profiloId, tensione) {
 }
 
 export function caricaOpzioniTemperaturaIniziale(profiloId, tensione, ip) {
-  
+
   $('#temperatura-iniziale-options').empty().html('<div class="spinner-border" role="status"></div><p>Caricamento opzioni temperatura...</p>');
   configurazione.temperaturaSelezionata = null;
-  
+
+  let url = `/get_opzioni_temperatura_iniziale/${profiloId}/${tensione}/${ip}/${configurazione.tipologiaStripSelezionata}`;
+  // For INDOOR flow, add max side length to filter by giuntabile (not total length)
+  if (configurazione.lunghezzaMassimaLato && profiloId !== 'ESTERNI') {
+    url += `/${configurazione.lunghezzaMassimaLato}`;
+  }
+
   $.ajax({
-    url: `/get_opzioni_temperatura_iniziale/${profiloId}/${tensione}/${ip}/${configurazione.tipologiaStripSelezionata}`,
+    url: url,
     method: 'GET',
     success: function(data) {
       
@@ -513,7 +529,11 @@ export function caricaOpzioniPotenza(profiloId, temperatura) {
     });
   } else {
     let url = `/get_opzioni_potenza/${profiloId}/${configurazione.tensioneSelezionato}/${configurazione.ipSelezionato}/${temperatura}/${configurazione.tipologiaStripSelezionata}`;
-    
+    // For INDOOR flow, add max side length to filter by giuntabile (not total length)
+    if (configurazione.lunghezzaMassimaLato && profiloId !== 'ESTERNI') {
+      url += `/${configurazione.lunghezzaMassimaLato}`;
+    }
+
     $.ajax({
       url: url,
       method: 'GET',
@@ -659,7 +679,11 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
   if (profiloId === 'ESTERNI') {
     url = `/get_strip_led_filtrate/ESTERNI/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;
   } else {
-    url = `/get_strip_led_filtrate/${profiloId}/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;
+    // For indoor profiles, pass lunghezzaRichiesta to filter non-giuntabile strips
+    const lunghezzaParam = configurazione.lunghezzaRichiesta || '';
+    url = lunghezzaParam
+      ? `/get_strip_led_filtrate/${profiloId}/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}/${lunghezzaParam}`
+      : `/get_strip_led_filtrate/${profiloId}/${tensione}/${ip}/${temperatura}/${potenzaFinale}/${tipologia_strip}`;
   }
   
   $.ajax({
@@ -1127,6 +1151,7 @@ export function finalizzaConfigurazione() {
         configurazione.quantitaStripLed = data.quantitaStripLed || 1;
         configurazione.lunghezzaMassimaProfilo = data.lunghezzaMassimaProfilo || 3000;
         configurazione.lunghezzaMassimaStripLed = data.lunghezzaMassimaStripLed || 5000;
+        configurazione.stripGiuntabile = data.stripGiuntabile !== undefined ? data.stripGiuntabile : true;
         configurazione.lunghezzaTotale = data.lunghezzaTotale || 0;
 
         console.log('[DEBUG RIEPILOGO] Quantità strip ricevuta dal backend:', data.quantitaStripLed);

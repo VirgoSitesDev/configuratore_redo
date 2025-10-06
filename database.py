@@ -165,9 +165,10 @@ class DatabaseManager:
         self._set_cache(cache_key, profili)
         return profili
 
-    def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str, 
+    def get_strip_led_filtrate(self, profilo_id: str, tensione: str, ip: str,
                             temperatura: str, potenza: Optional[str] = None,
-                            tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
+                            tipologia: Optional[str] = None,
+                            lunghezza_richiesta: Optional[int] = None) -> List[Dict[str, Any]]:
         logging.info(f"get_strip_led_filtrate chiamata con: profilo_id={profilo_id}, tensione={tensione}, ip={ip}, temperatura={temperatura}, potenza={potenza}, tipologia={tipologia}")
 
         profilo_check = self.supabase.table('profili').select('id, nome').eq('id', profilo_id).execute()
@@ -239,16 +240,26 @@ class DatabaseManager:
             if potenza and potenza not in potenze_map.get(sid, []):
                 continue
 
+            # Filter out strips where giuntabile is false and requested length exceeds standard length
+            # Note: lunghezza in DB is in meters, lunghezza_richiesta is in millimeters
+            giuntabile = strip.get('giuntabile', True)
+            lunghezza_standard_metri = strip.get('lunghezza', 5)
+            lunghezza_standard_mm = lunghezza_standard_metri * 1000
+            if lunghezza_richiesta and not giuntabile and lunghezza_richiesta > lunghezza_standard_mm:
+                logging.info(f"Strip {sid} filtered out: giuntabile=False, lunghezza_richiesta={lunghezza_richiesta}mm > lunghezza_standard={lunghezza_standard_mm}mm")
+                continue
+
             strip['temperaturaColoreDisponibili'] = temp_list
             strip['temperatura'] = temperatura
             strip['potenzeDisponibili'] = potenze_map.get(sid, [])
             strip['codiciProdotto'] = codici_map.get(sid, [])
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
-            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)
-            
+            strip['lunghezzaMassima'] = lunghezza_standard_mm
+            strip['giuntabile'] = giuntabile
+
             result.append(strip)
-        
+
         return result
 
     def get_all_strip_led_filtrate(self, tensione: str, ip: str, 
@@ -317,7 +328,8 @@ class DatabaseManager:
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
             strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)
-            
+            strip['giuntabile'] = strip.get('giuntabile', True)
+
             result.append(strip)
         
         return result
@@ -709,31 +721,34 @@ class DatabaseManager:
 
         codice_base = profilo_id.replace('_', '/')
 
-        if lunghezza_mm and lunghezza_mm > 0:
+        # Check if it's an outdoor profile (ends with SK) - these should NOT have length suffix
+        is_outdoor_profile = profilo_id.endswith('SK')
+
+        if lunghezza_mm and lunghezza_mm > 0 and not is_outdoor_profile:
             lunghezza_standard_da_usare = lunghezza_mm
-            
+
             try:
                 lunghezze_data = self.supabase.table('profili_lunghezze')\
                     .select('lunghezza')\
                     .eq('profilo_id', profilo_id)\
                     .order('lunghezza')\
                     .execute().data
-                
+
                 if lunghezze_data:
                     lunghezze_disponibili = sorted([l['lunghezza'] for l in lunghezze_data])
                     lunghezza_per_eccesso = next((l for l in lunghezze_disponibili if l >= lunghezza_mm), None)
-                    
+
                     if lunghezza_per_eccesso:
                         lunghezza_standard_da_usare = lunghezza_per_eccesso
                     else:
                         lunghezza_standard_da_usare = max(lunghezze_disponibili)
-                    
+
                     logging.info(f"Profilo {profilo_id}: lunghezza richiesta {lunghezza_mm}mm -> lunghezza standard {lunghezza_standard_da_usare}mm")
-                    
+
             except Exception as e:
                 logging.warning(f"Errore nel recupero lunghezze per profilo {profilo_id}: {str(e)}")
                 pass
-            
+
             lunghezza_cm = round(lunghezza_standard_da_usare / 10)
             lunghezza_formattata = f"{lunghezza_cm:03d}"
 

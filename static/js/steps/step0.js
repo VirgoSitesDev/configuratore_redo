@@ -247,16 +247,8 @@ function initStep2bParametriListeners() {
 }
 
 function initStep2bPotenzaListeners() {
-  
-  caricaOpzioniPotenzaStep2b();
 
-  $('#step2b-lunghezza-strip').on('input', function() {
-    configurazione.lunghezzaRichiestaMetri = parseFloat($(this).val()) / 1000 || null;
-    if (configurazione.lunghezzaRichiestaMetri) {
-      configurazione.lunghezzaRichiesta = configurazione.lunghezzaRichiestaMetri * 1000;
-    }
-    checkStep2bPotenzaCompletion();
-  });
+  caricaOpzioniPotenzaStep2b();
 
   $(document).off('click', '.potenza-card').on('click', '.potenza-card', function() {
     $('.potenza-card').removeClass('selected');
@@ -270,16 +262,56 @@ function initStep2bPotenzaListeners() {
   $(document).off('click', '.step2b-strip-led-card').on('click', '.step2b-strip-led-card', function() {
     $('.step2b-strip-led-card').removeClass('selected');
     $(this).addClass('selected');
-    
+
     const stripId = $(this).data('strip-id');
     const nomeCommerciale = $(this).data('nome-commerciale') || '';
+    const lunghezzaMassima = $(this).data('lunghezza-massima') || 5000;
+    const giuntabile = $(this).data('giuntabile');
 
     configurazione.stripLedSceltaFinale = stripId;
     configurazione.nomeCommercialeStripLed = nomeCommerciale;
     configurazione.stripLedSelezionata = stripId;
+    configurazione.lunghezzaMassimaStripLed = lunghezzaMassima;
+    configurazione.stripGiuntabile = giuntabile !== undefined ? giuntabile : true;
+
+    // Show and setup length input after strip selection
+    $('#step2b-lunghezza-container').show();
+    setupLengthValidation();
 
     checkStep2bPotenzaCompletion();
   });
+
+  function setupLengthValidation() {
+    $('#step2b-lunghezza-strip').off('input').on('input', function() {
+      let lunghezza = parseFloat($(this).val()) || null;
+
+      if (lunghezza) {
+        // Validate against max length if strip is not giuntabile
+        if (configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed) {
+          if (lunghezza > configurazione.lunghezzaMassimaStripLed) {
+            alert(`ATTENZIONE: La lunghezza massima per questa strip LED è ${configurazione.lunghezzaMassimaStripLed}mm (${configurazione.lunghezzaMassimaStripLed/1000}m). La strip non è giuntabile.`);
+            $(this).val(configurazione.lunghezzaMassimaStripLed);
+            lunghezza = configurazione.lunghezzaMassimaStripLed;
+          }
+        }
+
+        configurazione.lunghezzaRichiestaMetri = lunghezza / 1000;
+        configurazione.lunghezzaRichiesta = lunghezza;
+      } else {
+        configurazione.lunghezzaRichiestaMetri = null;
+        configurazione.lunghezzaRichiesta = null;
+      }
+
+      checkStep2bPotenzaCompletion();
+    });
+
+    // Set max attribute if not giuntabile
+    if (configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed) {
+      $('#step2b-lunghezza-strip').attr('max', configurazione.lunghezzaMassimaStripLed);
+    } else {
+      $('#step2b-lunghezza-strip').removeAttr('max');
+    }
+  }
 
   $('#btn-torna-parametri-step2b').on('click', function(e) {
     e.preventDefault();
@@ -672,9 +704,11 @@ function caricaStripLedPerSoloStrip() {
           
           stripHtml += `
             <div class="col-md-4 mb-3">
-              <div class="card option-card step2b-strip-led-card" 
-                  data-strip-id="${strip.id}" 
-                  data-nome-commerciale="${strip.nomeCommerciale || ''}">
+              <div class="card option-card step2b-strip-led-card"
+                  data-strip-id="${strip.id}"
+                  data-nome-commerciale="${strip.nomeCommerciale || ''}"
+                  data-lunghezza-massima="${strip.lunghezzaMassima || 5000}"
+                  data-giuntabile="${strip.giuntabile !== undefined ? strip.giuntabile : true}">
                 <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}" 
                     style="height: 180px; object-fit: cover;" 
                     onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px';">
@@ -700,6 +734,8 @@ function caricaStripLedPerSoloStrip() {
             configurazione.stripLedSceltaFinale = stripSelezionata.id;
             configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
             configurazione.stripLedSelezionata = stripSelezionata.id;
+            configurazione.lunghezzaMassimaStripLed = stripSelezionata.lunghezzaMassima || 5000;
+            configurazione.stripGiuntabile = stripSelezionata.giuntabile !== undefined ? stripSelezionata.giuntabile : true;
 
             checkStep2bPotenzaCompletion();
           }, 100);

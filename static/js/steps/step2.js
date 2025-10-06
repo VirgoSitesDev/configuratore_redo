@@ -468,12 +468,38 @@ export function vaiAllaPersonalizzazione() {
 export function preparePersonalizzazioneListeners() {
   caricaFinitureDisponibili(configurazione.profiloSelezionato);
 
+  // For OUTDOOR flow: fetch strip data to get giuntabile and lunghezzaMassima
   if (configurazione.categoriaSelezionata === 'esterni' || configurazione.categoriaSelezionata === 'wall_washer_ext') {
+    $.ajax({
+      url: '/get_strip_led_filtrate_standalone',
+      method: 'POST',
+      contentType: 'application/json',
+      async: false,
+      data: JSON.stringify({
+        tipologia: configurazione.tipologiaStripSelezionata,
+        special: configurazione.specialStripSelezionata,
+        tensione: configurazione.tensioneSelezionato,
+        ip: configurazione.ipSelezionato,
+        temperatura: configurazione.temperaturaSelezionata,
+        potenza: configurazione.potenzaSelezionata
+      }),
+      success: function(data) {
+        if (data.success && data.strip_led && data.strip_led.length > 0) {
+          const strip = data.strip_led[0];
+          configurazione.stripLedSelezionata = strip.id;
+          configurazione.stripLedSceltaFinale = strip.id;
+          configurazione.nomeCommercialeStripLed = strip.nomeCommerciale || '';
+          configurazione.lunghezzaMassimaStripLed = strip.lunghezzaMassima || 5000;
+          configurazione.stripGiuntabile = strip.giuntabile !== undefined ? strip.giuntabile : true;
+        }
+      }
+    });
+
     $('.forma-taglio-card').parent().hide();
     $('.forma-taglio-card[data-forma="DRITTO_SEMPLICE"]').parent().show();
     $('.forma-taglio-card[data-forma="DRITTO_SEMPLICE"]').addClass('selected');
     configurazione.formaDiTaglioSelezionata = 'DRITTO_SEMPLICE';
-    
+
     updateIstruzioniMisurazione('DRITTO_SEMPLICE');
     
     $('.forma-taglio-card').off('click');
@@ -1280,22 +1306,46 @@ export function updateIstruzioniMisurazione(forma) {
     case 'DRITTO_SEMPLICE':
       istruzioniContainer.html(`
         <p>Inserisci la lunghezza desiderata in millimetri.</p>
-        <img src="/static/img/dritto_semplice.png" alt="Forma dritta" class="img-fluid mb-3" 
+        <img src="/static/img/dritto_semplice.png" alt="Forma dritta" class="img-fluid mb-3"
              style="width: 100%; max-width: 300px;">
       `);
-      
+
+      // Check if strip is giuntabile to set max length (only for outdoor and solo_strip flows)
+      const isOutdoorOrSoloStrip = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                    configurazione.categoriaSelezionata === 'esterni' ||
+                                    configurazione.categoriaSelezionata === 'wall_washer_ext';
+      const maxAttr = (isOutdoorOrSoloStrip && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed)
+        ? `max="${configurazione.lunghezzaMassimaStripLed}"`
+        : '';
+
       misurazioneContainer.html(`
         <div class="form-group mb-4 lunghezza-personalizzata-container">
           <label for="lunghezza-personalizzata">Lunghezza richiesta (mm):</label>
-          <input type="number" class="form-control" id="lunghezza-personalizzata" 
-                 placeholder="Inserisci la lunghezza in millimetri" min="100">
+          <input type="number" class="form-control" id="lunghezza-personalizzata"
+                 placeholder="Inserisci la lunghezza in millimetri" min="100" ${maxAttr}>
           <p class="assembly-warning mt-2">NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le stip 220v è 50mt</p>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
 
       $('#lunghezza-personalizzata').on('input', function() {
-        configurazione.lunghezzaRichiesta = parseInt($(this).val(), 10) || null;
+        let lunghezza = parseInt($(this).val(), 10) || null;
+
+        // For OUTDOOR/ONLY_LED: validate against strip max length if not giuntabile
+        const isOutdoorOrSoloStrip = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                      configurazione.categoriaSelezionata === 'esterni' ||
+                                      configurazione.categoriaSelezionata === 'wall_washer_ext';
+
+        if (isOutdoorOrSoloStrip && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed && lunghezza) {
+          if (lunghezza > configurazione.lunghezzaMassimaStripLed) {
+            alert(`ATTENZIONE: La lunghezza massima per questa strip LED è ${configurazione.lunghezzaMassimaStripLed}mm (${configurazione.lunghezzaMassimaStripLed/1000}m). La strip non è giuntabile.`);
+            $(this).val(configurazione.lunghezzaMassimaStripLed);
+            lunghezza = configurazione.lunghezzaMassimaStripLed;
+          }
+        }
+
+        configurazione.lunghezzaRichiesta = lunghezza;
+        configurazione.lunghezzaMassimaLato = lunghezza;  // For single length, max side = total length
         if (configurazione.diffusoreSelezionato) {
           calcolaQuantitaDiffusore();
         }
@@ -1307,20 +1357,27 @@ export function updateIstruzioniMisurazione(forma) {
     case 'FORMA_L_DX':
       istruzioniContainer.html(`
         <p>Inserisci le lunghezze per entrambi i lati del profilo a L.</p>
-        <img src="/static/img/forma_a_l_dx.png" alt="Forma a L destra" class="img-fluid mb-3" 
+        <img src="/static/img/forma_a_l_dx.png" alt="Forma a L destra" class="img-fluid mb-3"
              style="width: 100%; max-width: 300px;">
       `);
-      
+
+      const isOutdoorOrSoloStripLDx = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                       configurazione.categoriaSelezionata === 'esterni' ||
+                                       configurazione.categoriaSelezionata === 'wall_washer_ext';
+      const maxAttrLDx = (isOutdoorOrSoloStripLDx && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed)
+        ? `max="${configurazione.lunghezzaMassimaStripLed}"`
+        : '';
+
       misurazioneContainer.html(`
         <div class="form-group mb-3 lunghezza-personalizzata-container">
           <label for="lunghezza-lato1">Lunghezza lato orizzontale (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1" 
-                 data-lato="lato1" placeholder="Lato orizzontale" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1"
+                 data-lato="lato1" placeholder="Lato orizzontale" min="100" ${maxAttrLDx}>
         </div>
         <div class="form-group mb-4 lunghezza-personalizzata-container">
           <label for="lunghezza-lato2">Lunghezza lato verticale (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2" 
-                 data-lato="lato2" placeholder="Lato verticale" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
+                 data-lato="lato2" placeholder="Lato verticale" min="100" ${maxAttrLDx}>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
@@ -1330,20 +1387,27 @@ export function updateIstruzioniMisurazione(forma) {
     case 'FORMA_L_SX':
       istruzioniContainer.html(`
         <p>Inserisci le lunghezze per entrambi i lati del profilo a L.</p>
-        <img src="/static/img/forma_a_l_sx.png" alt="Forma a L sinistra" class="img-fluid mb-3" 
+        <img src="/static/img/forma_a_l_sx.png" alt="Forma a L sinistra" class="img-fluid mb-3"
              style="width: 100%; max-width: 300px;">
       `);
-      
+
+      const isOutdoorOrSoloStripLSx = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                       configurazione.categoriaSelezionata === 'esterni' ||
+                                       configurazione.categoriaSelezionata === 'wall_washer_ext';
+      const maxAttrLSx = (isOutdoorOrSoloStripLSx && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed)
+        ? `max="${configurazione.lunghezzaMassimaStripLed}"`
+        : '';
+
       misurazioneContainer.html(`
         <div class="form-group mb-3 lunghezza-personalizzata-container">
           <label for="lunghezza-lato1">Lunghezza lato orizzontale (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1" 
-                 data-lato="lato1" placeholder="Lato orizzontale" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1"
+                 data-lato="lato1" placeholder="Lato orizzontale" min="100" ${maxAttrLSx}>
         </div>
         <div class="form-group mb-4 lunghezza-personalizzata-container">
           <label for="lunghezza-lato2">Lunghezza lato verticale (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2" 
-                 data-lato="lato2" placeholder="Lato verticale" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
+                 data-lato="lato2" placeholder="Lato verticale" min="100" ${maxAttrLSx}>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
@@ -1353,25 +1417,32 @@ export function updateIstruzioniMisurazione(forma) {
     case 'FORMA_C':
       istruzioniContainer.html(`
         <p>Inserisci le lunghezze per tutti i lati del profilo a C.</p>
-        <img src="/static/img/forma_a_c.png" alt="Forma a C" class="img-fluid mb-3" 
+        <img src="/static/img/forma_a_c.png" alt="Forma a C" class="img-fluid mb-3"
              style="width: 100%; max-width: 300px;">
       `);
-      
+
+      const isOutdoorOrSoloStripC = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                     configurazione.categoriaSelezionata === 'esterni' ||
+                                     configurazione.categoriaSelezionata === 'wall_washer_ext';
+      const maxAttrC = (isOutdoorOrSoloStripC && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed)
+        ? `max="${configurazione.lunghezzaMassimaStripLed}"`
+        : '';
+
       misurazioneContainer.html(`
         <div class="form-group mb-3 lunghezza-personalizzata-container">
           <label for="lunghezza-lato1">Lunghezza lato orizzontale superiore (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1" 
-                 data-lato="lato1" placeholder="Lato orizzontale superiore" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1"
+                 data-lato="lato1" placeholder="Lato orizzontale superiore" min="100" ${maxAttrC}>
         </div>
         <div class="form-group mb-3 lunghezza-personalizzata-container">
           <label for="lunghezza-lato2">Lunghezza lato verticale (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2" 
-                 data-lato="lato2" placeholder="Lato verticale" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
+                 data-lato="lato2" placeholder="Lato verticale" min="100" ${maxAttrC}>
         </div>
         <div class="form-group mb-4 lunghezza-personalizzata-container">
           <label for="lunghezza-lato3">Lunghezza lato orizzontale inferiore (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato3" 
-                 data-lato="lato3" placeholder="Lato orizzontale inferiore" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato3"
+                 data-lato="lato3" placeholder="Lato orizzontale inferiore" min="100" ${maxAttrC}>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
@@ -1381,20 +1452,27 @@ export function updateIstruzioniMisurazione(forma) {
     case 'RETTANGOLO_QUADRATO':
       istruzioniContainer.html(`
         <p>Inserisci le lunghezze per i lati del rettangolo/quadrato.</p>
-        <img src="/static/img/forma_a_rettangolo.png" alt="Forma rettangolare" class="img-fluid mb-3" 
+        <img src="/static/img/forma_a_rettangolo.png" alt="Forma rettangolare" class="img-fluid mb-3"
              style="width: 100%; max-width: 300px;">
       `);
-      
+
+      const isOutdoorOrSoloStripRect = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                        configurazione.categoriaSelezionata === 'esterni' ||
+                                        configurazione.categoriaSelezionata === 'wall_washer_ext';
+      const maxAttrRect = (isOutdoorOrSoloStripRect && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed)
+        ? `max="${configurazione.lunghezzaMassimaStripLed}"`
+        : '';
+
       misurazioneContainer.html(`
         <div class="form-group mb-3 lunghezza-personalizzata-container">
           <label for="lunghezza-lato1">Lunghezza (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1" 
-                 data-lato="lato1" placeholder="Lunghezza" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato1"
+                 data-lato="lato1" placeholder="Lunghezza" min="100" ${maxAttrRect}>
         </div>
         <div class="form-group mb-4 lunghezza-personalizzata-container">
           <label for="lunghezza-lato2">Larghezza (mm):</label>
-          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2" 
-                 data-lato="lato2" placeholder="Larghezza" min="100">
+          <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
+                 data-lato="lato2" placeholder="Larghezza" min="100" ${maxAttrRect}>
           <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
@@ -1407,29 +1485,47 @@ export function updateIstruzioniMisurazione(forma) {
 
   $('.campo-lunghezza-multipla').on('input', function() {
     const lato = $(this).data('lato');
-    const valore = parseInt($(this).val(), 10) || null;
+    let valore = parseInt($(this).val(), 10) || null;
+
+    // For OUTDOOR/ONLY_LED: validate EACH INDIVIDUAL SIDE against strip max length if not giuntabile
+    // Each side must fit within the strip's standard length
+    const isOutdoorOrSoloStrip = configurazione.modalitaConfigurazione === 'solo_strip' ||
+                                  configurazione.categoriaSelezionata === 'esterni' ||
+                                  configurazione.categoriaSelezionata === 'wall_washer_ext';
+
+    if (isOutdoorOrSoloStrip && configurazione.stripGiuntabile === false && configurazione.lunghezzaMassimaStripLed && valore) {
+      if (valore > configurazione.lunghezzaMassimaStripLed) {
+        alert(`ATTENZIONE: Ogni singolo lato non può superare ${configurazione.lunghezzaMassimaStripLed}mm (${configurazione.lunghezzaMassimaStripLed/1000}m). La strip non è giuntabile.`);
+        $(this).val(configurazione.lunghezzaMassimaStripLed);
+        valore = configurazione.lunghezzaMassimaStripLed;
+      }
+    }
 
     if (!configurazione.lunghezzeMultiple) {
       configurazione.lunghezzeMultiple = {};
     }
-    
+
     configurazione.lunghezzeMultiple[lato] = valore;
 
     let sommaLunghezze = 0;
     let tuttiValoriPresenti = true;
-    
+    let lunghezzaMassima = 0;
+
     Object.values(configurazione.lunghezzeMultiple).forEach(val => {
       if (val && val > 0) {
         sommaLunghezze += val;
+        lunghezzaMassima = Math.max(lunghezzaMassima, val);
       } else {
         tuttiValoriPresenti = false;
       }
     });
-    
+
     if (tuttiValoriPresenti) {
       configurazione.lunghezzaRichiesta = sommaLunghezze;
+      configurazione.lunghezzaMassimaLato = lunghezzaMassima;  // Maximum individual side for giuntabile check
     } else {
       configurazione.lunghezzaRichiesta = null;
+      configurazione.lunghezzaMassimaLato = null;
     }
 
     if (configurazione.diffusoreSelezionato) {
@@ -1534,8 +1630,14 @@ export function caricaOpzioniParametriFiltrate() {
       }
     });
   } else {
+    let url = `/get_opzioni_tensione/${configurazione.profiloSelezionato}/${configurazione.tipologiaStripSelezionata}`;
+    // For INDOOR flow, add max side length to filter by giuntabile (not total length)
+    if (configurazione.lunghezzaMassimaLato) {
+      url += `/${configurazione.lunghezzaMassimaLato}`;
+    }
+
     $.ajax({
-      url: `/get_opzioni_tensione/${configurazione.profiloSelezionato}/${configurazione.tipologiaStripSelezionata}`,
+      url: url,
       method: 'GET',
       success: function(data) {
         if (data.success && data.voltaggi) {

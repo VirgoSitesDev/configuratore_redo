@@ -99,79 +99,97 @@ def get_opzioni_profilo(profilo_id):
 
 @app.route('/get_opzioni_tensione/<profilo_id>')
 @app.route('/get_opzioni_tensione/<profilo_id>/<tipologia_strip>')
-def get_opzioni_tensione(profilo_id, tipologia_strip=None):
+@app.route('/get_opzioni_tensione/<profilo_id>/<tipologia_strip>/<int:lunghezza>')
+def get_opzioni_tensione(profilo_id, tipologia_strip=None, lunghezza=None):
     try:
         if profilo_id == 'ESTERNI':
             voltaggi_disponibili = ['24V', '48V', '220V']
             if tipologia_strip == 'SPECIAL':
                 voltaggi_disponibili = ['24V']
             return jsonify({'success': True, 'voltaggi': voltaggi_disponibili})
-        
+
         strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
         strip_ids = [s['strip_id'] for s in strip_compatibili]
-        
+
         if not strip_ids:
             return jsonify({'success': True, 'voltaggi': []})
-        
-        query = db.supabase.table('strip_led').select('tensione')
-        
+
+        query = db.supabase.table('strip_led').select('tensione, giuntabile, lunghezza')
+
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
-        
+
         strips = query.in_('id', strip_ids).execute().data
-        
+
+        # Filter strips by giuntabile if length is provided (INDOOR flow)
+        # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
+        if lunghezza:
+            strips = [s for s in strips if not (lunghezza > (s.get('lunghezza', 5) * 1000) and not s.get('giuntabile', True))]
+
         voltaggi_disponibili = list(set([s['tensione'] for s in strips]))
-        
+
         return jsonify({'success': True, 'voltaggi': voltaggi_disponibili})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_opzioni_ip/<profilo_id>/<tensione>')
 @app.route('/get_opzioni_ip/<profilo_id>/<tensione>/<tipologia_strip>')
-def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None):
+@app.route('/get_opzioni_ip/<profilo_id>/<tensione>/<tipologia_strip>/<int:lunghezza>')
+def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None, lunghezza=None):
     try:
         strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
         strip_ids = [s['strip_id'] for s in strip_compatibili]
-        
+
         if not strip_ids:
             return jsonify({'success': True, 'ip': []})
-        
-        query = db.supabase.table('strip_led').select('ip').eq('tensione', tensione)
-        
+
+        query = db.supabase.table('strip_led').select('ip, giuntabile, lunghezza').eq('tensione', tensione)
+
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
-        
+
         strips = query.in_('id', strip_ids).execute().data
-        
+
+        # Filter strips by giuntabile if length is provided (INDOOR flow)
+        # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
+        if lunghezza:
+            strips = [s for s in strips if not (lunghezza > (s.get('lunghezza', 5) * 1000) and not s.get('giuntabile', True))]
+
         ip_disponibili = list(set([s['ip'] for s in strips]))
-        
+
         return jsonify({'success': True, 'ip': ip_disponibili})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_opzioni_temperatura_iniziale/<profilo_id>/<tensione>/<ip>')
 @app.route('/get_opzioni_temperatura_iniziale/<profilo_id>/<tensione>/<ip>/<tipologia_strip>')
-def get_opzioni_temperatura_iniziale(profilo_id, tensione, ip, tipologia_strip=None):
+@app.route('/get_opzioni_temperatura_iniziale/<profilo_id>/<tensione>/<ip>/<tipologia_strip>/<int:lunghezza>')
+def get_opzioni_temperatura_iniziale(profilo_id, tensione, ip, tipologia_strip=None, lunghezza=None):
     try:
         strip_compatibili = db.supabase.table('profili_strip_compatibili').select('strip_id').eq('profilo_id', profilo_id).execute().data
         strip_ids = [s['strip_id'] for s in strip_compatibili]
-        
+
         if not strip_ids:
             return jsonify({'success': True, 'temperature': []})
-        
-        query = db.supabase.table('strip_led').select('id').eq('tensione', tensione).eq('ip', ip)
-        
+
+        query = db.supabase.table('strip_led').select('id, giuntabile, lunghezza').eq('tensione', tensione).eq('ip', ip)
+
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
-        
+
         strips = query.in_('id', strip_ids).execute().data
-        
+
+        # Filter strips by giuntabile if length is provided (INDOOR flow)
+        # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
+        if lunghezza:
+            strips = [s for s in strips if not (lunghezza > (s.get('lunghezza', 5) * 1000) and not s.get('giuntabile', True))]
+
         temperature_disponibili = set()
         for strip in strips:
             temps = db.supabase.table('strip_temperature').select('temperatura').eq('strip_id', strip['id']).execute().data
             for t in temps:
                 temperature_disponibili.add(t['temperatura'])
-        
+
         return jsonify({'success': True, 'temperature': list(temperature_disponibili)})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -195,21 +213,22 @@ def get_temperature_colore(profilo_id, tipologia, tensione, ip):
 
 @app.route('/get_opzioni_potenza/<profilo_id>/<tensione>/<ip>/<temperatura>')
 @app.route('/get_opzioni_potenza/<profilo_id>/<tensione>/<ip>/<temperatura>/<tipologia_strip>')
-def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=None):
+@app.route('/get_opzioni_potenza/<profilo_id>/<tensione>/<ip>/<temperatura>/<tipologia_strip>/<int:lunghezza>')
+def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=None, lunghezza=None):
     try:
         if profilo_id == 'ESTERNI':
             strips = db.get_all_strip_led_filtrate(tensione, ip, temperatura, None, tipologia_strip)
         else:
-            strips = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, None, tipologia_strip)
-        
+            strips = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, None, tipologia_strip, lunghezza)
+
         tutte_potenze_disponibili = set()
         for strip in strips:
             potenze_strip = strip.get('potenzeDisponibili', [])
             tutte_potenze_disponibili.update(potenze_strip)
-        
+
         if not tutte_potenze_disponibili:
             return jsonify({'success': False, 'message': 'Nessuna potenza disponibile per i parametri selezionati'})
-        
+
         potenze_complete = []
         for potenza in tutte_potenze_disponibili:
             potenze_complete.append({
@@ -220,7 +239,7 @@ def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=N
             })
 
         return jsonify({'success': True, 'potenze': potenze_complete})
-        
+
     except Exception as e:
         logging.error(f"ERRORE GRAVE in get_opzioni_potenza: {str(e)}")
         import traceback
@@ -229,7 +248,8 @@ def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=N
 
 @app.route('/get_strip_led_filtrate/<profilo_id>/<tensione>/<ip>/<temperatura>/<potenza>')
 @app.route('/get_strip_led_filtrate/<profilo_id>/<tensione>/<ip>/<temperatura>/<potenza>/<tipologia>')
-def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia=None):
+@app.route('/get_strip_led_filtrate/<profilo_id>/<tensione>/<ip>/<temperatura>/<potenza>/<tipologia>/<int:lunghezza>')
+def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia=None, lunghezza=None):
     try:
         if potenza:
             potenza = potenza.replace('-', ' ').replace('_', '/')
@@ -237,8 +257,8 @@ def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipol
         if profilo_id == 'ESTERNI':
             strips = db.get_all_strip_led_filtrate(tensione, ip, temperatura, potenza, tipologia)
         else:
-            strips = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia)
-        
+            strips = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia, lunghezza)
+
         return jsonify({'success': True, 'strip_led': strips})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -464,6 +484,8 @@ def calcola_lunghezze():
     potenza_selezionata = data.get('potenzaSelezionata')
     lunghezze_multiple = data.get('lunghezzeMultiple', {})
     forma_taglio = data.get('formaDiTaglioSelezionata', 'DRITTO_SEMPLICE')
+    modalita = data.get('modalitaConfigurazione', '')
+    categoria = data.get('categoriaSelezionata', '')
     
     taglio_minimo = 1
     spazio_produzione = 5
@@ -618,7 +640,12 @@ def calcola_lunghezze():
             })
 
         combinazioni.sort(key=lambda x: (x['ha_spazio_buio'], x['spazio_buio_totale'], x['lunghezza_totale']))
-        
+
+        # Filter out combinations with spazio_buio for solo_strip or outdoor flows
+        is_outdoor = categoria in ['esterni', 'wall_washer_ext']
+        if modalita == 'solo_strip' or is_outdoor:
+            combinazioni = [c for c in combinazioni if not c['ha_spazio_buio']]
+
         return jsonify({
             'success': True,
             'tipo': 'combinazioni',
@@ -806,17 +833,20 @@ def finalizza_configurazione():
                 quantita_profilo = math.ceil(lunghezza_totale / lunghezza_massima_profilo)
             combinazione_ottimale = [{'lunghezza': lunghezza_massima_profilo, 'quantita': quantita_profilo}]
 
+    strip_giuntabile = True
     if 'stripLedSelezionata' in configurazione and configurazione['stripLedSelezionata'] and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
         try:
             strip_data = db.supabase.table('strip_led')\
-                .select('lunghezza')\
+                .select('lunghezza, giuntabile')\
                 .eq('id', configurazione['stripLedSelezionata'])\
                 .single()\
                 .execute()
 
             if strip_data.data and strip_data.data.get('lunghezza'):
                 lunghezza_massima_strip = strip_data.data['lunghezza']
+                strip_giuntabile = strip_data.data.get('giuntabile', True)
                 print(f"[DEBUG] Lunghezza massima strip: {lunghezza_massima_strip}mm")
+                print(f"[DEBUG] Strip giuntabile: {strip_giuntabile}")
 
                 if lunghezza_totale_strip > 0:
                     quantita_strip_led = math.ceil(lunghezza_totale_strip / (lunghezza_massima_strip * 1000))
@@ -868,6 +898,7 @@ def finalizza_configurazione():
         'quantitaStripLed': quantita_strip_led,
         'lunghezzaMassimaProfilo': lunghezza_massima_profilo,
         'lunghezzaMassimaStripLed': lunghezza_massima_strip,
+        'stripGiuntabile': strip_giuntabile,
         'lunghezzaTotale': lunghezza_totale,
         'combinazioneProfiloOttimale': combinazione_ottimale,
         'prezzi': prezzi
@@ -1440,6 +1471,9 @@ def get_strip_led_filtrate_standalone():
             strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
             strip['taglioMinimo'] = strip.get('taglio_minimo', {})
             strip['temperatura'] = temperatura
+            # Add length and giuntabile info for validation
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5) * 1000  # Convert meters to mm
+            strip['giuntabile'] = strip.get('giuntabile', True)
 
             result.append(strip)
 
@@ -1535,7 +1569,7 @@ def richiedi_preventivo():
             }), 400
 
         email_html = genera_email_preventivo(
-            nome_agente, email_agente, ragione_sociale, 
+            nome_agente, email_agente, ragione_sociale,
             riferimento, note, configurazione, codice_prodotto
         )
 
@@ -2055,7 +2089,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         totale_con_staffe = prezzi['totale'] + prezzo_totale_staffe
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
-                    <th scope="row"><strong>Totale configurazione (prezzi di listino)</strong></th>
+                    <th scope="row"><strong style="color: #e83f34;">Totale configurazione (prezzi di listino)</strong></th>
                     <td><strong>€{totale_con_staffe:.2f}</strong></td>
                 </tr>
         """
@@ -2137,7 +2171,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 <td>€{costo_gestione:.2f}</td>
             </tr>
             <tr class="totale-row" style="border-top: 2px solid #e83f34;">
-                <th><strong>Totale costi di lavorazione (netti)</strong></th>
+                <th><strong style="color: #e83f34;">Totale costi di lavorazione (netti)</strong></th>
                 <td><strong>€{totale_lavorazioni:.2f}</strong></td>
             </tr>
         </table>

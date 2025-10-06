@@ -243,19 +243,26 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
     spaziBuioTotale: 0
   });
 
+  // For outdoor flow, don't show proposals with spazio buio
+  const isOutdoorFlow = configurazione.categoriaSelezionata === 'esterni' ||
+                        configurazione.categoriaSelezionata === 'wall_washer_ext';
+
   if (!coincideConProposte && spazioBuio > 0) {
-    proposte.push({
-      id: 'originale',
-      titolo: 'Combinazione 3',
-      valore: lunghezzaOriginale,
-      badge: { classe: 'bg-warning text-white', testo: `${spazioBuio}mm spazio buio` },
-      hasSpaziBuio: true,
-      spaziBuioTotale: spazioBuio
-    });
+    // Only add this proposal if it's NOT an outdoor flow
+    if (!isOutdoorFlow) {
+      proposte.push({
+        id: 'originale',
+        titolo: 'Combinazione 3',
+        valore: lunghezzaOriginale,
+        badge: { classe: 'bg-warning text-white', testo: `${spazioBuio}mm spazio buio` },
+        hasSpaziBuio: true,
+        spaziBuioTotale: spazioBuio
+      });
+    }
   } else if (!coincideConProposte) {
     proposte.push({
       id: 'originale',
-      titolo: 'Combinazione 3', 
+      titolo: 'Combinazione 3',
       valore: lunghezzaOriginale,
       badge: { classe: 'bg-success', testo: 'Ottimale' },
       hasSpaziBuio: false,
@@ -335,11 +342,20 @@ function renderProposteCombinazioni(data) {
     }
   });
 
+  // For outdoor flow, filter out combinations with spazio buio
+  const isOutdoorFlow = configurazione.categoriaSelezionata === 'esterni' ||
+                        configurazione.categoriaSelezionata === 'wall_washer_ext';
+
+  let combinazioniFiltrate = data.combinazioni;
+  if (isOutdoorFlow) {
+    combinazioniFiltrate = data.combinazioni.filter(c => !c.ha_spazio_buio);
+  }
+
   const lunghezzeMultipleArrotondate = {};
   Object.keys(configurazione.lunghezzeMultiple).forEach(lato => {
     lunghezzeMultipleArrotondate[lato] = Math.floor(configurazione.lunghezzeMultiple[lato]);
   });
-  
+
   const etichetteLati = {
     'FORMA_L_DX': {
       'lato1': 'Lato orizzontale',
@@ -361,7 +377,7 @@ function renderProposteCombinazioni(data) {
   };
 
   const etichette = etichetteLati[configurazione.formaDiTaglioSelezionata] || {};
-  
+
   let proposteHTML = `
     <h5>Proposte di combinazioni per forma complessa</h5>
     <p>Il sistema ha calcolato diverse combinazioni ottimali per i tuoi lati. Seleziona la combinazione che preferisci:</p>
@@ -372,21 +388,21 @@ function renderProposteCombinazioni(data) {
       <h6>Misure originali inserite:</h6>
       <ul class="mb-3">
   `;
-  
+
   Object.entries(configurazione.lunghezzeMultiple).forEach(([lato, valore]) => {
     if (valore) {
       const etichetta = etichette[lato] || `Lato ${lato.replace('lato', '')}`;
       proposteHTML += `<li>${etichetta}: ${valore}mm</li>`;
     }
   });
-  
+
   proposteHTML += `
       </ul>
     </div>
     <div class="row mt-3">
   `;
 
-  data.combinazioni.forEach((combinazione, index) => {
+  combinazioniFiltrate.forEach((combinazione, index) => {
     let cardClass = 'btn-outline-primary';
     let badgeClass = 'bg-success';
     let badgeText = 'Ottimale';

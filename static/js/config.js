@@ -43,6 +43,7 @@ const configurazione = {
 	propostePerLato: null,
 	combinazioni: null,
 	lunghezzaMassimaStripLed: null,
+	stripGiuntabile: true,
 	quantitaProfilo: 1,
 	quantitaStripLed: 1,
 	lunghezzaTotale: 0,
@@ -52,7 +53,8 @@ const configurazione = {
     lunghezzaOriginalePreTappi: undefined,
 	tipoTappiSelezionato: null,
 	doppiaStripSelezionata: false,
-	moltiplicatoreStrip: 1
+	moltiplicatoreStrip: 1,
+	lunghezzaMassimaLato: null
 };
 
   const mappaCategorieVisualizzazione = {
