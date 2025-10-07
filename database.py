@@ -185,25 +185,34 @@ class DatabaseManager:
             if profilo_test_data:
                 profilo_larghezza = profilo_test_data[0].get('larghezza', 0)
 
-        # Get all strips
-        query = self.supabase.table('strip_led').select('id, tipo, nome_commerciale, larghezza')
+        # Get all unique strips from strip_test
+        query = self.supabase.table('strip_test').select('strip_id, tipo, nome_commerciale, larghezza')
 
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
 
-        all_strips = query.execute().data
+        strips_data = query.execute().data
 
-        if not all_strips:
+        if not strips_data:
             return []
+
+        # Get unique strips by strip_id
+        strips_by_id = {}
+        for s in strips_data:
+            sid = s['strip_id']
+            if sid not in strips_by_id:
+                strips_by_id[sid] = s
+
+        all_strips = list(strips_by_id.values())
 
         # Apply compatibility filters
         compatible_strip_ids = []
 
         for strip in all_strips:
-            strip_id = strip['id']
+            strip_id = strip['strip_id']
             strip_tipo = strip.get('tipo', '')
             strip_nome_commerciale = strip.get('nome_commerciale', '')
-            strip_larghezza = strip.get('larghezza', 0)
+            strip_larghezza = strip.get('larghezza') or 0
 
             is_compatible = False
 
@@ -236,7 +245,7 @@ class DatabaseManager:
                 # SPECIAL strips are NOT compatible unless they have ZIGZAG or exactly 12X4
                 tipo_compatible = (not is_special) or (is_special and (has_zigzag or has_12x4))
 
-                # Check width compatibility
+                # Check width compatibility (handle None larghezza)
                 width_compatible = (strip_larghezza <= profilo_larghezza) if profilo_larghezza > 0 else True
 
                 is_compatible = tipo_compatible and width_compatible
@@ -268,23 +277,59 @@ class DatabaseManager:
                 profilo_larghezza = profilo_test_data[0].get('larghezza', 0)
                 logging.info(f"Profilo indoor {profilo_id} larghezza: {profilo_larghezza}mm")
 
-        # Get all strips matching basic filters
-        query = self.supabase.table('strip_led').select('*')
-        query = query.eq('tensione', tensione).eq('ip', ip)
+        # Get all strips matching basic filters from strip_test
+        query = self.supabase.table('strip_test').select('*')
+        query = query.eq('tensione', tensione).eq('ip', ip).eq('temperatura', temperatura)
 
         if tipologia:
             query = query.eq('tipo', tipologia)
+
+        if potenza:
+            query = query.eq('potenza', potenza)
 
         all_strips = query.execute().data
 
         if not all_strips:
             return []
 
+        # Group by strip_id to get unique strips with their variants
+        strips_by_id = {}
+        for strip in all_strips:
+            strip_id = strip['strip_id']
+            if strip_id not in strips_by_id:
+                strips_by_id[strip_id] = {
+                    'id': strip_id,
+                    'nome': strip['nome'],
+                    'nome_commerciale': strip['nome_commerciale'],
+                    'tipo': strip['tipo'],
+                    'tensione': strip['tensione'],
+                    'ip': strip['ip'],
+                    'lunghezza': strip['lunghezza'],
+                    'larghezza': strip['larghezza'],
+                    'giuntabile': strip['giuntabile'],
+                    'temperaturaColoreDisponibili': set(),
+                    'potenzeDisponibili': [],
+                    'codiciProdotto': [],
+                    'taglioMinimo': {},
+                    'variants': []
+                }
+
+            # Add this variant
+            strips_by_id[strip_id]['variants'].append(strip)
+            strips_by_id[strip_id]['temperaturaColoreDisponibili'].add(strip['temperatura'])
+
+            # Add potenza and codice if not already present
+            if strip['potenza'] not in strips_by_id[strip_id]['potenzeDisponibili']:
+                strips_by_id[strip_id]['potenzeDisponibili'].append(strip['potenza'])
+                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_prodotto'])
+                # Store taglio_minimo per potenza
+                if strip['taglio_minimo']:
+                    strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
+
         # Apply compatibility filters
         compatible_strips = []
 
-        for strip in all_strips:
-            strip_id = strip['id']
+        for strip_id, strip in strips_by_id.items():
             strip_tipo = strip.get('tipo', '')
             strip_nome_commerciale = strip.get('nome_commerciale', '')
             strip_larghezza = strip.get('larghezza', 0)
@@ -293,7 +338,6 @@ class DatabaseManager:
 
             if is_outdoor:
                 # OUTDOOR COMPATIBILITY LOGIC
-                # Extract numbers with 'X' from profile codice_listino (e.g., "13X12" from "MG13X12PF")
                 import re
                 profile_pattern = re.search(r'(\d+X\d+)', profilo_id)
                 profile_dimensions = profile_pattern.group(1) if profile_pattern else None
@@ -314,14 +358,8 @@ class DatabaseManager:
 
             else:
                 # INDOOR COMPATIBILITY LOGIC
-                # Strips are compatible if:
-                # 1. tipo is NOT "SPECIAL"
-                # 2. OR tipo is "SPECIAL" but nome_commerciale contains "ZIGZAG" or exactly "12X4"
-                # 3. AND strip larghezza <= profile larghezza
-
                 is_special = (strip_tipo.upper() == 'SPECIAL')
                 has_zigzag = 'ZIGZAG' in strip_nome_commerciale.upper()
-                # Must be exactly "12X4", not "12X17" or other variations
                 has_12x4 = ' 12X4' in (' ' + strip_nome_commerciale.upper()) or strip_nome_commerciale.upper().endswith('12X4')
 
                 # Check tipo compatibility
@@ -335,76 +373,29 @@ class DatabaseManager:
                 logging.info(f"Strip {strip_id} indoor compatibility: tipo={strip_tipo}, special={is_special}, zigzag={has_zigzag}, 12x4={has_12x4}, strip_width={strip_larghezza}, profile_width={profilo_larghezza}, compatible={is_compatible}")
 
             if is_compatible:
+                # Filter out strips where giuntabile is false and requested length exceeds standard length
+                giuntabile = strip.get('giuntabile', True)
+                lunghezza_standard_metri = strip.get('lunghezza', 5)
+                lunghezza_standard_mm = lunghezza_standard_metri * 1000
+
+                if lunghezza_richiesta and not giuntabile and lunghezza_richiesta > lunghezza_standard_mm:
+                    logging.info(f"Strip {strip_id} filtered out: giuntabile=False, lunghezza_richiesta={lunghezza_richiesta}mm > lunghezza_standard={lunghezza_standard_mm}mm")
+                    continue
+
+                strip['temperaturaColoreDisponibili'] = list(strip['temperaturaColoreDisponibili'])
+                strip['temperatura'] = temperatura
+                strip['nomeCommerciale'] = strip['nome_commerciale']
+                strip['lunghezzaMassima'] = lunghezza_standard_mm
+
                 compatible_strips.append(strip)
 
         if not compatible_strips:
             logging.warning(f"No compatible strips found for profile {profilo_id}")
-            return []
 
-        # Get additional data for compatible strips
-        strip_ids = [s['id'] for s in compatible_strips]
+        logging.info(f"Found {len(compatible_strips)} compatible strips for profile {profilo_id}")
+        return compatible_strips
 
-        temperature_data = self.supabase.table('strip_temperature')\
-            .select('strip_id, temperatura')\
-            .in_('strip_id', strip_ids)\
-            .execute().data
-
-        potenze_data = self.supabase.table('strip_potenze')\
-            .select('strip_id, potenza, codice_prodotto, indice')\
-            .in_('strip_id', strip_ids)\
-            .order('indice')\
-            .execute().data
-
-        temperature_map = {}
-        for t in temperature_data:
-            sid = t['strip_id']
-            if sid not in temperature_map:
-                temperature_map[sid] = []
-            temperature_map[sid].append(t['temperatura'])
-
-        potenze_map = {}
-        codici_map = {}
-        for p in potenze_data:
-            sid = p['strip_id']
-            if sid not in potenze_map:
-                potenze_map[sid] = []
-                codici_map[sid] = []
-            potenze_map[sid].append(p['potenza'])
-            codici_map[sid].append(p['codice_prodotto'])
-
-        # Build final result with filtering
-        result = []
-        for strip in compatible_strips:
-            sid = strip['id']
-            temp_list = temperature_map.get(sid, [])
-            if temperatura not in temp_list:
-                continue
-            if potenza and potenza not in potenze_map.get(sid, []):
-                continue
-
-            # Filter out strips where giuntabile is false and requested length exceeds standard length
-            giuntabile = strip.get('giuntabile', True)
-            lunghezza_standard_metri = strip.get('lunghezza', 5)
-            lunghezza_standard_mm = lunghezza_standard_metri * 1000
-            if lunghezza_richiesta and not giuntabile and lunghezza_richiesta > lunghezza_standard_mm:
-                logging.info(f"Strip {sid} filtered out: giuntabile=False, lunghezza_richiesta={lunghezza_richiesta}mm > lunghezza_standard={lunghezza_standard_mm}mm")
-                continue
-
-            strip['temperaturaColoreDisponibili'] = temp_list
-            strip['temperatura'] = temperatura
-            strip['potenzeDisponibili'] = potenze_map.get(sid, [])
-            strip['codiciProdotto'] = codici_map.get(sid, [])
-            strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
-            strip['taglioMinimo'] = strip.get('taglio_minimo', {})
-            strip['lunghezzaMassima'] = lunghezza_standard_mm
-            strip['giuntabile'] = giuntabile
-
-            result.append(strip)
-
-        logging.info(f"Found {len(result)} compatible strips for profile {profilo_id}")
-        return result
-
-    def get_all_strip_led_filtrate(self, tensione: str, ip: str, 
+    def get_all_strip_led_filtrate(self, tensione: str, ip: str,
                                 temperatura: str, potenza: Optional[str] = None,
                                 tipologia: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -413,67 +404,62 @@ class DatabaseManager:
         Usato per il flusso esterni.
         """
 
-        query = self.supabase.table('strip_led').select('*, lunghezza')
-        query = query.eq('tensione', tensione).eq('ip', ip)
-        
+        query = self.supabase.table('strip_test').select('*')
+        query = query.eq('tensione', tensione).eq('ip', ip).eq('temperatura', temperatura)
+
         if tipologia:
             query = query.eq('tipo', tipologia)
-        
-        strips = query.execute().data
-        
-        if not strips:
+
+        if potenza:
+            query = query.eq('potenza', potenza)
+
+        all_strips = query.execute().data
+
+        if not all_strips:
             return []
 
-        found_strip_ids = [s['id'] for s in strips]
+        # Group by strip_id to get unique strips with their variants
+        strips_by_id = {}
+        for strip in all_strips:
+            strip_id = strip['strip_id']
+            if strip_id not in strips_by_id:
+                strips_by_id[strip_id] = {
+                    'id': strip_id,
+                    'nome': strip['nome'],
+                    'nome_commerciale': strip['nome_commerciale'],
+                    'tipo': strip['tipo'],
+                    'tensione': strip['tensione'],
+                    'ip': strip['ip'],
+                    'lunghezza': strip['lunghezza'],
+                    'larghezza': strip['larghezza'],
+                    'giuntabile': strip['giuntabile'],
+                    'temperaturaColoreDisponibili': set(),
+                    'potenzeDisponibili': [],
+                    'codiciProdotto': [],
+                    'taglioMinimo': {},
+                    'variants': []
+                }
 
-        temperature_data = self.supabase.table('strip_temperature')\
-            .select('strip_id, temperatura')\
-            .in_('strip_id', found_strip_ids)\
-            .execute().data
+            # Add this variant
+            strips_by_id[strip_id]['variants'].append(strip)
+            strips_by_id[strip_id]['temperaturaColoreDisponibili'].add(strip['temperatura'])
 
-        potenze_data = self.supabase.table('strip_potenze')\
-            .select('strip_id, potenza, codice_prodotto, indice')\
-            .in_('strip_id', found_strip_ids)\
-            .order('indice')\
-            .execute().data
-
-        temperature_map = {}
-        for t in temperature_data:
-            sid = t['strip_id']
-            if sid not in temperature_map:
-                temperature_map[sid] = []
-            temperature_map[sid].append(t['temperatura'])
-        
-        potenze_map = {}
-        codici_map = {}
-        for p in potenze_data:
-            sid = p['strip_id']
-            if sid not in potenze_map:
-                potenze_map[sid] = []
-                codici_map[sid] = []
-            potenze_map[sid].append(p['potenza'])
-            codici_map[sid].append(p['codice_prodotto'])
+            # Add potenza and codice if not already present
+            if strip['potenza'] not in strips_by_id[strip_id]['potenzeDisponibili']:
+                strips_by_id[strip_id]['potenzeDisponibili'].append(strip['potenza'])
+                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_prodotto'])
+                # Store taglio_minimo per potenza
+                if strip['taglio_minimo']:
+                    strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
 
         result = []
-        for strip in strips:
-            sid = strip['id']
-            temp_list = temperature_map.get(sid, [])
-            if temperatura not in temp_list:
-                continue
-            if potenza and potenza not in potenze_map.get(sid, []):
-                continue
-
-            strip['temperaturaColoreDisponibili'] = temp_list
+        for strip_id, strip in strips_by_id.items():
+            strip['temperaturaColoreDisponibili'] = list(strip['temperaturaColoreDisponibili'])
             strip['temperatura'] = temperatura
-            strip['potenzeDisponibili'] = potenze_map.get(sid, [])
-            strip['codiciProdotto'] = codici_map.get(sid, [])
-            strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
-            strip['taglioMinimo'] = strip.get('taglio_minimo', {})
-            strip['lunghezzaMassima'] = strip.get('lunghezza', 5000)
-            strip['giuntabile'] = strip.get('giuntabile', True)
-
+            strip['nomeCommerciale'] = strip['nome_commerciale']
+            strip['lunghezzaMassima'] = strip.get('lunghezza', 5) * 1000
             result.append(strip)
-        
+
         return result
 
     def get_alimentatori_by_tipo(self, tipo_alimentazione: str, 
@@ -637,18 +623,18 @@ class DatabaseManager:
             if not codice_completo:
                 return 0.0
 
-            query = self.supabase.table('strip_prezzi').select('prezzo_euro')
+            query = self.supabase.table('strip_test').select('prezzo')
             query = query.eq('strip_id', codice_completo)
 
             if temperatura:
                 query = query.eq('temperatura', temperatura)
             if potenza:
                 query = query.eq('potenza', potenza)
-            
+
             result = query.execute()
-            
+
             if result.data and len(result.data) > 0:
-                prezzo = result.data[0].get('prezzo_euro', 0.0)
+                prezzo = result.data[0].get('prezzo', 0.0)
                 return float(prezzo) if prezzo is not None else 0.0
             
             return 0.0
@@ -858,16 +844,16 @@ class DatabaseManager:
             if not strip_id:
                 return ""
 
-            query = self.supabase.table('strip_prezzi').select('codice_completo')
+            query = self.supabase.table('strip_test').select('codice_completo')
             query = query.eq('strip_id', strip_id)
 
             if temperatura:
                 query = query.eq('temperatura', temperatura)
             if potenza:
                 query = query.eq('potenza', potenza)
-            
+
             result = query.execute()
-            
+
             if result.data and len(result.data) > 0:
                 codice = result.data[0].get('codice_completo', '')
                 return str(codice) if codice is not None else ""

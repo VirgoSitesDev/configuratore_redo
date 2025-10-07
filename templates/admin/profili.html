@@ -10,10 +10,10 @@
         position: relative;
     }
     .editable-cell:hover:not(.editing) {
-        background-color: #f0f8ff;
+        background-color: #f8f9fa;
     }
     .editable-cell.editing {
-        background-color: #fff3cd;
+        background-color: #ffe5e2;
     }
     .cell-input {
         width: 100%;
@@ -56,12 +56,12 @@
                         <th>Codice Listino</th>
                         <th>Prezzo (€)</th>
                         <th>Immagine</th>
-                        <th width="120">Azioni</th>
+                        <th width="150">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in profili_combinati %}
-                    <tr data-codice-listino="{{ item.codice_listino }}" data-profilo-id="{{ item.profilo_id }}">
+                    <tr data-codice-listino="{{ item.codice_listino }}" data-profilo-id="{{ item.profilo_id }}" data-descrizione="{{ item.descrizione or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ item.codice_listino }}" onchange="toggleBulkActions()">
@@ -100,6 +100,11 @@
                             <div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
                                     <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="openDescrizioneModal('{{ item.codice_listino }}')"
+                                        title="Modifica descrizione">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger"
                                         onclick="deletePrezzo('{{ item.codice_listino }}')">
@@ -298,6 +303,33 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Descrizione -->
+<div class="modal fade" id="descrizioneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Descrizione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="descrizione_codice_listino">
+                <div class="mb-3">
+                    <label for="descrizione_text" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="descrizione_text" rows="4" placeholder="Inserisci la descrizione del profilo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveDescrizione()">
+                    <i class="bi bi-check me-2"></i>Salva
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -522,6 +554,47 @@ function bulkDeletePrezzi() {
             if (response.success) {
                 showAlert(`${response.deleted_count} varianti prezzo eliminate con successo!`, 'success');
                 setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function openDescrizioneModal(codiceListino) {
+    // Find the row with this codice_listino
+    const row = $(`tr[data-codice-listino="${codiceListino}"]`);
+    const descrizione = row.data('descrizione') || '';
+
+    // Set the values in the modal
+    $('#descrizione_codice_listino').val(codiceListino);
+    $('#descrizione_text').val(descrizione);
+
+    // Show the modal
+    $('#descrizioneModal').modal('show');
+}
+
+function saveDescrizione() {
+    const codiceListino = $('#descrizione_codice_listino').val();
+    const descrizione = $('#descrizione_text').val();
+
+    const data = {
+        descrizione: descrizione
+    };
+
+    $.ajax({
+        url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Descrizione salvata con successo!', 'success');
+                $('#descrizioneModal').modal('hide');
+
+                // Update the data attribute in the row
+                $(`tr[data-codice-listino="${codiceListino}"]`).data('descrizione', descrizione);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
             }

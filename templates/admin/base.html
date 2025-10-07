@@ -108,11 +108,59 @@
         .badge {
             font-size: 0.7em;
         }
+        .badge.bg-info {
+            background-color: #6c757d !important;
+        }
+        .badge.bg-secondary {
+            background-color: #495057 !important;
+        }
+        .badge.bg-success {
+            background-color: #28a745 !important;
+        }
+        .badge.bg-danger {
+            background-color: #e83f34 !important;
+        }
         .alert {
             margin-bottom: 1rem;
         }
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
         .navbar-brand img {
             height: 40px;
+        }
+        .btn-outline-success:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-outline-primary {
+            color: #e83f34;
+            border-color: #e83f34;
+        }
+        .btn-outline-primary:hover {
+            background-color: #e83f34;
+            border-color: #e83f34;
+            color: white;
+        }
+        .btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            border-color: #dc3545;
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -124,7 +172,7 @@
             <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="adminSidebar">
                 <div class="position-sticky pt-3">
                     <div class="text-center mb-4">
-                        <img src="{{ url_for('static', filename='img/logo-redo-nero.png') }}" alt="REDO" class="img-fluid" style="max-width: 120px; filter: invert(1);">
+                        <img src="{{ url_for('static', filename='img/logo-redo.png') }}" alt="REDO" class="img-fluid" style="max-width: 120px;">
                         <div class="small text-muted mt-2">Admin Panel</div>
                     </div>
 

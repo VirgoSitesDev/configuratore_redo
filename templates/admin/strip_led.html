@@ -10,10 +10,10 @@
         position: relative;
     }
     .editable-cell:hover:not(.editing) {
-        background-color: #f0f8ff;
+        background-color: #f8f9fa;
     }
     .editable-cell.editing {
-        background-color: #fff3cd;
+        background-color: #ffe5e2;
     }
     .cell-input {
         width: 100%;
@@ -65,10 +65,10 @@
                 </thead>
                 <tbody>
                     {% for strip in strips %}
-                    <tr data-prezzo-id="{{ strip.prezzo_id }}" data-strip-id="{{ strip.strip_id }}">
+                    <tr data-codice-completo="{{ strip.codice_completo }}" data-strip-id="{{ strip.strip_id }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
-                                   value="{{ strip.prezzo_id }}" onchange="toggleBulkActions()">
+                                   value="{{ strip.codice_completo }}" onchange="toggleBulkActions()">
                         </td>
                         <td><strong>{{ strip.nome_commerciale or '-' }}</strong></td>
                         <td><span class="badge bg-info">{{ strip.tipo or 'N/A' }}</span></td>
@@ -476,7 +476,7 @@ function updateStrip(event) {
     if (!data.special) delete data.special;
 
     $.ajax({
-        url: `{{ url_for("admin.update_strip_led", strip_id="") }}${stripId}`,
+        url: `{{ url_for("admin.update_strip_led", codice_completo='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(stripId)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -499,7 +499,7 @@ function deleteStrip(id) {
     }
 
     $.ajax({
-        url: `{{ url_for("admin.delete_strip_led", strip_id="") }}${id}`,
+        url: `{{ url_for("admin.delete_strip_led", codice_completo='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(id)),
         method: 'DELETE',
         success: function(response) {
             if (response.success) {
@@ -576,28 +576,23 @@ function cancelEdit(row) {
 
 function saveRow(button, table) {
     const row = $(button).closest('tr');
-    const prezzoId = row.data('prezzo-id');
-    const stripId = row.data('strip-id');
-    const data = {
-        strip_id: stripId
-    };
+    const codiceCompleto = row.data('codice-completo');
+    const data = {};
 
     row.find('.editable-cell').each(function() {
         const cell = $(this);
         const field = cell.data('field');
         let value = cell.find('.cell-input').val();
 
-        if (field === 'potenza') {
+        if (field === 'prezzo') {
             data[field] = value ? parseFloat(value) : null;
-        } else if (field === 'prezzo') {
-            data['prezzo_euro'] = value ? parseFloat(value) : null;
         } else {
             data[field] = value || null;
         }
     });
 
     $.ajax({
-        url: `{{ url_for("admin.update_strip_prezzo", prezzo_id=0) }}`.replace('0', prezzoId),
+        url: `{{ url_for("admin.update_strip_led", codice_completo='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceCompleto)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -617,17 +612,17 @@ function saveRow(button, table) {
     });
 }
 
-function deleteStripPrezzo(id) {
-    if (!confirmDelete('Sei sicuro di voler eliminare questa variante prezzo strip LED?\nQuesta azione non può essere annullata.')) {
+function deleteStripPrezzo(codice) {
+    if (!confirmDelete('Sei sicuro di voler eliminare questa strip LED?\nQuesta azione non può essere annullata.')) {
         return;
     }
 
     $.ajax({
-        url: `{{ url_for("admin.delete_strip_prezzo", prezzo_id=0) }}`.replace('0', id),
+        url: `{{ url_for("admin.delete_strip_led", codice_completo='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
         method: 'DELETE',
         success: function(response) {
             if (response.success) {
-                showAlert('Variante prezzo eliminata con successo!', 'success');
+                showAlert('Strip LED eliminata con successo!', 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
@@ -655,7 +650,7 @@ function bulkDelete(table) {
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
-            table: table,
+            table: 'strip_test',
             ids: selectedIds
         }),
         success: function(response) {

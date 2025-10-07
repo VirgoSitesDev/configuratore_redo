@@ -49,8 +49,8 @@ def dashboard():
         profili = db.supabase.table('profili_test').select('*').execute()
         stats['profili'] = len(profili.data) if profili.data else 0
 
-        # Conta strip LED (from strip_prezzi table - shows actual entries displayed in admin)
-        strips = db.supabase.table('strip_prezzi').select('*').execute()
+        # Conta strip LED (from strip_test table - shows actual entries displayed in admin)
+        strips = db.supabase.table('strip_test').select('*').execute()
         stats['strip_led'] = len(strips.data) if strips.data else 0
 
         # Conta alimentatori (from alimentatori_potenze table - shows actual entries displayed in admin)
@@ -357,62 +357,28 @@ def strip_led():
         return auth_check
 
     try:
-        import re
+        # Fetch all data from strip_test (consolidated table)
+        strips_data = db.supabase.table('strip_test').select('*').execute()
 
-        # Fetch all strip_prezzi entries (main source)
-        prezzi = db.supabase.table('strip_prezzi').select('*').execute()
-
-        # Fetch strip_led base data for lookup
-        strips_base = db.supabase.table('strip_led').select('*').execute()
-
-        # Fetch all strip_potenze for power index lookup
-        potenze = db.supabase.table('strip_potenze').select('*').execute()
-
-        # Create a lookup map for strip_led base info
-        strips_map = {s['id']: s for s in (strips_base.data or [])}
-
-        # Create a lookup map for potenze indices: {strip_id: {potenza: indice}}
-        potenze_map = {}
-        for p in (potenze.data or []):
-            strip_id = p.get('strip_id')
-            if strip_id not in potenze_map:
-                potenze_map[strip_id] = {}
-            potenze_map[strip_id][p.get('potenza')] = p.get('indice', -1)
-
-        # Build combined list
+        # Build list directly from strip_test
         strips_combinati = []
-        for prezzo in (prezzi.data or []):
-            strip_id = prezzo.get('strip_id')
-            potenza = prezzo.get('potenza')
-            strip_info = strips_map.get(strip_id, {})
-
-            # Get taglio_minimo for this specific power
-            taglio_minimo_val = '-'
-            tagli_minimi = strip_info.get('taglio_minimo', [])
-
-            if strip_id in potenze_map and potenza in potenze_map[strip_id]:
-                indice = potenze_map[strip_id][potenza]
-                if indice >= 0 and indice < len(tagli_minimi):
-                    taglio_minimo_str = tagli_minimi[indice]
-                    match = re.search(r'(\d+(?:[.,]\d+)?)', str(taglio_minimo_str))
-                    if match:
-                        taglio_minimo_val = match.group(1).replace(',', '.')
-
+        for strip in (strips_data.data or []):
             strips_combinati.append({
-                'prezzo_id': prezzo.get('id'),
-                'strip_id': strip_id,
-                'tipo': strip_info.get('tipo'),
-                'nome_commerciale': strip_info.get('nome_commerciale'),
-                'tensione': strip_info.get('tensione'),
-                'ip': strip_info.get('ip'),
-                'lunghezza': strip_info.get('lunghezza'),
-                'larghezza': strip_info.get('larghezza'),
-                'giuntabile': strip_info.get('giuntabile'),
-                'taglio_minimo': taglio_minimo_val,
-                'temperatura': prezzo.get('temperatura'),
-                'potenza': prezzo.get('potenza'),
-                'codice_completo': prezzo.get('codice_completo'),
-                'prezzo': prezzo.get('prezzo_euro')
+                'codice_completo': strip.get('codice_completo'),
+                'strip_id': strip.get('strip_id'),
+                'tipo': strip.get('tipo'),
+                'nome_commerciale': strip.get('nome_commerciale'),
+                'tensione': strip.get('tensione'),
+                'ip': strip.get('ip'),
+                'lunghezza': strip.get('lunghezza'),
+                'larghezza': strip.get('larghezza'),
+                'giuntabile': strip.get('giuntabile'),
+                'taglio_minimo': strip.get('taglio_minimo', '-'),
+                'temperatura': strip.get('temperatura'),
+                'potenza': strip.get('potenza'),
+                'codice_completo': strip.get('codice_completo'),
+                'codice_prodotto': strip.get('codice_prodotto'),
+                'prezzo': strip.get('prezzo')
             })
 
         return render_template('admin/strip_led.html', strips=strips_combinati)
@@ -429,65 +395,37 @@ def add_strip_led():
 
     try:
         data = request.json
-        result = db.supabase.table('strip_led').insert(data).execute()
+        result = db.supabase.table('strip_test').insert(data).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiunta strip LED: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@admin_bp.route('/strip_led/update/<strip_id>', methods=['PUT'])
-def update_strip_led(strip_id):
+@admin_bp.route('/strip_led/update/<path:codice_completo>', methods=['PUT'])
+def update_strip_led(codice_completo):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
         data = request.json
-        result = db.supabase.table('strip_led').update(data).eq('id', strip_id).execute()
+        result = db.supabase.table('strip_test').update(data).eq('codice_completo', codice_completo).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiornamento strip LED: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@admin_bp.route('/strip_led/delete/<strip_id>', methods=['DELETE'])
-def delete_strip_led(strip_id):
+@admin_bp.route('/strip_led/delete/<path:codice_completo>', methods=['DELETE'])
+def delete_strip_led(codice_completo):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
-        result = db.supabase.table('strip_led').delete().eq('id', strip_id).execute()
+        result = db.supabase.table('strip_test').delete().eq('codice_completo', codice_completo).execute()
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione strip LED: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-# Routes for strip_prezzi (individual price entries)
-@admin_bp.route('/strip_prezzi/update/<int:prezzo_id>', methods=['PUT'])
-def update_strip_prezzo(prezzo_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        data = request.json
-        result = db.supabase.table('strip_prezzi').update(data).eq('id', prezzo_id).execute()
-        return jsonify({'success': True, 'data': result.data})
-    except Exception as e:
-        logging.error(f"Errore aggiornamento strip prezzo: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@admin_bp.route('/strip_prezzi/delete/<int:prezzo_id>', methods=['DELETE'])
-def delete_strip_prezzo(prezzo_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        result = db.supabase.table('strip_prezzi').delete().eq('id', prezzo_id).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        logging.error(f"Errore eliminazione strip prezzo: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================
@@ -892,13 +830,15 @@ def bulk_delete():
             return jsonify({'success': False, 'error': 'Parametri mancanti'})
 
         # Validazione tabella per sicurezza
-        allowed_tables = ['categorie', 'profili', 'profili_test', 'strip_led', 'alimentatori', 'dimmer', 'configurazioni_salvate', 'tappi', 'staffe', 'diffusori']
+        allowed_tables = ['categorie', 'profili', 'profili_test', 'strip_led', 'strip_test', 'alimentatori', 'dimmer', 'configurazioni_salvate', 'tappi', 'staffe', 'diffusori']
         if table not in allowed_tables:
             return jsonify({'success': False, 'error': 'Tabella non valida'})
 
-        # profili_test uses codice_listino as primary key, accessories use codice, others use id
+        # Different tables use different primary keys
         if table == 'profili_test':
             id_field = 'codice_listino'
+        elif table == 'strip_test':
+            id_field = 'codice_completo'
         elif table in ['tappi', 'staffe', 'diffusori']:
             id_field = 'codice'
         else:

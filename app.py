@@ -57,17 +57,22 @@ def get_profili(categoria):
         if tutti_strip_ids:
             strip_ids_list = list(tutti_strip_ids)
 
-            strip_data_response = db.supabase.table('strip_led')\
-                .select('id, nome_commerciale')\
-                .in_('id', strip_ids_list)\
+            strip_data_response = db.supabase.table('strip_test')\
+                .select('strip_id, nome_commerciale')\
+                .in_('strip_id', strip_ids_list)\
                 .execute()
 
             if strip_data_response.data:
+                # Get unique strips by strip_id
+                seen = set()
                 for strip in strip_data_response.data:
-                    strip_led_map[strip['id']] = {
-                        'id': strip['id'],
-                        'nomeCommerciale': strip.get('nome_commerciale', '')
-                    }
+                    strip_id = strip['strip_id']
+                    if strip_id not in seen:
+                        strip_led_map[strip_id] = {
+                            'id': strip_id,
+                            'nomeCommerciale': strip.get('nome_commerciale', '')
+                        }
+                        seen.add(strip_id)
 
         for profilo in profili:
             strip_compatibili_info = []
@@ -136,13 +141,14 @@ def get_opzioni_tensione(profilo_id, tipologia_strip=None, lunghezza=None):
         if not strip_ids:
             return jsonify({'success': True, 'voltaggi': []})
 
-        strips = db.supabase.table('strip_led').select('tensione, giuntabile, lunghezza').in_('id', strip_ids).execute().data
+        strips = db.supabase.table('strip_test').select('tensione, giuntabile, lunghezza').in_('strip_id', strip_ids).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
         if lunghezza:
             strips = [s for s in strips if not (lunghezza > (s.get('lunghezza', 5) * 1000) and not s.get('giuntabile', True))]
 
+        # Get unique voltages
         voltaggi_disponibili = list(set([s['tensione'] for s in strips]))
 
         return jsonify({'success': True, 'voltaggi': voltaggi_disponibili})
@@ -174,7 +180,7 @@ def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None, lunghezza=None):
         if not strip_ids:
             return jsonify({'success': True, 'ip': []})
 
-        strips = db.supabase.table('strip_led').select('ip, giuntabile, lunghezza').eq('tensione', tensione).in_('id', strip_ids).execute().data
+        strips = db.supabase.table('strip_test').select('ip, giuntabile, lunghezza').eq('tensione', tensione).in_('strip_id', strip_ids).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -212,23 +218,20 @@ def get_opzioni_temperatura_iniziale(profilo_id, tensione, ip, tipologia_strip=N
         if not strip_ids:
             return jsonify({'success': True, 'temperature': []})
 
-        query = db.supabase.table('strip_led').select('id, giuntabile, lunghezza').eq('tensione', tensione).eq('ip', ip)
+        query = db.supabase.table('strip_test').select('strip_id, temperatura, giuntabile, lunghezza').eq('tensione', tensione).eq('ip', ip)
 
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
 
-        strips = query.in_('id', strip_ids).execute().data
+        strips = query.in_('strip_id', strip_ids).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
         if lunghezza:
             strips = [s for s in strips if not (lunghezza > (s.get('lunghezza', 5) * 1000) and not s.get('giuntabile', True))]
 
-        temperature_disponibili = set()
-        for strip in strips:
-            temps = db.supabase.table('strip_temperature').select('temperatura').eq('strip_id', strip['id']).execute().data
-            for t in temps:
-                temperature_disponibili.add(t['temperatura'])
+        # Get unique temperatures
+        temperature_disponibili = set([s['temperatura'] for s in strips])
 
         return jsonify({'success': True, 'temperature': list(temperature_disponibili)})
     except Exception as e:
@@ -469,50 +472,43 @@ def get_strip_compatibile_standalone():
         temperatura = data.get('temperatura')
         potenza = data.get('potenza')
         special = data.get('special')
-        query = db.supabase.table('strip_led').select('*')
+        query = db.supabase.table('strip_test').select('*')
         query = query.eq('tensione', tensione).eq('ip', ip)
+
+        if temperatura:
+            query = query.eq('temperatura', temperatura)
+
+        if potenza:
+            query = query.eq('potenza', potenza)
 
         if tipologia == 'SPECIAL' and special:
             if special == 'XMAGIS':
-                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,strip_id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
             elif special == 'XFLEX':
-                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,strip_id.ilike.%XFLEX%')
             elif special == 'XSNAKE':
-                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,strip_id.ilike.%XSNAKE%,strip_id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
-                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,strip_id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
         elif tipologia and tipologia != 'None':
             query = query.eq('tipo', tipologia)
-        
+
         strips = query.execute().data
-        
+
         if not strips:
             return jsonify({
-                'success': False, 
+                'success': False,
                 'message': 'Nessuna strip trovata per i parametri specificati'
             })
 
-        if temperatura:
-            strip_ids = [s['id'] for s in strips]
-            temp_check = db.supabase.table('strip_temperature')\
-                .select('strip_id')\
-                .eq('temperatura', temperatura)\
-                .in_('strip_id', strip_ids)\
-                .execute().data
-            
-            strip_ids_con_temp = [t['strip_id'] for t in temp_check]
-            strips = [s for s in strips if s['id'] in strip_ids_con_temp]
+        # Group by strip_id to get unique strips
+        strips_by_id = {}
+        for s in strips:
+            sid = s['strip_id']
+            if sid not in strips_by_id:
+                strips_by_id[sid] = s
 
-        if potenza:
-            strip_ids = [s['id'] for s in strips]
-            potenza_check = db.supabase.table('strip_potenze')\
-                .select('strip_id')\
-                .eq('potenza', potenza)\
-                .in_('strip_id', strip_ids)\
-                .execute().data
-            
-            strip_ids_con_potenza = [p['strip_id'] for p in potenza_check]
-            strips = [s for s in strips if s['id'] in strip_ids_con_potenza]
+        strips = list(strips_by_id.values())
         
         if not strips:
             return jsonify({
@@ -558,33 +554,24 @@ def calcola_lunghezze():
 
     if strip_id and strip_id != 'NO_STRIP' and potenza_selezionata:
         try:
-            strip_data_result = db.supabase.table('strip_led').select('*').eq('id', strip_id).execute()
-            
-            if strip_data_result.data and len(strip_data_result.data) > 0:
-                strip_info = strip_data_result.data[0]
-                tagli_minimi = strip_info.get('taglio_minimo', [])
-                potenze_data = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_id).order('indice').execute()
-                if potenze_data.data:
-                    indice_potenza = -1
-                    for record in potenze_data.data:
-                        if record.get('potenza') == potenza_selezionata:
-                            indice_potenza = record.get('indice', -1)
-                            break
+            # Get taglio_minimo directly from strip_test table
+            strip_data_result = db.supabase.table('strip_test')\
+                .select('taglio_minimo')\
+                .eq('strip_id', strip_id)\
+                .eq('potenza', potenza_selezionata)\
+                .limit(1)\
+                .execute()
 
-                    if indice_potenza >= 0 and indice_potenza < len(tagli_minimi):
-                        taglio_minimo_str = tagli_minimi[indice_potenza]
-                        import re
-                        match = re.search(r'(\d+(?:[.,]\d+)?)', taglio_minimo_str)
-                        if match:
-                            taglio_minimo_val = match.group(1).replace(',', '.')
-                            try:
-                                taglio_minimo = float(taglio_minimo_val)
-                            except ValueError:
-                                logging.warning(f"Impossibile convertire taglio_minimo: {taglio_minimo_val}")
-                                pass
+            if strip_data_result.data and len(strip_data_result.data) > 0:
+                taglio_minimo_val = strip_data_result.data[0].get('taglio_minimo')
+                if taglio_minimo_val:
+                    try:
+                        taglio_minimo = float(taglio_minimo_val)
+                    except ValueError:
+                        logging.warning(f"Impossibile convertire taglio_minimo: {taglio_minimo_val}")
             else:
-                logging.warning(f"Strip non trovata nel database: {strip_id}")
-                
+                logging.warning(f"Strip non trovata nel database: {strip_id} con potenza {potenza_selezionata}")
+
         except Exception as e:
             logging.error(f"Errore nella ricerca della strip {strip_id}: {str(e)}")
 
@@ -909,15 +896,15 @@ def finalizza_configurazione():
     strip_giuntabile = True
     if 'stripLedSelezionata' in configurazione and configurazione['stripLedSelezionata'] and configurazione['stripLedSelezionata'] not in ['NO_STRIP', 'senza_strip']:
         try:
-            strip_data = db.supabase.table('strip_led')\
+            strip_data = db.supabase.table('strip_test')\
                 .select('lunghezza, giuntabile')\
-                .eq('id', configurazione['stripLedSelezionata'])\
-                .single()\
+                .eq('strip_id', configurazione['stripLedSelezionata'])\
+                .limit(1)\
                 .execute()
 
-            if strip_data.data and strip_data.data.get('lunghezza'):
-                lunghezza_massima_strip = strip_data.data['lunghezza']
-                strip_giuntabile = strip_data.data.get('giuntabile', True)
+            if strip_data.data and len(strip_data.data) > 0 and strip_data.data[0].get('lunghezza'):
+                lunghezza_massima_strip = strip_data.data[0]['lunghezza']
+                strip_giuntabile = strip_data.data[0].get('giuntabile', True)
                 print(f"[DEBUG] Lunghezza massima strip: {lunghezza_massima_strip}mm")
                 print(f"[DEBUG] Strip giuntabile: {strip_giuntabile}")
 
@@ -1127,9 +1114,9 @@ def genera_excel_configurazione(configurazione, codice_prodotto):
 def get_tipologie_strip_disponibili():
     """Ottiene tutte le tipologie di strip disponibili nel database"""
     try:
-        tipologie_data = db.supabase.table('strip_led').select('tipo').execute().data
+        tipologie_data = db.supabase.table('strip_test').select('tipo').execute().data
         tipologie_uniche = list(set([t['tipo'] for t in tipologie_data if t['tipo']]))
-        
+
         return jsonify({'success': True, 'tipologie': tipologie_uniche})
     except Exception as e:
         logging.error(f"Errore in get_tipologie_strip_disponibili: {str(e)}")
@@ -1139,7 +1126,7 @@ def get_tipologie_strip_disponibili():
 def get_special_strip_disponibili():
     """Ottiene tutte le special strip disponibili nel database"""
     try:
-        strips_data = db.supabase.table('strip_led').select('nome_commerciale, id').execute().data
+        strips_data = db.supabase.table('strip_test').select('nome_commerciale, strip_id').execute().data
         special_strips = set()
 
         special_keywords = {
@@ -1170,24 +1157,24 @@ def get_opzioni_strip_standalone():
         data = request.json
         tipologia = data.get('tipologia')
         special = data.get('special')
-        query = db.supabase.table('strip_led').select('tensione')
-        
+        query = db.supabase.table('strip_test').select('tensione')
+
         if tipologia and tipologia != 'None':
             if tipologia == 'SPECIAL':
                 if special:
                     if special == 'XMAGIS':
-                        query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+                        query = query.or_('nome_commerciale.ilike.%XMAGIS%,strip_id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
                     elif special == 'XFLEX':
-                        query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+                        query = query.or_('nome_commerciale.ilike.%XFLEX%,strip_id.ilike.%XFLEX%')
                     elif special == 'XSNAKE':
-                        query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+                        query = query.or_('nome_commerciale.ilike.%XSNAKE%,strip_id.ilike.%XSNAKE%,strip_id.ilike.%SNK%')
                     elif special == 'ZIG_ZAG':
-                        query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+                        query = query.or_('nome_commerciale.ilike.%ZIGZAG%,strip_id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
                 else:
                     special_keywords = ['XFLEX', 'XSNAKE', 'XMAGIS', 'ZIGZAG', 'ZIG_ZAG', 'MG13X12', 'MG12X17', 'SNK']
                     or_conditions = []
                     for keyword in special_keywords:
-                        or_conditions.extend([f"nome_commerciale.ilike.%{keyword}%", f"id.ilike.%{keyword}%"])
+                        or_conditions.extend([f"nome_commerciale.ilike.%{keyword}%", f"strip_id.ilike.%{keyword}%"])
                     query = query.or_(','.join(or_conditions))
             else:
                 query = query.eq('tipo', tipologia)
@@ -1226,24 +1213,24 @@ def get_opzioni_ip_standalone():
         tensione = data.get('tensione', '')
         special = data.get('special')
 
-        query = db.supabase.table('strip_led').select('ip')\
+        query = db.supabase.table('strip_test').select('ip')\
             .eq('tensione', tensione)
 
         if tipologia and tipologia != 'None':
             query = query.eq('tipo', tipologia)
 
         if tipologia == 'SPECIAL' and special:
-            query = db.supabase.table('strip_led').select('ip')\
+            query = db.supabase.table('strip_test').select('ip')\
                 .eq('tensione', tensione)
-            
+
             if special == 'XMAGIS':
-                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,strip_id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
             elif special == 'XFLEX':
-                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,strip_id.ilike.%XFLEX%')
             elif special == 'XSNAKE':
-                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,strip_id.ilike.%XSNAKE%,strip_id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
-                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,strip_id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
 
         strips = query.execute().data
         
@@ -1294,13 +1281,13 @@ def get_opzioni_temperatura_standalone():
         categoria = data.get('categoria')
 
         strips = []
-        
+
         if tipologia == 'SPECIAL' and special:
-            query = db.supabase.table('strip_led')\
-                .select('id, nome_commerciale, tensione, ip, tipo')\
+            query = db.supabase.table('strip_test')\
+                .select('strip_id, nome_commerciale, tensione, ip, tipo, temperatura')\
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
-            
+
             all_strips = query.execute().data
 
             special_keywords = {
@@ -1309,41 +1296,32 @@ def get_opzioni_temperatura_standalone():
                 'XSNAKE': ['XSNAKE', 'SNAKE', 'SNK'],
                 'ZIG_ZAG': ['ZIGZAG', 'ZIG_ZAG', 'ZIG-ZAG'],
             }
-            
+
             keywords = special_keywords.get(special, [])
-            
+
             for strip in all_strips:
                 nome_commerciale = (strip.get('nome_commerciale') or '').upper()
-                strip_id = (strip.get('id') or '').upper()
+                sid = (strip.get('strip_id') or '').upper()
 
-                if any(keyword in nome_commerciale or keyword in strip_id for keyword in keywords):
+                if any(keyword in nome_commerciale or keyword in sid for keyword in keywords):
                     strips.append(strip)
-            
+
         else:
-            query = db.supabase.table('strip_led').select('id, nome_commerciale, tensione, ip, tipo')\
+            query = db.supabase.table('strip_test').select('strip_id, nome_commerciale, tensione, ip, tipo, temperatura')\
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
-            
+
             if tipologia and tipologia not in ['None', 'SPECIAL']:
                 query = query.eq('tipo', tipologia)
-            
+
             strips = query.execute().data
-        
+
         if not strips:
             logging.warning("DEBUG TEMPERATURA - Nessuna strip trovata per i parametri specificati")
             return jsonify({'success': True, 'temperature': []})
 
-        strip_ids = [s['id'] for s in strips]
-        temperature_data = db.supabase.table('strip_temperature')\
-            .select('temperatura')\
-            .in_('strip_id', strip_ids)\
-            .execute().data
-        
-        if not temperature_data:
-            logging.warning("DEBUG TEMPERATURA - Nessuna temperatura trovata per le strip")
-            return jsonify({'success': True, 'temperature': []})
-
-        temperature_uniche = list(set([t['temperatura'] for t in temperature_data if t['temperatura']]))
+        # Get unique temperatures directly from strip_test results
+        temperature_uniche = list(set([s['temperatura'] for s in strips if s.get('temperatura')]))
 
         def get_temperatura_order(temp):
             if 'K' in temp and temp.replace('K', '').isdigit():
@@ -1360,11 +1338,10 @@ def get_opzioni_temperatura_standalone():
         temperature_ordinate = sorted(temperature_uniche, key=get_temperatura_order)
         
         return jsonify({
-            'success': True, 
+            'success': True,
             'temperature': temperature_ordinate,
             'debug': {
                 'strips_trovate': len(strips),
-                'temperature_records': len(temperature_data),
                 'temperature_uniche': len(temperature_uniche),
                 'parametri': {
                     'tipologia': tipologia,
@@ -1392,47 +1369,32 @@ def get_opzioni_potenza_standalone():
         ip = data.get('ip')
         temperatura = data.get('temperatura')
 
-        query = db.supabase.table('strip_led').select('id')\
+        query = db.supabase.table('strip_test').select('strip_id, potenza')\
             .eq('tensione', tensione)\
             .eq('ip', ip)
 
+        if temperatura:
+            query = query.eq('temperatura', temperatura)
+
         if tipologia == 'SPECIAL' and special:
             if special == 'XMAGIS':
-                query = query.or_('nome_commerciale.ilike.%XMAGIS%,id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
+                query = query.or_('nome_commerciale.ilike.%XMAGIS%,strip_id.ilike.%XMAGIS%,nome_commerciale.ilike.%MG13X12%,nome_commerciale.ilike.%MG12X17%')
             elif special == 'XFLEX':
-                query = query.or_('nome_commerciale.ilike.%XFLEX%,id.ilike.%XFLEX%')
+                query = query.or_('nome_commerciale.ilike.%XFLEX%,strip_id.ilike.%XFLEX%')
             elif special == 'XSNAKE':
-                query = query.or_('nome_commerciale.ilike.%XSNAKE%,id.ilike.%XSNAKE%,id.ilike.%SNK%')
+                query = query.or_('nome_commerciale.ilike.%XSNAKE%,strip_id.ilike.%XSNAKE%,strip_id.ilike.%SNK%')
             elif special == 'ZIG_ZAG':
-                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
+                query = query.or_('nome_commerciale.ilike.%ZIGZAG%,strip_id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
         elif tipologia and tipologia != 'SPECIAL':
             query = query.eq('tipo', tipologia)
 
         strips = query.execute().data
-        
+
         if not strips:
             return jsonify({'success': True, 'potenze': []})
-        
-        strip_ids = [s['id'] for s in strips]
 
-        if temperatura:
-            temp_check = db.supabase.table('strip_temperature')\
-                .select('strip_id')\
-                .eq('temperatura', temperatura)\
-                .in_('strip_id', strip_ids)\
-                .execute().data
-            
-            strip_ids = [t['strip_id'] for t in temp_check]
-        
-        if not strip_ids:
-            return jsonify({'success': True, 'potenze': []})
-
-        potenze_data = db.supabase.table('strip_potenze')\
-            .select('potenza')\
-            .in_('strip_id', strip_ids)\
-            .execute().data
-
-        potenze_uniche = sorted(list(set([p['potenza'] for p in potenze_data])), 
+        # Get unique powers directly from strip_test results
+        potenze_uniche = sorted(list(set([s['potenza'] for s in strips if s.get('potenza')])), 
                                key=lambda x: float(x.replace('W/m', '').replace(',', '.').split()[0]))
         
         potenze = [{'id': p, 'nome': p} for p in potenze_uniche]
@@ -1467,19 +1429,19 @@ def get_strip_led_filtrate_standalone():
             }
             
             keywords = special_keywords.get(special, [])
-            
+
             if not keywords:
                 return jsonify({'success': False, 'message': f'Tipologia special strip non riconosciuta: {special}'})
 
-            base_query = db.supabase.table('strip_led').select('*')
-            
+            base_query = db.supabase.table('strip_test').select('*')
+
             or_conditions = []
             for keyword in keywords:
                 or_conditions.append(f"nome_commerciale.ilike.%{keyword}%")
-                or_conditions.append(f"id.ilike.%{keyword}%")
-            
+                or_conditions.append(f"strip_id.ilike.%{keyword}%")
+
             or_query = ','.join(or_conditions)
-            
+
             special_strips = base_query.or_(or_query).execute().data
 
             if tensione:
@@ -1490,64 +1452,66 @@ def get_strip_led_filtrate_standalone():
                 if strips_con_ip_richiesto:
                     special_strips = strips_con_ip_richiesto
 
+            if temperatura:
+                special_strips = [s for s in special_strips if s['temperatura'] == temperatura]
+
+            if potenza:
+                special_strips = [s for s in special_strips if s['potenza'] == potenza]
+
             strips = special_strips
-            
+
         else:
-            query = db.supabase.table('strip_led').select('*')
-            
+            query = db.supabase.table('strip_test').select('*')
+
             if tensione:
                 query = query.eq('tensione', tensione)
             if ip:
                 query = query.eq('ip', ip)
-                
+            if temperatura:
+                query = query.eq('temperatura', temperatura)
+            if potenza:
+                query = query.eq('potenza', potenza)
+
             strips = query.execute().data
 
-        
+
+        # Group by strip_id to get unique strips with their variants
+        strips_by_id = {}
+        for s in strips:
+            sid = s['strip_id']
+            if sid not in strips_by_id:
+                strips_by_id[sid] = {
+                    'id': sid,
+                    'nome': s['nome'],
+                    'nome_commerciale': s['nome_commerciale'],
+                    'tipo': s['tipo'],
+                    'tensione': s['tensione'],
+                    'ip': s['ip'],
+                    'lunghezza': s['lunghezza'],
+                    'larghezza': s['larghezza'],
+                    'giuntabile': s['giuntabile'],
+                    'temperaturaColoreDisponibili': set(),
+                    'potenzeDisponibili': [],
+                    'codiciProdotto': [],
+                    'taglioMinimo': {},
+                    'variants': []
+                }
+
+            strips_by_id[sid]['variants'].append(s)
+            strips_by_id[sid]['temperaturaColoreDisponibili'].add(s['temperatura'])
+
+            if s['potenza'] not in strips_by_id[sid]['potenzeDisponibili']:
+                strips_by_id[sid]['potenzeDisponibili'].append(s['potenza'])
+                strips_by_id[sid]['codiciProdotto'].append(s['codice_prodotto'])
+                if s['taglio_minimo']:
+                    strips_by_id[sid]['taglioMinimo'][s['potenza']] = s['taglio_minimo']
+
         result = []
-        for strip in strips:
-            strip_id = strip['id']
-
-            if temperatura:
-                temp_check = db.supabase.table('strip_temperature')\
-                    .select('temperatura')\
-                    .eq('strip_id', strip_id)\
-                    .eq('temperatura', temperatura)\
-                    .execute().data
-                
-                if not temp_check:
-                    continue
-
-            if potenza:
-                potenza_check = db.supabase.table('strip_potenze')\
-                    .select('potenza')\
-                    .eq('strip_id', strip_id)\
-                    .eq('potenza', potenza)\
-                    .execute().data
-
-                if not potenza_check:
-                    continue
-
-            temperatures = db.supabase.table('strip_temperature')\
-                .select('temperatura')\
-                .eq('strip_id', strip_id)\
-                .execute().data
-
-            potenze = db.supabase.table('strip_potenze')\
-                .select('potenza, codice_prodotto')\
-                .eq('strip_id', strip_id)\
-                .order('indice')\
-                .execute().data
-            
-            strip['temperaturaColoreDisponibili'] = [t['temperatura'] for t in temperatures]
-            strip['potenzeDisponibili'] = [p['potenza'] for p in potenze]
-            strip['codiciProdotto'] = [p['codice_prodotto'] for p in potenze]
-            strip['nomeCommerciale'] = strip.get('nome_commerciale', '')
-            strip['taglioMinimo'] = strip.get('taglio_minimo', {})
+        for strip_id, strip in strips_by_id.items():
+            strip['temperaturaColoreDisponibili'] = list(strip['temperaturaColoreDisponibili'])
+            strip['nomeCommerciale'] = strip['nome_commerciale']
+            strip['lunghezzaMassima'] = strip['lunghezza'] * 1000  # Convert meters to mm
             strip['temperatura'] = temperatura
-            # Add length and giuntabile info for validation
-            strip['lunghezzaMassima'] = strip.get('lunghezza', 5) * 1000  # Convert meters to mm
-            strip['giuntabile'] = strip.get('giuntabile', True)
-
             result.append(strip)
 
         return jsonify({'success': True, 'strip_led': result})
@@ -1568,15 +1532,22 @@ def get_strip_compatibili_esterni(categoria):
                 strip_compatibili_totali.update(profilo['stripLedCompatibili'])
 
         if strip_compatibili_totali:
-            strip_details = db.supabase.table('strip_led')\
+            strip_details = db.supabase.table('strip_test')\
                 .select('*')\
-                .in_('id', list(strip_compatibili_totali))\
+                .in_('strip_id', list(strip_compatibili_totali))\
                 .execute()
-            
+
+            # Get unique strips by strip_id
+            strips_by_id = {}
+            for strip in (strip_details.data or []):
+                sid = strip['strip_id']
+                if sid not in strips_by_id:
+                    strips_by_id[sid] = strip
+
             return jsonify({
                 'success': True,
                 'strip_compatibili': list(strip_compatibili_totali),
-                'strip_details': strip_details.data if strip_details.data else []
+                'strip_details': list(strips_by_id.values())
             })
         else:
             return jsonify({
@@ -1592,27 +1563,37 @@ def get_strip_compatibili_esterni(categoria):
 @app.route('/get_strip_led_by_nome_commerciale/<nome_commerciale>')
 def get_strip_led_by_nome_commerciale(nome_commerciale):
     try:
-        strip_data = db.supabase.table('strip_led').select('*').eq('nome_commerciale', nome_commerciale).single().execute()
-        
-        if not strip_data.data:
+        # Get all variants for this commercial name from strip_test
+        strip_data = db.supabase.table('strip_test').select('*').eq('nome_commerciale', nome_commerciale).execute()
+
+        if not strip_data.data or len(strip_data.data) == 0:
             return jsonify({'success': False, 'message': f'Strip LED non trovata: {nome_commerciale}'})
-        
-        strip_info = strip_data.data
-        
-        temperature = db.supabase.table('strip_temperature').select('temperatura').eq('strip_id', strip_info['id']).execute().data
-        potenze = db.supabase.table('strip_potenze').select('*').eq('strip_id', strip_info['id']).order('indice').execute().data
-        
+
+        # Get first variant for basic info
+        first_variant = strip_data.data[0]
+
+        # Collect all temperatures and powers from variants
+        temperature_set = set()
+        potenze_list = []
+        codici_list = []
+
+        for variant in strip_data.data:
+            temperature_set.add(variant['temperatura'])
+            if variant['potenza'] not in potenze_list:
+                potenze_list.append(variant['potenza'])
+                codici_list.append(variant['codice_prodotto'])
+
         return jsonify({
             'success': True,
             'strip_led': {
-                'id': strip_info['id'],
-                'nome': strip_info['nome'],
-                'nomeCommerciale': strip_info.get('nome_commerciale', ''),
-                'tensione': strip_info['tensione'],
-                'ip': strip_info['ip'],
-                'temperaturaColoreDisponibili': [t['temperatura'] for t in temperature],
-                'potenzeDisponibili': [p['potenza'] for p in potenze],
-                'codiciProdotto': [p['codice_prodotto'] for p in potenze]
+                'id': first_variant['strip_id'],
+                'nome': first_variant['nome'],
+                'nomeCommerciale': first_variant.get('nome_commerciale', ''),
+                'tensione': first_variant['tensione'],
+                'ip': first_variant['ip'],
+                'temperaturaColoreDisponibili': list(temperature_set),
+                'potenzeDisponibili': potenze_list,
+                'codiciProdotto': codici_list
             }
         })
     except Exception as e:
@@ -1884,12 +1865,24 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
             configurazione.get('stripLedSelezionata'))
 
         if strip_id and strip_id not in ['NO_STRIP', 'senza_strip', '', None]:
-            temperatura = (configurazione.get('temperaturaColoreSelezionata') or 
+            temperatura = (configurazione.get('temperaturaColoreSelezionata') or
                         configurazione.get('temperaturaSelezionata'))
             potenza = configurazione.get('potenzaSelezionata')
-            
+
             try:
-                codici_email['stripLed'] = db.get_codice_strip_led(strip_id, temperatura, potenza)
+                # Get codice_completo directly from strip_test
+                query = db.supabase.table('strip_test').select('codice_completo')
+                query = query.eq('strip_id', strip_id)
+                if temperatura:
+                    query = query.eq('temperatura', temperatura)
+                if potenza:
+                    query = query.eq('potenza', potenza)
+
+                result = query.limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    codici_email['stripLed'] = result.data[0].get('codice_completo', strip_id)
+                else:
+                    codici_email['stripLed'] = strip_id
             except Exception as e:
                 logging.error(f"Errore recupero codice strip: {str(e)}")
                 codici_email['stripLed'] = strip_id
@@ -2521,10 +2514,11 @@ def verifica_doppia_strip():
         profilo_doppia_data = doppia_strip_result.data[0]
         print(f"[DEBUG DOPPIA STRIP] Entry trovata: {profilo_doppia_data}")
 
-        # Get strip width from strip_led table
-        strip_result = db.supabase.table('strip_led')\
+        # Get strip width from strip_test table
+        strip_result = db.supabase.table('strip_test')\
             .select('larghezza')\
-            .eq('id', strip_id)\
+            .eq('strip_id', strip_id)\
+            .limit(1)\
             .execute()
 
         if not strip_result.data or len(strip_result.data) == 0:
