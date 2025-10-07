@@ -101,6 +101,11 @@
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
                                     <i class="bi bi-check"></i>
                                 </button>
+                                <button type="button" class="btn btn-outline-primary{% if not item.visibile %} btn-not-visible{% endif %}"
+                                        onclick="toggleVisibility('{{ item.codice_listino }}', {{ 'true' if item.visibile else 'false' }})"
+                                        title="{{ 'Nascondi' if item.visibile else 'Mostra' }}">
+                                    <i class="bi bi-eye{% if not item.visibile %}-slash{% endif %}"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-primary"
                                         onclick="openDescrizioneModal('{{ item.codice_listino }}')"
                                         title="Modifica descrizione">
@@ -347,6 +352,30 @@
 
 {% block extra_js %}
 <script>
+function toggleVisibility(codice, currentVisibility) {
+    const newVisibility = !currentVisibility;
+
+    $.ajax({
+        url: '{{ url_for("admin.toggle_visibility") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: 'profili_test',
+            codice: codice,
+            visibile: newVisibility
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`Visibilità ${newVisibility ? 'attivata' : 'disattivata'} con successo!`, 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
 // Inline editing functionality
 $(document).ready(function() {
     // Make cells editable on click

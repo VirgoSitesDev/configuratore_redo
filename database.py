@@ -29,6 +29,7 @@ class DatabaseManager:
         self._cache = {}
         self._cache_timestamps = {}
         self._cache_duration = timedelta(minutes=30)
+        self._exceptions_table_exists = None  # Will be checked lazily on first use
     
     def _test_connection(self):
         try:
@@ -55,7 +56,74 @@ class DatabaseManager:
     def _set_cache(self, key: str, value: Any):
         self._cache[key] = value
         self._cache_timestamps[key] = datetime.now()
-    
+
+    def check_strip_profilo_exception(self, strip_codice: str, profilo_famiglia: str) -> bool:
+        """
+        Check if there's an exception entry allowing this strip-profile combination.
+
+        This is a PUBLIC method to be called when validating a specific user selection,
+        NOT during initial compatibility filtering.
+
+        Args:
+            strip_codice: The strip ID (e.g., 'COB24V...')
+            profilo_famiglia: The profile family (e.g., 'PRF005')
+
+        Returns:
+            True if an exception exists, False otherwise
+        """
+        try:
+            result = self.supabase.table('strip_profilo_eccezioni')\
+                .select('*')\
+                .eq('strip_codice', strip_codice)\
+                .eq('profilo_famiglia', profilo_famiglia)\
+                .limit(1)\
+                .execute()
+            return len(result.data) > 0
+        except Exception as e:
+            # Table doesn't exist yet or other error - silently return False
+            logging.debug(f"Exception check skipped (table may not exist): {str(e)}")
+            return False
+
+    def get_strip_exceptions_for_profile(self, profilo_famiglia: str) -> List[str]:
+        """
+        Get all strip codes that have exceptions for a specific profile family.
+
+        Args:
+            profilo_famiglia: The profile family (e.g., 'PRF005')
+
+        Returns:
+            List of strip codes that have exceptions for this profile
+        """
+        try:
+            result = self.supabase.table('strip_profilo_eccezioni')\
+                .select('strip_codice')\
+                .eq('profilo_famiglia', profilo_famiglia)\
+                .execute()
+            return [row['strip_codice'] for row in result.data]
+        except Exception as e:
+            logging.debug(f"Could not fetch exceptions (table may not exist): {str(e)}")
+            return []
+
+    def get_profile_exceptions_for_strip(self, strip_codice: str) -> List[str]:
+        """
+        Get all profile families that have exceptions for a specific strip.
+
+        Args:
+            strip_codice: The strip code (e.g., 'COB24V...')
+
+        Returns:
+            List of profile families (e.g., ['PRF005', 'PRF174']) that have exceptions for this strip
+        """
+        try:
+            result = self.supabase.table('strip_profilo_eccezioni')\
+                .select('profilo_famiglia')\
+                .eq('strip_codice', strip_codice)\
+                .execute()
+            return [row['profilo_famiglia'] for row in result.data]
+        except Exception as e:
+            logging.debug(f"Could not fetch exceptions (table may not exist): {str(e)}")
+            return []
+
     def get_categorie(self) -> List[Dict[str, Any]]:
         cache_key = "all_categorie"
         cached = self._get_from_cache(cache_key)
@@ -93,6 +161,7 @@ class DatabaseManager:
         profili_test_data = self.supabase.table('profili_test')\
             .select('*')\
             .eq('categoria', categoria)\
+            .eq('visibile', True)\
             .execute().data
 
         if not profili_test_data:
@@ -179,6 +248,7 @@ class DatabaseManager:
             profilo_test_data = self.supabase.table('profili_test')\
                 .select('larghezza')\
                 .eq('famiglia', profilo_id)\
+                .eq('visibile', True)\
                 .limit(1)\
                 .execute().data
 
@@ -191,7 +261,7 @@ class DatabaseManager:
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
 
-        strips_data = query.execute().data
+        strips_data = query.eq('visibile', True).execute().data
 
         if not strips_data:
             return []
@@ -248,10 +318,20 @@ class DatabaseManager:
                 # Check width compatibility (handle None larghezza)
                 width_compatible = (strip_larghezza <= profilo_larghezza) if profilo_larghezza > 0 else True
 
+                # NOTE: Exception checks are NOT done here to avoid slowing down initial filtering
+                # Exceptions are checked later when displaying specific selected combinations
                 is_compatible = tipo_compatible and width_compatible
 
             if is_compatible:
                 compatible_strip_ids.append(strip_id)
+
+        # OUTDOOR ONLY: Add exception strips after normal filtering
+        if is_outdoor:
+            exception_strip_codes = self.get_strip_exceptions_for_profile(profilo_id)
+            for strip_code in exception_strip_codes:
+                if strip_code not in compatible_strip_ids:
+                    compatible_strip_ids.append(strip_code)
+                    logging.info(f"Added exception strip {strip_code} for outdoor profile {profilo_id}")
 
         return compatible_strip_ids
 
@@ -270,6 +350,7 @@ class DatabaseManager:
             profilo_test_data = self.supabase.table('profili_test')\
                 .select('larghezza')\
                 .eq('famiglia', profilo_id)\
+                .eq('visibile', True)\
                 .limit(1)\
                 .execute().data
 
@@ -287,7 +368,7 @@ class DatabaseManager:
         if potenza:
             query = query.eq('potenza', potenza)
 
-        all_strips = query.execute().data
+        all_strips = query.eq('visibile', True).execute().data
 
         if not all_strips:
             return []
@@ -368,6 +449,8 @@ class DatabaseManager:
                 # Check width compatibility
                 width_compatible = (strip_larghezza <= profilo_larghezza) if profilo_larghezza > 0 else True
 
+                # NOTE: Exception checks are NOT done here to avoid slowing down initial filtering
+                # Exceptions are checked later when displaying specific selected combinations
                 is_compatible = tipo_compatible and width_compatible
 
                 logging.info(f"Strip {strip_id} indoor compatibility: tipo={strip_tipo}, special={is_special}, zigzag={has_zigzag}, 12x4={has_12x4}, strip_width={strip_larghezza}, profile_width={profilo_larghezza}, compatible={is_compatible}")
@@ -389,10 +472,74 @@ class DatabaseManager:
 
                 compatible_strips.append(strip)
 
+        # INDOOR ONLY: Add exception strips after normal filtering
+        if not is_outdoor:
+            exception_strip_codes = self.get_strip_exceptions_for_profile(profilo_id)
+            if exception_strip_codes:
+                logging.info(f"Found {len(exception_strip_codes)} exception strips for profile {profilo_id}")
+
+                # Get exception strips matching the basic filters (tensione, ip, temperatura, potenza, tipologia)
+                exception_query = self.supabase.table('strip_test').select('*')
+                exception_query = exception_query.eq('tensione', tensione).eq('ip', ip).eq('temperatura', temperatura)
+                exception_query = exception_query.in_('id', exception_strip_codes).eq('visibile', True)
+
+                if tipologia:
+                    exception_query = exception_query.eq('tipo', tipologia)
+                if potenza:
+                    exception_query = exception_query.eq('potenza', potenza)
+
+                exception_strips_data = exception_query.execute().data
+
+                # Group exception strips by strip_id
+                for strip in exception_strips_data:
+                    strip_id = strip['strip_id']
+
+                    # Skip if already in compatible_strips
+                    if any(s['id'] == strip_id for s in compatible_strips):
+                        continue
+
+                    # Build strip object same way as normal strips
+                    if strip_id not in strips_by_id:
+                        strips_by_id[strip_id] = {
+                            'id': strip_id,
+                            'nome': strip['nome'],
+                            'nome_commerciale': strip['nome_commerciale'],
+                            'tipo': strip['tipo'],
+                            'tensione': strip['tensione'],
+                            'ip': strip['ip'],
+                            'lunghezza': strip['lunghezza'],
+                            'larghezza': strip['larghezza'],
+                            'giuntabile': strip['giuntabile'],
+                            'temperaturaColoreDisponibili': set(),
+                            'potenzeDisponibili': [],
+                            'codiciProdotto': [],
+                            'taglioMinimo': {},
+                            'variants': []
+                        }
+
+                    strips_by_id[strip_id]['variants'].append(strip)
+                    strips_by_id[strip_id]['temperaturaColoreDisponibili'].add(strip['temperatura'])
+
+                    if strip['potenza'] not in strips_by_id[strip_id]['potenzeDisponibili']:
+                        strips_by_id[strip_id]['potenzeDisponibili'].append(strip['potenza'])
+                        strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_completo'])
+                        if strip['taglio_minimo']:
+                            strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
+
+                    # Add to compatible_strips
+                    exception_strip_obj = strips_by_id[strip_id].copy()
+                    exception_strip_obj['temperaturaColoreDisponibili'] = list(exception_strip_obj['temperaturaColoreDisponibili'])
+                    exception_strip_obj['temperatura'] = temperatura
+                    exception_strip_obj['nomeCommerciale'] = exception_strip_obj['nome_commerciale']
+                    exception_strip_obj['lunghezzaMassima'] = exception_strip_obj['lunghezza'] * 1000
+
+                    compatible_strips.append(exception_strip_obj)
+                    logging.info(f"Added exception strip {strip_id} for profile {profilo_id}")
+
         if not compatible_strips:
             logging.warning(f"No compatible strips found for profile {profilo_id}")
 
-        logging.info(f"Found {len(compatible_strips)} compatible strips for profile {profilo_id}")
+        logging.info(f"Found {len(compatible_strips)} total compatible strips (including exceptions) for profile {profilo_id}")
         return compatible_strips
 
     def get_all_strip_led_filtrate(self, tensione: str, ip: str,
@@ -413,7 +560,7 @@ class DatabaseManager:
         if potenza:
             query = query.eq('potenza', potenza)
 
-        all_strips = query.execute().data
+        all_strips = query.eq('visibile', True).execute().data
 
         if not all_strips:
             return []
@@ -483,6 +630,7 @@ class DatabaseManager:
             .select('*')\
             .eq('tensione', tensione)\
             .in_('alimentatore_id', alimentatori_ids)\
+            .eq('visibile', True)\
             .order('potenza')\
             .execute().data
 
@@ -545,6 +693,7 @@ class DatabaseManager:
         dimmer_details = self.supabase.table('dimmer')\
             .select('*')\
             .in_('id', dimmer_ids)\
+            .eq('visibile', True)\
             .execute().data
 
         dimmer_ids.append('NESSUN_DIMMER')

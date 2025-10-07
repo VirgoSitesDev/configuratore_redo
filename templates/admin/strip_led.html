@@ -105,6 +105,11 @@
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'strip_prezzi')" style="display: none;">
                                     <i class="bi bi-check"></i>
                                 </button>
+                                <button type="button" class="btn btn-outline-primary{% if not strip.visibile %} btn-not-visible{% endif %}"
+                                        onclick="toggleVisibility('{{ strip.codice_completo }}', {{ 'true' if strip.visibile else 'false' }})"
+                                        title="{{ 'Nascondi' if strip.visibile else 'Mostra' }}">
+                                    <i class="bi bi-eye{% if not strip.visibile %}-slash{% endif %}"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-primary"
                                         onclick="openDescrizioneModal('{{ strip.codice_completo }}')"
                                         title="Modifica descrizione">
@@ -271,6 +276,19 @@
                                 <label for="add_descrizione" class="form-label">Descrizione</label>
                                 <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"
                                           placeholder="Inserisci una descrizione opzionale per la strip LED..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-warning" onclick="openEccezioniModal(event)">
+                                    Eccezioni Compatibilità
+                                </button>
+                                <div class="form-text">Specifica i profili compatibili anche se la larghezza della strip supera quella del profilo</div>
+                                <input type="hidden" id="add_eccezioni" name="eccezioni" value="[]">
+                                <div id="eccezioni_selected_display" class="mt-2"></div>
                             </div>
                         </div>
                     </div>
@@ -450,10 +468,69 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Eccezioni Compatibilità -->
+<div class="modal fade" id="eccezioniModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Eccezioni Compatibilità
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Seleziona le famiglie di profili che devono essere compatibili con questa strip LED
+                    anche se la larghezza della strip supera quella del profilo.
+                </p>
+                <div id="profilo_famiglie_loading" class="text-center">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Caricamento famiglie profili...</p>
+                </div>
+                <div id="profilo_famiglie_list" style="display: none;">
+                    <div class="row">
+                        <!-- Checkboxes will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveEccezioni()">
+                    <i class="bi bi-check me-2"></i>Salva Eccezioni
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function toggleVisibility(codice, currentVisibility) {
+    const newVisibility = !currentVisibility;
+
+    $.ajax({
+        url: '{{ url_for("admin.toggle_visibility") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: 'strip_test',
+            codice: codice,
+            visibile: newVisibility
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`Visibilità ${newVisibility ? 'attivata' : 'disattivata'} con successo!`, 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
 function addStrip(event) {
     event.preventDefault();
 
@@ -467,6 +544,13 @@ function addStrip(event) {
         delete data.lunghezzaMassima;
     }
     if (!data.special) delete data.special;
+
+    // Parse eccezioni from hidden field
+    try {
+        data.eccezioni = JSON.parse(data.eccezioni || '[]');
+    } catch (e) {
+        data.eccezioni = [];
+    }
 
     $.ajax({
         url: '{{ url_for("admin.add_strip_led") }}',
@@ -746,6 +830,89 @@ function saveDescrizione() {
         },
         error: handleAjaxError
     });
+}
+
+// Eccezioni Compatibilità functions
+function openEccezioniModal(event) {
+    event.preventDefault();
+
+    // Show loading
+    $('#profilo_famiglie_loading').show();
+    $('#profilo_famiglie_list').hide();
+
+    // Fetch profile families
+    $.ajax({
+        url: '{{ url_for("admin.get_profilo_famiglie") }}',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                renderProfiloFamiglie(response.famiglie);
+                $('#profilo_famiglie_loading').hide();
+                $('#profilo_famiglie_list').show();
+
+                // Show the modal
+                const eccezioniModal = new bootstrap.Modal(document.getElementById('eccezioniModal'));
+                eccezioniModal.show();
+            } else {
+                showAlert('Errore nel caricamento delle famiglie profili', 'danger');
+            }
+        },
+        error: function() {
+            showAlert('Errore nel caricamento delle famiglie profili', 'danger');
+        }
+    });
+}
+
+function renderProfiloFamiglie(famiglie) {
+    const container = $('#profilo_famiglie_list .row');
+    container.empty();
+
+    // Get currently selected eccezioni
+    const selectedEccezioni = JSON.parse($('#add_eccezioni').val() || '[]');
+
+    famiglie.forEach(famiglia => {
+        const isChecked = selectedEccezioni.includes(famiglia);
+        const checkbox = $(`
+            <div class="col-md-4 col-sm-6 mb-3">
+                <div class="form-check">
+                    <input class="form-check-input eccezione-checkbox" type="checkbox"
+                           value="${famiglia}" id="eccezione_${famiglia}"
+                           ${isChecked ? 'checked' : ''}>
+                    <label class="form-check-label" for="eccezione_${famiglia}">
+                        ${famiglia}
+                    </label>
+                </div>
+            </div>
+        `);
+        container.append(checkbox);
+    });
+}
+
+function saveEccezioni() {
+    // Collect all checked checkboxes
+    const selectedFamiglie = [];
+    $('.eccezione-checkbox:checked').each(function() {
+        selectedFamiglie.push($(this).val());
+    });
+
+    // Update hidden field
+    $('#add_eccezioni').val(JSON.stringify(selectedFamiglie));
+
+    // Update display
+    updateEccezioniDisplay(selectedFamiglie);
+
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('eccezioniModal')).hide();
+}
+
+function updateEccezioniDisplay(famiglie) {
+    const displayDiv = $('#eccezioni_selected_display');
+    displayDiv.empty();
+
+    if (famiglie.length > 0) {
+        const badges = famiglie.map(f => `<span class="badge bg-warning text-dark me-1">${f}</span>`).join('');
+        displayDiv.html(`<strong>Eccezioni selezionate:</strong> ${badges}`);
+    }
 }
 </script>
 {% endblock %}

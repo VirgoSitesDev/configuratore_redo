@@ -54,7 +54,7 @@
                         <th>Tensione</th>
                         <th>IP</th>
                         <th>Prezzo (€)</th>
-                        <th width="120">Azioni</th>
+                        <th width="150">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,6 +98,11 @@
                             <div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'dimmer')" style="display: none;">
                                     <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary{% if not d.visibile %} btn-not-visible{% endif %}"
+                                        onclick="toggleVisibility('{{ d.id }}', {{ 'true' if d.visibile else 'false' }})"
+                                        title="{{ 'Nascondi' if d.visibile else 'Mostra' }}">
+                                    <i class="bi bi-eye{% if not d.visibile %}-slash{% endif %}"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger"
                                         onclick="deleteDimmer('{{ d.id }}')">
@@ -308,6 +313,30 @@
 
 {% block extra_js %}
 <script>
+function toggleVisibility(codice, currentVisibility) {
+    const newVisibility = !currentVisibility;
+
+    $.ajax({
+        url: '{{ url_for("admin.toggle_visibility") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: 'dimmer',
+            codice: codice,
+            visibile: newVisibility
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`Visibilità ${newVisibility ? 'attivata' : 'disattivata'} con successo!`, 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
 // Inline editing functionality
 $(document).ready(function() {
     // Make cells editable on click

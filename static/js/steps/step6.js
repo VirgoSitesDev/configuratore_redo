@@ -216,8 +216,12 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
   // if (data.formaDiTaglioSelezionata == null) spazioBuio -= 5;
 
   // NEW FORMULA (Using lunghezza_interna from selected end cap, or 0 if no caps):
+  // Calculate effective quantity: use actual quantity selected, capped at 2
+  const effectiveQty = configurazione.tappiSelezionati
+    ? Math.min(configurazione.quantitaTappi || configurazione.tappiSelezionati.quantita || 1, 2)
+    : 0;
   const extraSpace = (configurazione.tappiSelezionati && configurazione.tappiSelezionati.lunghezza_interna)
-    ? configurazione.tappiSelezionati.lunghezza_interna
+    ? configurazione.tappiSelezionati.lunghezza_interna * effectiveQty
     : 0;
   let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2
     ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + extraSpace

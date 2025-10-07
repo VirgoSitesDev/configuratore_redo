@@ -650,7 +650,9 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
     if (configurazione.tipologiaSelezionata === 'taglio_misura') {
       // Show note about automatic inclusion with calculation
       const lunghezzaSelezionata = configurazione.lunghezzaRichiesta || 0;
-      const lunghezzaEsternatappi = tappoIncluso.lunghezza_esterna || 0;
+      // Cap effective quantity to 2 for included caps
+      const effectiveQty = Math.min(tappoIncluso.quantita || 1, 2);
+      const lunghezzaEsternatappi = (tappoIncluso.lunghezza_esterna || 0) * effectiveQty;
       const lunghezzaRisultante = lunghezzaSelezionata - lunghezzaEsternatappi;
 
       const tappiHtml = `
@@ -959,7 +961,9 @@ function aggiornaLunghezzaEffettiva() {
 
   if (configurazione.tipologiaSelezionata === 'taglio_misura') {
     const lunghezzaOriginale = configurazione.lunghezzaOriginalePreTappi;
-    const lunghezzaEsternatappi = tappo.lunghezza_esterna || 0;
+    // Calculate effective quantity: use actual quantity selected, capped at 2
+    const effectiveQty = Math.min(configurazione.quantitaTappi || tappo.quantita || 1, 2);
+    const lunghezzaEsternatappi = (tappo.lunghezza_esterna || 0) * effectiveQty;
     const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappi;
 
     $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappi);

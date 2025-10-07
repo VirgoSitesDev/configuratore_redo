@@ -1019,3 +1019,20 @@ body.on-homepage .step-progress {
     transform: translateY(0);
   }
 }
+
+/* Admin visibility toggle - inverted colors for "not visible" state */
+/* Applies to all admin tables with eye-slash icon */
+/* Higher specificity to override btn-outline-primary styles */
+.btn.btn-outline-primary.btn-not-visible,
+button.btn-outline-primary.btn-not-visible {
+  background-color: #e83f34 !important;
+  border-color: #e83f34 !important;
+  color: #fff !important;
+}
+
+.btn.btn-outline-primary.btn-not-visible:hover,
+button.btn-outline-primary.btn-not-visible:hover {
+  background-color: #d63429 !important;
+  border-color: #d63429 !important;
+  color: #fff !important;
+}

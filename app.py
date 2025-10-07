@@ -60,6 +60,7 @@ def get_profili(categoria):
             strip_data_response = db.supabase.table('strip_test')\
                 .select('strip_id, nome_commerciale')\
                 .in_('strip_id', strip_ids_list)\
+                .eq('visibile', True)\
                 .execute()
 
             if strip_data_response.data:
@@ -90,7 +91,7 @@ def get_profili(categoria):
 def get_opzioni_profilo(profilo_id):
     try:
         # Get due_tagli value from profili_test table for this famiglia
-        profili_test_data = db.supabase.table('profili_test').select('due_tagli').eq('famiglia', profilo_id).limit(1).execute().data
+        profili_test_data = db.supabase.table('profili_test').select('due_tagli').eq('famiglia', profilo_id).eq('visibile', True).limit(1).execute().data
 
         if not profili_test_data:
             return jsonify({'tipologie': []})
@@ -141,7 +142,7 @@ def get_opzioni_tensione(profilo_id, tipologia_strip=None, lunghezza=None):
         if not strip_ids:
             return jsonify({'success': True, 'voltaggi': []})
 
-        strips = db.supabase.table('strip_test').select('tensione, giuntabile, lunghezza').in_('strip_id', strip_ids).execute().data
+        strips = db.supabase.table('strip_test').select('tensione, giuntabile, lunghezza').in_('strip_id', strip_ids).eq('visibile', True).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -180,7 +181,7 @@ def get_opzioni_ip(profilo_id, tensione, tipologia_strip=None, lunghezza=None):
         if not strip_ids:
             return jsonify({'success': True, 'ip': []})
 
-        strips = db.supabase.table('strip_test').select('ip, giuntabile, lunghezza').eq('tensione', tensione).in_('strip_id', strip_ids).execute().data
+        strips = db.supabase.table('strip_test').select('ip, giuntabile, lunghezza').eq('tensione', tensione).in_('strip_id', strip_ids).eq('visibile', True).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -223,7 +224,7 @@ def get_opzioni_temperatura_iniziale(profilo_id, tensione, ip, tipologia_strip=N
         if tipologia_strip:
             query = query.eq('tipo', tipologia_strip)
 
-        strips = query.in_('strip_id', strip_ids).execute().data
+        strips = query.in_('strip_id', strip_ids).eq('visibile', True).execute().data
 
         # Filter strips by giuntabile if length is provided (INDOOR flow)
         # Note: lunghezza from DB is in meters, lunghezza parameter is in millimeters
@@ -386,7 +387,7 @@ def get_finiture(profilo_id, lunghezza_mm=None):
         if lunghezza_mm:
             query = query.eq('lunghezza', lunghezza_mm)
 
-        finiture = query.execute().data
+        finiture = query.eq('visibile', True).execute().data
 
         # Get unique finiture
         finiture_list = sorted(list(set([f['finitura'] for f in finiture if f['finitura']])))
@@ -493,7 +494,7 @@ def get_strip_compatibile_standalone():
         elif tipologia and tipologia != 'None':
             query = query.eq('tipo', tipologia)
 
-        strips = query.execute().data
+        strips = query.eq('visibile', True).execute().data
 
         if not strips:
             return jsonify({
@@ -559,6 +560,7 @@ def calcola_lunghezze():
                 .select('taglio_minimo')\
                 .eq('strip_id', strip_id)\
                 .eq('potenza', potenza_selezionata)\
+                .eq('visibile', True)\
                 .limit(1)\
                 .execute()
 
@@ -873,7 +875,7 @@ def finalizza_configurazione():
             if finitura_selezionata:
                 query = query.eq('finitura', finitura_selezionata)
 
-            lunghezze_profilo = query.execute().data
+            lunghezze_profilo = query.eq('visibile', True).execute().data
 
             if lunghezze_profilo and lunghezza_totale > 0:
                 # Get unique lengths
@@ -901,6 +903,7 @@ def finalizza_configurazione():
             strip_data = db.supabase.table('strip_test')\
                 .select('lunghezza, giuntabile')\
                 .eq('strip_id', configurazione['stripLedSelezionata'])\
+                .eq('visibile', True)\
                 .limit(1)\
                 .execute()
 
@@ -1116,7 +1119,7 @@ def genera_excel_configurazione(configurazione, codice_prodotto):
 def get_tipologie_strip_disponibili():
     """Ottiene tutte le tipologie di strip disponibili nel database"""
     try:
-        tipologie_data = db.supabase.table('strip_test').select('tipo').execute().data
+        tipologie_data = db.supabase.table('strip_test').select('tipo').eq('visibile', True).execute().data
         tipologie_uniche = list(set([t['tipo'] for t in tipologie_data if t['tipo']]))
 
         return jsonify({'success': True, 'tipologie': tipologie_uniche})
@@ -1128,7 +1131,7 @@ def get_tipologie_strip_disponibili():
 def get_special_strip_disponibili():
     """Ottiene tutte le special strip disponibili nel database"""
     try:
-        strips_data = db.supabase.table('strip_test').select('nome_commerciale, strip_id').execute().data
+        strips_data = db.supabase.table('strip_test').select('nome_commerciale, strip_id').eq('visibile', True).execute().data
         special_strips = set()
 
         special_keywords = {
@@ -1180,8 +1183,8 @@ def get_opzioni_strip_standalone():
                     query = query.or_(','.join(or_conditions))
             else:
                 query = query.eq('tipo', tipologia)
-        
-        strips = query.execute().data
+
+        strips = query.eq('visibile', True).execute().data
         
         if not strips:
             return jsonify({'success': True, 'tensioni': []})
@@ -1234,7 +1237,7 @@ def get_opzioni_ip_standalone():
             elif special == 'ZIG_ZAG':
                 query = query.or_('nome_commerciale.ilike.%ZIGZAG%,strip_id.ilike.%ZIGZAG%,nome_commerciale.ilike.%ZIG_ZAG%')
 
-        strips = query.execute().data
+        strips = query.eq('visibile', True).execute().data
         
         if not strips:
             logging.warning("DEBUG IP - Nessuna strip trovata per i parametri specificati")
@@ -1290,7 +1293,7 @@ def get_opzioni_temperatura_standalone():
                 .eq('tensione', tensione)\
                 .eq('ip', ip)
 
-            all_strips = query.execute().data
+            all_strips = query.eq('visibile', True).execute().data
 
             special_keywords = {
                 'XMAGIS': ['XMAGIS', 'MAGIS', 'MG13X12', 'MG12X17'],
@@ -1316,7 +1319,7 @@ def get_opzioni_temperatura_standalone():
             if tipologia and tipologia not in ['None', 'SPECIAL']:
                 query = query.eq('tipo', tipologia)
 
-            strips = query.execute().data
+            strips = query.eq('visibile', True).execute().data
 
         if not strips:
             logging.warning("DEBUG TEMPERATURA - Nessuna strip trovata per i parametri specificati")
@@ -1390,7 +1393,7 @@ def get_opzioni_potenza_standalone():
         elif tipologia and tipologia != 'SPECIAL':
             query = query.eq('tipo', tipologia)
 
-        strips = query.execute().data
+        strips = query.eq('visibile', True).execute().data
 
         if not strips:
             return jsonify({'success': True, 'potenze': []})
@@ -1444,7 +1447,7 @@ def get_strip_led_filtrate_standalone():
 
             or_query = ','.join(or_conditions)
 
-            special_strips = base_query.or_(or_query).execute().data
+            special_strips = base_query.or_(or_query).eq('visibile', True).execute().data
 
             if tensione:
                 special_strips = [s for s in special_strips if s['tensione'] == tensione]
@@ -1476,7 +1479,7 @@ def get_strip_led_filtrate_standalone():
             if potenza:
                 query = query.eq('potenza', potenza)
 
-            strips = query.execute().data
+            strips = query.eq('visibile', True).execute().data
 
 
         # Group by strip_id to get unique strips with their variants
@@ -1539,6 +1542,7 @@ def get_strip_compatibili_esterni(categoria):
             strip_details = db.supabase.table('strip_test')\
                 .select('*')\
                 .in_('strip_id', list(strip_compatibili_totali))\
+                .eq('visibile', True)\
                 .execute()
 
             # Get unique strips by strip_id
@@ -1568,7 +1572,7 @@ def get_strip_compatibili_esterni(categoria):
 def get_strip_led_by_nome_commerciale(nome_commerciale):
     try:
         # Get all variants for this commercial name from strip_test
-        strip_data = db.supabase.table('strip_test').select('*').eq('nome_commerciale', nome_commerciale).execute()
+        strip_data = db.supabase.table('strip_test').select('*').eq('nome_commerciale', nome_commerciale).eq('visibile', True).execute()
 
         if not strip_data.data or len(strip_data.data) == 0:
             return jsonify({'success': False, 'message': f'Strip LED non trovata: {nome_commerciale}'})
@@ -1882,7 +1886,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 if potenza:
                     query = query.eq('potenza', potenza)
 
-                result = query.limit(1).execute()
+                result = query.eq('visibile', True).limit(1).execute()
                 if result.data and len(result.data) > 0:
                     codici_email['stripLed'] = result.data[0].get('codice_completo', strip_id)
                 else:
@@ -2337,6 +2341,7 @@ def verifica_tappi_profilo():
         tappi_result = db.supabase.table('tappi')\
             .select('*')\
             .eq('prf_riferimento', profilo_id)\
+            .eq('visibile', True)\
             .execute()
 
         print(f"[DEBUG TAPPI] Query result: {len(tappi_result.data) if tappi_result.data else 0} tappi trovati")
@@ -2388,6 +2393,7 @@ def verifica_diffusori_profilo():
         diffusori_result = db.supabase.table('diffusori')\
             .select('*')\
             .eq('prf_riferimento', profilo_id)\
+            .eq('visibile', True)\
             .execute()
 
         if diffusori_result.data and len(diffusori_result.data) > 0:
@@ -2447,6 +2453,7 @@ def verifica_staffe_profilo():
             .select('*')\
             .eq('prf_riferimento', profilo_id)\
             .eq('incluso', False)\
+            .eq('visibile', True)\
             .execute()
 
         print(f"[DEBUG STAFFE] Query result: {len(staffe_result.data) if staffe_result.data else 0} staffe trovate")
@@ -2522,6 +2529,7 @@ def verifica_doppia_strip():
         strip_result = db.supabase.table('strip_test')\
             .select('larghezza')\
             .eq('strip_id', strip_id)\
+            .eq('visibile', True)\
             .limit(1)\
             .execute()
 

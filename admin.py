@@ -177,7 +177,8 @@ def profili():
                 'larghezza': item.get('larghezza'),  # New field
                 'descrizione': item.get('descrizione'),
                 'due_tagli': item.get('due_tagli'),
-                'prezzo': item.get('prezzo')
+                'prezzo': item.get('prezzo'),
+                'visibile': item.get('visibile', True)
             })
 
         return render_template('admin/profili.html',
@@ -379,7 +380,8 @@ def strip_led():
                 'codice_completo': strip.get('codice_completo'),
                 'codice_prodotto': strip.get('codice_prodotto'),
                 'prezzo': strip.get('prezzo'),
-                'descrizione': strip.get('descrizione')
+                'descrizione': strip.get('descrizione'),
+                'visibile': strip.get('visibile', True)
             })
 
         return render_template('admin/strip_led.html', strips=strips_combinati)
@@ -396,7 +398,23 @@ def add_strip_led():
 
     try:
         data = request.json
+        eccezioni = data.pop('eccezioni', [])  # Extract eccezioni before inserting strip
+
+        # Insert strip
         result = db.supabase.table('strip_test').insert(data).execute()
+
+        # If strip was created successfully and there are eccezioni, insert them
+        if result.data and eccezioni:
+            strip_codice = data['id']  # The strip ID/codice
+            for profilo_famiglia in eccezioni:
+                try:
+                    db.supabase.table('strip_profilo_eccezioni').insert({
+                        'strip_codice': strip_codice,
+                        'profilo_famiglia': profilo_famiglia
+                    }).execute()
+                except Exception as eccezione_err:
+                    logging.warning(f"Errore inserimento eccezione {strip_codice} -> {profilo_famiglia}: {str(eccezione_err)}")
+
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiunta strip LED: {str(e)}")
@@ -429,6 +447,28 @@ def delete_strip_led(codice_completo):
         logging.error(f"Errore eliminazione strip LED: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
+@admin_bp.route('/get_profilo_famiglie', methods=['GET'])
+def get_profilo_famiglie():
+    """Get all unique profile families (famiglia) from profili_test table"""
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        # Get all unique famiglia values from profili_test
+        result = db.supabase.table('profili_test')\
+            .select('famiglia')\
+            .eq('visibile', True)\
+            .execute()
+
+        # Extract unique famiglie
+        famiglie = sorted(list(set([row['famiglia'] for row in result.data if row.get('famiglia')])))
+
+        return jsonify({'success': True, 'famiglie': famiglie})
+    except Exception as e:
+        logging.error(f"Errore caricamento famiglie profili: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
 # =========================
 # GESTIONE ALIMENTATORI
 # =========================
@@ -454,7 +494,8 @@ def alimentatori():
                 'tensione': alimentatore.get('tensione'),
                 'ip': alimentatore.get('ip'),
                 'potenza': alimentatore.get('potenza'),
-                'prezzo': alimentatore.get('prezzo')
+                'prezzo': alimentatore.get('prezzo'),
+                'visibile': alimentatore.get('visibile', True)
             })
 
         return render_template('admin/alimentatori.html', alimentatori=alimentatori_list)
@@ -778,6 +819,45 @@ def delete_diffusore(codice):
 # =========================
 # OPERAZIONI IN BLOCCO
 # =========================
+
+@admin_bp.route('/toggle-visibility', methods=['POST'])
+def toggle_visibility():
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        data = request.json
+        table = data.get('table')
+        codice = data.get('codice')
+        visibile = data.get('visibile')
+
+        if not table or codice is None or visibile is None:
+            return jsonify({'success': False, 'error': 'Parametri mancanti'})
+
+        # Validazione tabella per sicurezza
+        allowed_tables = ['profili_test', 'strip_test', 'alimentatori_test', 'dimmer', 'tappi', 'staffe', 'diffusori']
+        if table not in allowed_tables:
+            return jsonify({'success': False, 'error': 'Tabella non valida'})
+
+        # Different tables use different primary keys
+        if table == 'profili_test':
+            id_field = 'codice_listino'
+        elif table == 'strip_test':
+            id_field = 'codice_completo'
+        elif table == 'dimmer':
+            id_field = 'id'
+        else:
+            id_field = 'codice'
+
+        # Update visibility
+        result = db.supabase.table(table).update({'visibile': visibile}).eq(id_field, codice).execute()
+
+        return jsonify({'success': True, 'data': result.data})
+
+    except Exception as e:
+        logging.error(f"Errore toggle visibilità: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/bulk-delete', methods=['POST'])
 def bulk_delete():

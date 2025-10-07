@@ -52,12 +52,12 @@
                         <th>Profilo Riferimento</th>
                         <th>Lunghezza (m)</th>
                         <th>Prezzo (€)</th>
-                        <th width="120">Azioni</th>
+                        <th width="150">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in diffusori %}
-                    <tr data-codice="{{ item.codice }}">
+                    <tr data-codice="{{ item.codice }}" data-descrizione="{{ item.descrizione or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ item.codice }}" onchange="toggleBulkActions()">
@@ -79,6 +79,16 @@
                             <div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
                                     <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary{% if not item.visibile %} btn-not-visible{% endif %}"
+                                        onclick="toggleVisibility('{{ item.codice }}', {{ 'true' if item.visibile else 'false' }})"
+                                        title="{{ 'Nascondi' if item.visibile else 'Mostra' }}">
+                                    <i class="bi bi-eye{% if not item.visibile %}-slash{% endif %}"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="openDescrizioneModal('{{ item.codice }}')"
+                                        title="Modifica descrizione">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger"
                                         onclick="deleteItem('{{ item.codice }}')">
@@ -145,10 +155,61 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Modifica Descrizione -->
+<div class="modal fade" id="descrizioneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Descrizione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="descrizione_codice">
+                <div class="mb-3">
+                    <label for="descrizione_text" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="descrizione_text" rows="4" placeholder="Inserisci la descrizione del diffusore..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveDescrizione()">
+                    <i class="bi bi-check me-2"></i>Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function toggleVisibility(codice, currentVisibility) {
+    const newVisibility = !currentVisibility;
+
+    $.ajax({
+        url: '{{ url_for("admin.toggle_visibility") }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            table: 'diffusori',
+            codice: codice,
+            visibile: newVisibility
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(`Visibilità ${newVisibility ? 'attivata' : 'disattivata'} con successo!`, 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
 // Inline editing functionality
 $(document).ready(function() {
     $('.editable-cell').on('click', function(e) {
@@ -312,6 +373,42 @@ function bulkDeleteItems() {
             if (response.success) {
                 showAlert(`${response.deleted_count} diffusori eliminati con successo!`, 'success');
                 setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function openDescrizioneModal(codice) {
+    const row = $(`tr[data-codice="${codice}"]`);
+    const descrizione = row.data('descrizione') || '';
+
+    $('#descrizione_codice').val(codice);
+    $('#descrizione_text').val(descrizione);
+
+    const modal = new bootstrap.Modal(document.getElementById('descrizioneModal'));
+    modal.show();
+}
+
+function saveDescrizione() {
+    const codice = $('#descrizione_codice').val();
+    const descrizione = $('#descrizione_text').val();
+
+    $.ajax({
+        url: '/admin/diffusori/update_descrizione',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            codice: codice,
+            descrizione: descrizione
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Descrizione aggiornata con successo!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('descrizioneModal')).hide();
+                setTimeout(() => location.reload(), 800);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
             }
