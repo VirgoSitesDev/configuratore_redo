@@ -122,9 +122,25 @@ function renderTipologie(tipologie) {
   $('.step2b-tipologia-card').on('click', function() {
     $('.step2b-tipologia-card').removeClass('selected');
     $(this).addClass('selected');
-    
+
     configurazione.tipologiaStripSelezionata = $(this).data('tipologia');
-    
+
+    // Clear previous strip selection when changing tipologia
+    configurazione.stripLedSceltaFinale = null;
+    configurazione.stripLedSelezionata = null;
+    configurazione.nomeCommercialeStripLed = null;
+
+    // Clear parameters when changing tipologia
+    configurazione.tensioneSelezionato = null;
+    configurazione.ipSelezionato = null;
+    configurazione.temperaturaSelezionata = null;
+    configurazione.potenzaSelezionata = null;
+
+    // Hide downstream sections
+    $('#step2b-parametri-strip').hide();
+    $('#step2b-potenza-strip').hide();
+    $('#step2b-strip-selection').hide();
+
     if (configurazione.tipologiaStripSelezionata === 'SPECIAL') {
       caricaSpecialStripDalDatabase();
       $('#btn-continua-tipologia-step2b').prop('disabled', true);

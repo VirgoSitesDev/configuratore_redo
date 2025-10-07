@@ -60,12 +60,12 @@
                         <th>Potenza</th>
                         <th>Codice Completo</th>
                         <th>Prezzo (€)</th>
-                        <th width="120">Azioni</th>
+                        <th width="150">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for strip in strips %}
-                    <tr data-codice-completo="{{ strip.codice_completo }}" data-strip-id="{{ strip.strip_id }}">
+                    <tr data-codice-completo="{{ strip.codice_completo }}" data-strip-id="{{ strip.strip_id }}" data-descrizione="{{ strip.descrizione or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ strip.codice_completo }}" onchange="toggleBulkActions()">
@@ -105,8 +105,13 @@
                                 <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'strip_prezzi')" style="display: none;">
                                     <i class="bi bi-check"></i>
                                 </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="openDescrizioneModal('{{ strip.codice_completo }}')"
+                                        title="Modifica descrizione">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-danger"
-                                        onclick="deleteStripPrezzo({{ strip.prezzo_id }})">
+                                        onclick="deleteStripPrezzo('{{ strip.codice_completo }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -259,6 +264,16 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="add_descrizione" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"
+                                          placeholder="Inserisci una descrizione opzionale per la strip LED..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
@@ -405,6 +420,33 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Descrizione -->
+<div class="modal fade" id="descrizioneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Descrizione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="descrizione_codice_completo">
+                <div class="mb-3">
+                    <label for="descrizione_text" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="descrizione_text" rows="4" placeholder="Inserisci la descrizione della strip LED..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveDescrizione()">
+                    <i class="bi bi-check me-2"></i>Salva
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -657,6 +699,47 @@ function bulkDelete(table) {
             if (response.success) {
                 showAlert(`${response.deleted_count} strip LED eliminate con successo!`, 'success');
                 setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function openDescrizioneModal(codiceCompleto) {
+    // Find the row with this codice_completo
+    const row = $(`tr[data-codice-completo="${codiceCompleto}"]`);
+    const descrizione = row.data('descrizione') || '';
+
+    // Set the values in the modal
+    $('#descrizione_codice_completo').val(codiceCompleto);
+    $('#descrizione_text').val(descrizione);
+
+    // Show the modal
+    $('#descrizioneModal').modal('show');
+}
+
+function saveDescrizione() {
+    const codiceCompleto = $('#descrizione_codice_completo').val();
+    const descrizione = $('#descrizione_text').val();
+
+    const data = {
+        descrizione: descrizione
+    };
+
+    $.ajax({
+        url: `{{ url_for("admin.update_strip_led", codice_completo='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceCompleto)),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Descrizione salvata con successo!', 'success');
+                $('#descrizioneModal').modal('hide');
+
+                // Update the data attribute in the row
+                $(`tr[data-codice-completo="${codiceCompleto}"]`).data('descrizione', descrizione);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
             }

@@ -798,10 +798,12 @@ def finalizza_configurazione():
             codici['profilo'] = configurazione['codiceProfilo']
         elif configurazione.get('profiloSelezionato'):
             codici['profilo'] = configurazione['profiloSelezionato'].replace('_', '/')
-            
-        if configurazione.get('stripLedSelezionata'):
+
+        if configurazione.get('codiceStripLed'):
+            codici['stripLed'] = configurazione['codiceStripLed']
+        elif configurazione.get('stripLedSelezionata'):
             codici['stripLed'] = configurazione['stripLedSelezionata']
-            
+
         if configurazione.get('codiceAlimentatore'):
             codici['alimentatore'] = configurazione['codiceAlimentatore']
             
@@ -1463,6 +1465,8 @@ def get_strip_led_filtrate_standalone():
         else:
             query = db.supabase.table('strip_test').select('*')
 
+            if tipologia:
+                query = query.eq('tipo', tipologia)
             if tensione:
                 query = query.eq('tensione', tensione)
             if ip:
@@ -1502,7 +1506,7 @@ def get_strip_led_filtrate_standalone():
 
             if s['potenza'] not in strips_by_id[sid]['potenzeDisponibili']:
                 strips_by_id[sid]['potenzeDisponibili'].append(s['potenza'])
-                strips_by_id[sid]['codiciProdotto'].append(s['codice_prodotto'])
+                strips_by_id[sid]['codiciProdotto'].append(s['codice_completo'])
                 if s['taglio_minimo']:
                     strips_by_id[sid]['taglioMinimo'][s['potenza']] = s['taglio_minimo']
 
@@ -1581,7 +1585,7 @@ def get_strip_led_by_nome_commerciale(nome_commerciale):
             temperature_set.add(variant['temperatura'])
             if variant['potenza'] not in potenze_list:
                 potenze_list.append(variant['potenza'])
-                codici_list.append(variant['codice_prodotto'])
+                codici_list.append(variant['codice_completo'])
 
         return jsonify({
             'success': True,

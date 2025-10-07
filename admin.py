@@ -53,8 +53,8 @@ def dashboard():
         strips = db.supabase.table('strip_test').select('*').execute()
         stats['strip_led'] = len(strips.data) if strips.data else 0
 
-        # Conta alimentatori (from alimentatori_potenze table - shows actual entries displayed in admin)
-        alimentatori = db.supabase.table('alimentatori_potenze').select('*').execute()
+        # Conta alimentatori (from alimentatori_test table - shows actual entries displayed in admin)
+        alimentatori = db.supabase.table('alimentatori_test').select('*').execute()
         stats['alimentatori'] = len(alimentatori.data) if alimentatori.data else 0
 
         # Conta dimmer
@@ -378,7 +378,8 @@ def strip_led():
                 'potenza': strip.get('potenza'),
                 'codice_completo': strip.get('codice_completo'),
                 'codice_prodotto': strip.get('codice_prodotto'),
-                'prezzo': strip.get('prezzo')
+                'prezzo': strip.get('prezzo'),
+                'descrizione': strip.get('descrizione')
             })
 
         return render_template('admin/strip_led.html', strips=strips_combinati)
@@ -439,33 +440,24 @@ def alimentatori():
         return auth_check
 
     try:
-        # Fetch all alimentatori_potenze entries (main source)
-        potenze = db.supabase.table('alimentatori_potenze').select('*').execute()
+        # Fetch all data from alimentatori_test (consolidated table)
+        alimentatori_data = db.supabase.table('alimentatori_test').select('*').execute()
 
-        # Fetch alimentatori base data for lookup
-        alimentatori_base = db.supabase.table('alimentatori').select('*').execute()
-
-        # Create a lookup map for alimentatori base info
-        alimentatori_map = {a['id']: a for a in (alimentatori_base.data or [])}
-
-        # Build combined list
-        alimentatori_combinati = []
-        for potenza in (potenze.data or []):
-            alimentatore_id = potenza.get('alimentatore_id')
-            alimentatore_info = alimentatori_map.get(alimentatore_id, {})
-
-            alimentatori_combinati.append({
-                'potenza_id': potenza.get('id'),
-                'alimentatore_id': alimentatore_id,
-                'nome': alimentatore_info.get('nome'),
-                'tensione': alimentatore_info.get('tensione'),
-                'ip': alimentatore_info.get('ip'),
-                'potenza': potenza.get('potenza'),
-                'codice': potenza.get('codice'),
-                'prezzo': potenza.get('price')
+        # Build list directly from alimentatori_test
+        alimentatori_list = []
+        for alimentatore in (alimentatori_data.data or []):
+            alimentatori_list.append({
+                'codice': alimentatore.get('codice'),
+                'alimentatore_id': alimentatore.get('alimentatore_id'),
+                'nome': alimentatore.get('nome'),
+                'descrizione': alimentatore.get('descrizione'),
+                'tensione': alimentatore.get('tensione'),
+                'ip': alimentatore.get('ip'),
+                'potenza': alimentatore.get('potenza'),
+                'prezzo': alimentatore.get('prezzo')
             })
 
-        return render_template('admin/alimentatori.html', alimentatori=alimentatori_combinati)
+        return render_template('admin/alimentatori.html', alimentatori=alimentatori_list)
     except Exception as e:
         logging.error(f"Errore caricamento alimentatori: {str(e)}")
         flash('Errore nel caricamento degli alimentatori', 'error')
@@ -479,65 +471,37 @@ def add_alimentatore():
 
     try:
         data = request.json
-        result = db.supabase.table('alimentatori').insert(data).execute()
+        result = db.supabase.table('alimentatori_test').insert(data).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiunta alimentatore: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@admin_bp.route('/alimentatori/update/<alimentatore_id>', methods=['PUT'])
-def update_alimentatore(alimentatore_id):
+@admin_bp.route('/alimentatori/update/<path:codice>', methods=['PUT'])
+def update_alimentatore(codice):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
         data = request.json
-        result = db.supabase.table('alimentatori').update(data).eq('id', alimentatore_id).execute()
+        result = db.supabase.table('alimentatori_test').update(data).eq('codice', codice).execute()
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiornamento alimentatore: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@admin_bp.route('/alimentatori/delete/<alimentatore_id>', methods=['DELETE'])
-def delete_alimentatore(alimentatore_id):
+@admin_bp.route('/alimentatori/delete/<path:codice>', methods=['DELETE'])
+def delete_alimentatore(codice):
     auth_check = require_admin_login()
     if auth_check:
         return auth_check
 
     try:
-        result = db.supabase.table('alimentatori').delete().eq('id', alimentatore_id).execute()
+        result = db.supabase.table('alimentatori_test').delete().eq('codice', codice).execute()
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione alimentatore: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-# Routes for alimentatori_potenze (individual power entries)
-@admin_bp.route('/alimentatori_potenze/update/<int:potenza_id>', methods=['PUT'])
-def update_alimentatore_potenza(potenza_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        data = request.json
-        result = db.supabase.table('alimentatori_potenze').update(data).eq('id', potenza_id).execute()
-        return jsonify({'success': True, 'data': result.data})
-    except Exception as e:
-        logging.error(f"Errore aggiornamento alimentatore potenza: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@admin_bp.route('/alimentatori_potenze/delete/<int:potenza_id>', methods=['DELETE'])
-def delete_alimentatore_potenza(potenza_id):
-    auth_check = require_admin_login()
-    if auth_check:
-        return auth_check
-
-    try:
-        result = db.supabase.table('alimentatori_potenze').delete().eq('id', potenza_id).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        logging.error(f"Errore eliminazione alimentatore potenza: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================
@@ -830,7 +794,7 @@ def bulk_delete():
             return jsonify({'success': False, 'error': 'Parametri mancanti'})
 
         # Validazione tabella per sicurezza
-        allowed_tables = ['categorie', 'profili', 'profili_test', 'strip_led', 'strip_test', 'alimentatori', 'dimmer', 'configurazioni_salvate', 'tappi', 'staffe', 'diffusori']
+        allowed_tables = ['categorie', 'profili', 'profili_test', 'strip_led', 'strip_test', 'alimentatori_test', 'dimmer', 'configurazioni_salvate', 'tappi', 'staffe', 'diffusori']
         if table not in allowed_tables:
             return jsonify({'success': False, 'error': 'Tabella non valida'})
 
@@ -839,7 +803,7 @@ def bulk_delete():
             id_field = 'codice_listino'
         elif table == 'strip_test':
             id_field = 'codice_completo'
-        elif table in ['tappi', 'staffe', 'diffusori']:
+        elif table in ['tappi', 'staffe', 'diffusori', 'alimentatori_test']:
             id_field = 'codice'
         else:
             id_field = 'id'

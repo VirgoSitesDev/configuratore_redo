@@ -10,10 +10,10 @@
         position: relative;
     }
     .editable-cell:hover:not(.editing) {
-        background-color: #f0f8ff;
+        background-color: #f8f9fa;
     }
     .editable-cell.editing {
-        background-color: #fff3cd;
+        background-color: #ffe5e2;
     }
     .cell-input {
         width: 100%;
@@ -34,7 +34,7 @@
             <i class="bi bi-battery-charging me-2"></i>Elenco Alimentatori ({{ alimentatori|length }})
         </h6>
         <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDelete('alimentatori')">
+            <button class="btn btn-danger btn-sm" onclick="bulkDelete('alimentatori_test')">
                 <i class="bi bi-trash me-1"></i>Elimina Selezionati
             </button>
         </div>
@@ -54,15 +54,15 @@
                         <th>Potenza</th>
                         <th>Codice</th>
                         <th>Prezzo (€)</th>
-                        <th width="120">Azioni</th>
+                        <th width="150">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for alimentatore in alimentatori %}
-                    <tr data-potenza-id="{{ alimentatore.potenza_id }}" data-alimentatore-id="{{ alimentatore.alimentatore_id }}">
+                    <tr data-codice="{{ alimentatore.codice }}" data-alimentatore-id="{{ alimentatore.alimentatore_id }}" data-descrizione="{{ alimentatore.descrizione or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
-                                   value="{{ alimentatore.potenza_id }}" onchange="toggleBulkActions()">
+                                   value="{{ alimentatore.codice }}" onchange="toggleBulkActions()">
                         </td>
                         <td><strong>{{ alimentatore.nome or 'N/A' }}</strong></td>
                         <td><span class="badge bg-secondary">{{ alimentatore.tensione or '-' }}</span></td>
@@ -81,11 +81,16 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this, 'alimentatori_potenze')" style="display: none;">
+                                <button type="button" class="btn btn-outline-success save-btn" onclick="saveRow(this)" style="display: none;">
                                     <i class="bi bi-check"></i>
                                 </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="openDescrizioneModal('{{ alimentatore.codice }}')"
+                                        title="Modifica descrizione">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-danger"
-                                        onclick="deleteAlimentatorePotenza({{ alimentatore.potenza_id }})">
+                                        onclick="deleteAlimentatore('{{ alimentatore.codice }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -125,33 +130,54 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="add_id" class="form-label">ID Alimentatore *</label>
-                                <input type="text" class="form-control" id="add_id" name="id" required>
-                                <div class="form-text">Identificativo univoco (es: ALIM_24V_100W)</div>
+                                <label for="add_codice" class="form-label">Codice *</label>
+                                <input type="text" class="form-control" id="add_codice" name="codice" required>
+                                <div class="form-text">Es: AT2450, ATD2460</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="add_nome" class="form-label">Nome *</label>
+                                <label for="add_nome" class="form-label">Nome Famiglia *</label>
                                 <input type="text" class="form-control" id="add_nome" name="nome" required>
+                                <div class="form-text">Es: SERIE AT24, SERIE ATD24</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="add_tipo" class="form-label">Tipo</label>
-                                <select class="form-select" id="add_tipo" name="tipo">
+                                <label for="add_tensione" class="form-label">Tensione *</label>
+                                <select class="form-select" id="add_tensione" name="tensione" required>
                                     <option value="">Seleziona...</option>
-                                    <option value="standard">Standard</option>
-                                    <option value="slim">Slim</option>
-                                    <option value="waterproof">Waterproof</option>
-                                    <option value="dimmable">Dimmable</option>
+                                    <option value="24V">24V</option>
+                                    <option value="48V">48V</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_ip" class="form-label">Grado IP *</label>
+                                <select class="form-select" id="add_ip" name="ip" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="IP20">IP20</option>
+                                    <option value="IP44">IP44</option>
+                                    <option value="IP65">IP65</option>
+                                    <option value="IP67">IP67</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="add_potenza" class="form-label">Potenza (W) *</label>
+                                <input type="number" class="form-control" id="add_potenza" name="potenza" required
+                                       placeholder="es: 50, 100, 150">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="add_prezzo" class="form-label">Prezzo (€)</label>
                                 <input type="number" step="0.01" class="form-control" id="add_prezzo" name="prezzo"
@@ -160,41 +186,10 @@
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="add_tensioneInput" class="form-label">Tensione Input *</label>
-                                <select class="form-select" id="add_tensioneInput" name="tensioneInput" required>
-                                    <option value="">Seleziona...</option>
-                                    <option value="110V">110V</option>
-                                    <option value="220V">220V</option>
-                                    <option value="230V">230V</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="add_tensioneOutput" class="form-label">Tensione Output *</label>
-                                <select class="form-select" id="add_tensioneOutput" name="tensioneOutput" required>
-                                    <option value="">Seleziona...</option>
-                                    <option value="12V">12V</option>
-                                    <option value="24V">24V</option>
-                                    <option value="48V">48V</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="add_potenzaMassima" class="form-label">Potenza Massima (W) *</label>
-                                <input type="number" class="form-control" id="add_potenzaMassima" name="potenzaMassima" required
-                                       placeholder="es: 100">
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="mb-3">
                         <label for="add_descrizione" class="form-label">Descrizione</label>
-                        <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"></textarea>
+                        <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"
+                                  placeholder="Inserisci una descrizione opzionale per l'alimentatore..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -304,6 +299,33 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Modifica Descrizione -->
+<div class="modal fade" id="descrizioneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>Modifica Descrizione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="descrizione_codice">
+                <div class="mb-3">
+                    <label for="descrizione_text" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="descrizione_text" rows="4" placeholder="Inserisci la descrizione dell'alimentatore..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveDescrizione()">
+                    <i class="bi bi-check me-2"></i>Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -369,13 +391,10 @@ function cancelEdit(row) {
     row.find('.save-btn').hide();
 }
 
-function saveRow(button, table) {
+function saveRow(button) {
     const row = $(button).closest('tr');
-    const potenzaId = row.data('potenza-id');
-    const alimentatoreId = row.data('alimentatore-id');
-    const data = {
-        alimentatore_id: alimentatoreId
-    };
+    const codice = row.data('codice');
+    const data = {};
 
     row.find('.editable-cell').each(function() {
         const cell = $(this);
@@ -385,14 +404,14 @@ function saveRow(button, table) {
         if (field === 'potenza') {
             data[field] = value ? parseInt(value) : null;
         } else if (field === 'prezzo') {
-            data['price'] = value ? parseFloat(value) : null;
+            data[field] = value ? parseFloat(value) : null;
         } else {
             data[field] = value || null;
         }
     });
 
     $.ajax({
-        url: `{{ url_for("admin.update_alimentatore_potenza", potenza_id=0) }}`.replace('0', potenzaId),
+        url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -412,41 +431,30 @@ function saveRow(button, table) {
     });
 }
 
-function deleteAlimentatorePotenza(id) {
-    if (!confirmDelete('Sei sicuro di voler eliminare questa variante alimentatore?\nQuesta azione non può essere annullata.')) {
-        return;
-    }
-
-    $.ajax({
-        url: `{{ url_for("admin.delete_alimentatore_potenza", potenza_id=0) }}`.replace('0', id),
-        method: 'DELETE',
-        success: function(response) {
-            if (response.success) {
-                showAlert('Variante alimentatore eliminata con successo!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert('Errore: ' + response.error, 'danger');
-            }
-        },
-        error: handleAjaxError
-    });
-}
-
 function addAlimentatore(event) {
     event.preventDefault();
 
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
 
-    if (data.potenzaMassima) {
-        data.potenzaMassima = parseInt(data.potenzaMassima);
+    // Generate alimentatore_id from nome by replacing spaces with underscores
+    if (data.nome) {
+        data.alimentatore_id = data.nome.replace(/\s+/g, '_');
     }
+
+    // Convert potenza to integer
+    if (data.potenza) {
+        data.potenza = parseInt(data.potenza);
+    }
+
+    // Convert prezzo to float or remove if empty
     if (data.prezzo) {
         data.prezzo = parseFloat(data.prezzo);
     } else {
         delete data.prezzo;
     }
-    if (!data.tipo) delete data.tipo;
+
+    // Remove empty descrizione
     if (!data.descrizione) delete data.descrizione;
 
     $.ajax({
@@ -499,7 +507,7 @@ function updateAlimentatore(event) {
     if (!data.descrizione) delete data.descrizione;
 
     $.ajax({
-        url: `{{ url_for("admin.update_alimentatore", alimentatore_id="") }}${alimentatoreId}`,
+        url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(alimentatoreId)),
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -516,13 +524,13 @@ function updateAlimentatore(event) {
     });
 }
 
-function deleteAlimentatore(id) {
+function deleteAlimentatore(codice) {
     if (!confirmDelete('Sei sicuro di voler eliminare questo alimentatore?\nQuesta azione non può essere annullata.')) {
         return;
     }
 
     $.ajax({
-        url: `{{ url_for("admin.delete_alimentatore", alimentatore_id="") }}${id}`,
+        url: `{{ url_for("admin.delete_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
         method: 'DELETE',
         success: function(response) {
             if (response.success) {
@@ -561,6 +569,47 @@ function bulkDelete(table) {
             if (response.success) {
                 showAlert(`${response.deleted_count} alimentatori eliminati con successo!`, 'success');
                 setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Errore: ' + response.error, 'danger');
+            }
+        },
+        error: handleAjaxError
+    });
+}
+
+function openDescrizioneModal(codice) {
+    // Find the row with this codice
+    const row = $(`tr[data-codice="${codice}"]`);
+    const descrizione = row.data('descrizione') || '';
+
+    // Set the values in the modal
+    $('#descrizione_codice').val(codice);
+    $('#descrizione_text').val(descrizione);
+
+    // Show the modal
+    $('#descrizioneModal').modal('show');
+}
+
+function saveDescrizione() {
+    const codice = $('#descrizione_codice').val();
+    const descrizione = $('#descrizione_text').val();
+
+    const data = {
+        descrizione: descrizione
+    };
+
+    $.ajax({
+        url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Descrizione salvata con successo!', 'success');
+                $('#descrizioneModal').modal('hide');
+
+                // Update the data attribute in the row
+                $(`tr[data-codice="${codice}"]`).data('descrizione', descrizione);
             } else {
                 showAlert('Errore: ' + response.error, 'danger');
             }

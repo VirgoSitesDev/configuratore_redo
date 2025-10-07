@@ -68,18 +68,6 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
     return '';
   }
 
-  const mappaTemperaturaSuffisso = {
-      '2700K': 'UWW',
-      '3000K': 'WW',
-      '4000K': 'NW',
-      '6000K': 'CW',
-      '6500K': 'CW',
-      '6700K': 'CW',
-      'RGB': 'RGB',
-      'RGBW': 'RGB+WW',
-      'CCT': 'CCT'
-  };
-  
   let stripData = null;
 
   if (configurazione.modalitaConfigurazione === 'solo_strip' || 
@@ -194,32 +182,20 @@ export function calcolaCodiceStripLed(tipologia, tensione, ip, temperatura, pote
   }
   
   let codiceCompleto = '';
-  
+
   if (indicePotenza < stripData.codiciProdotto.length) {
       codiceCompleto = stripData.codiciProdotto[indicePotenza];
   } else {
       console.error('Indice potenza fuori range per codiciProdotto');
       return '';
   }
-  
+
   if (!codiceCompleto) {
       console.error('Codice completo è vuoto');
       return '';
   }
-  
-  configurazione.codiceProdottoCompleto = codiceCompleto;
-  
-  const suffissoTemp = mappaTemperaturaSuffisso[configurazione.temperaturaColoreSelezionata];
-  codiceCompleto = codiceCompleto + suffissoTemp;
 
-  if (configurazione.potenzaSelezionata.includes('CRI90')) codiceCompleto = codiceCompleto + 'CRI90';
-  if (configurazione.ipSelezionato == 'IP65' && configurazione.codiceProdottoCompleto.includes('XTP') && !codiceCompleto.includes('65')) codiceCompleto = codiceCompleto + '65';
-  if (configurazione.ipSelezionato == 'IP67' && !codiceCompleto.includes('67') && !configurazione.codiceProdottoCompleto.includes('MG') && !configurazione.codiceProdottoCompleto.includes('SNK')) codiceCompleto = codiceCompleto + '67';
-  if (configurazione.nomeCommercialeStripLed && configurazione.nomeCommercialeStripLed.includes('FROST')) codiceCompleto = codiceCompleto + 'FR';
-  if (configurazione.nomeCommercialeStripLed && configurazione.nomeCommercialeStripLed.includes('CLEAR')) codiceCompleto = codiceCompleto + 'CL';
-  if (configurazione.tensioneSelezionato == '48V') codiceCompleto = codiceCompleto + '48';
-  if (configurazione.tensioneSelezionato == '220V') codiceCompleto = codiceCompleto + '220';
-
+  // The codice_completo from database is already complete - no need to add anything
   return codiceCompleto;
 }
 

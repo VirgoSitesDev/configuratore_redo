@@ -321,7 +321,7 @@ class DatabaseManager:
             # Add potenza and codice if not already present
             if strip['potenza'] not in strips_by_id[strip_id]['potenzeDisponibili']:
                 strips_by_id[strip_id]['potenzeDisponibili'].append(strip['potenza'])
-                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_prodotto'])
+                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_completo'])
                 # Store taglio_minimo per potenza
                 if strip['taglio_minimo']:
                     strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
@@ -447,7 +447,7 @@ class DatabaseManager:
             # Add potenza and codice if not already present
             if strip['potenza'] not in strips_by_id[strip_id]['potenzeDisponibili']:
                 strips_by_id[strip_id]['potenzeDisponibili'].append(strip['potenza'])
-                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_prodotto'])
+                strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_completo'])
                 # Store taglio_minimo per potenza
                 if strip['taglio_minimo']:
                     strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
@@ -462,65 +462,64 @@ class DatabaseManager:
 
         return result
 
-    def get_alimentatori_by_tipo(self, tipo_alimentazione: str, 
+    def get_alimentatori_by_tipo(self, tipo_alimentazione: str,
                                   tensione: str = '24V') -> List[Dict[str, Any]]:
         alimentatori_map = {
-            'ON-OFF': ['SERIE_AT24', 'SERIE_ATUS', 'SERIE_ATSIP44', 
+            'ON-OFF': ['SERIE_AT24', 'SERIE_ATUS', 'SERIE_ATSIP44',
                        'SERIE_AT24IP67', 'SERIE_ATN24IP67'],
             'DIMMERABILE_TRIAC': ['SERIE_ATD24', 'SERIE_ATD24IP67']
         }
-        
+
         if tensione == '48V':
             alimentatori_map['ON-OFF'] = ['SERIE_ATS48IP44']
-        
+
         alimentatori_ids = alimentatori_map.get(tipo_alimentazione, [])
-        
+
         if not alimentatori_ids:
             return []
 
-        alimentatori = self.supabase.table('alimentatori')\
+        # Fetch all matching alimentatori from alimentatori_test table
+        alimentatori_data = self.supabase.table('alimentatori_test')\
             .select('*')\
             .eq('tensione', tensione)\
-            .in_('id', alimentatori_ids)\
-            .execute().data
-        
-        if not alimentatori:
-            return []
-
-        alim_ids = [a['id'] for a in alimentatori]
-        potenze_data = self.supabase.table('alimentatori_potenze')\
-            .select('alimentatore_id, potenza, codice')\
-            .in_('alimentatore_id', alim_ids)\
+            .in_('alimentatore_id', alimentatori_ids)\
             .order('potenza')\
             .execute().data
 
-        potenze_map = {}
-        for p in potenze_data:
-            aid = p['alimentatore_id']
-            if aid not in potenze_map:
-                potenze_map[aid] = []
-            potenze_map[aid].append(p)
+        if not alimentatori_data:
+            return []
 
-        for alim in alimentatori:
-            aid = alim['id']
-            potenze_list = potenze_map.get(aid, [])
-            alim['potenze'] = [p['potenza'] for p in potenze_list]
-            alim['codici'] = {str(p['potenza']): p['codice'] for p in potenze_list if p['codice']}
-        
-        return alimentatori
+        # Group by alimentatore_id to rebuild the structure
+        alim_map = {}
+        for item in alimentatori_data:
+            aid = item['alimentatore_id']
+            if aid not in alim_map:
+                alim_map[aid] = {
+                    'id': aid,
+                    'nome': item['nome'],
+                    'descrizione': item.get('descrizione'),
+                    'tensione': item['tensione'],
+                    'ip': item['ip'],
+                    'potenze': [],
+                    'codici': {}
+                }
+            alim_map[aid]['potenze'].append(item['potenza'])
+            alim_map[aid]['codici'][str(item['potenza'])] = item['codice']
+
+        return list(alim_map.values())
     
     def get_potenze_alimentatore(self, alimentatore_id: str) -> List[int]:
         cache_key = f"potenze_alim_{alimentatore_id}"
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
-        potenze = self.supabase.table('alimentatori_potenze')\
+
+        potenze = self.supabase.table('alimentatori_test')\
             .select('potenza')\
             .eq('alimentatore_id', alimentatore_id)\
             .order('potenza')\
             .execute().data
-        
+
         result = [p['potenza'] for p in potenze]
         self._set_cache(cache_key, result)
         return result
@@ -593,22 +592,28 @@ class DatabaseManager:
         if cached:
             return cached
 
-        alimentatore = self.supabase.table('alimentatori')\
+        # Fetch all entries for this alimentatore_id from alimentatori_test
+        alimentatori_data = self.supabase.table('alimentatori_test')\
             .select('*')\
-            .eq('id', alimentatore_id)\
-            .single()\
+            .eq('alimentatore_id', alimentatore_id)\
+            .order('potenza')\
             .execute().data
-        
-        if alimentatore:
-            potenze_data = self.supabase.table('alimentatori_potenze')\
-                .select('potenza, codice')\
-                .eq('alimentatore_id', alimentatore_id)\
-                .order('potenza')\
-                .execute().data
-            
-            alimentatore['potenze'] = [p['potenza'] for p in potenze_data]
-            alimentatore['codici'] = {str(p['potenza']): p['codice'] for p in potenze_data if p['codice']}
-        
+
+        if not alimentatori_data:
+            return None
+
+        # Reconstruct the alimentatore structure from the first entry
+        first = alimentatori_data[0]
+        alimentatore = {
+            'id': alimentatore_id,
+            'nome': first['nome'],
+            'descrizione': first.get('descrizione'),
+            'tensione': first['tensione'],
+            'ip': first['ip'],
+            'potenze': [p['potenza'] for p in alimentatori_data],
+            'codici': {str(p['potenza']): p['codice'] for p in alimentatori_data if p.get('codice')}
+        }
+
         self._set_cache(cache_key, alimentatore)
         return alimentatore
     
@@ -704,18 +709,18 @@ class DatabaseManager:
         try:
             if not codice_alimentatore:
                 return 0.0
-                
-            result = self.supabase.table('alimentatori_potenze')\
-                .select('price')\
+
+            result = self.supabase.table('alimentatori_test')\
+                .select('prezzo')\
                 .eq('codice', codice_alimentatore)\
                 .execute()
-            
+
             if result.data and len(result.data) > 0:
-                prezzo = result.data[0].get('price', 0.0)
+                prezzo = result.data[0].get('prezzo', 0.0)
                 return float(prezzo) if prezzo is not None else 0.0
-            
+
             return 0.0
-            
+
         except Exception as e:
             logging.error(f"Errore nel recupero prezzo alimentatore {codice_alimentatore}: {str(e)}")
             return 0.0
