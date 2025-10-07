@@ -1190,11 +1190,6 @@ export function finalizzaConfigurazione() {
         console.log('[DEBUG RIEPILOGO] Moltiplicatore strip:', configurazione.moltiplicatoreStrip);
         console.log('[DEBUG RIEPILOGO] Doppia strip selezionata:', configurazione.doppiaStripSelezionata);
 
-        // Set staffe quantity equal to profile quantity
-        if (configurazione.staffaSelezionata) {
-          configurazione.quantitaStaffe = configurazione.quantitaProfilo;
-        }
-
         configurazione.combinazioneProfiloOttimale = data.combinazioneProfiloOttimale || [
           {lunghezza: configurazione.lunghezzaMassimaProfilo, quantita: configurazione.quantitaProfilo}
         ];

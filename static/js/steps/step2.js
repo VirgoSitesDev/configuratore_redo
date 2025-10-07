@@ -1187,7 +1187,17 @@ function mostraSezioneConfigurazioneStaffe(staffa) {
       <div id="staffe-dettagli-section" style="display: none;">
         <div class="alert alert-info mb-3">
           <p class="mb-0"><strong>Staffa selezionata:</strong> ${staffa.codice}</p>
-          <p class="mb-0"><strong>Quantità:</strong> <span id="quantita-staffe-calcolata">1</span> (basata sulla quantità profili)</p>
+        </div>
+
+        <div class="mb-4">
+          <h5 class="mb-3">Quantità staffe</h5>
+          <div class="row">
+            <div class="col-md-6">
+              <label for="quantita-staffe" class="form-label">Quantità:</label>
+              <input type="number" class="form-control" id="quantita-staffe"
+                     min="1" step="1" value="1">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1207,9 +1217,9 @@ function mostraSezioneConfigurazioneStaffe(staffa) {
       $('#staffe-dettagli-section').slideDown(300);
       configurazione.staffaSelezionata = window.staffaData;
 
-      // Set quantity based on profile quantity (will be calculated later in finalizza)
-      configurazione.quantitaStaffe = configurazione.quantitaProfilo || 1;
-      $('#quantita-staffe-calcolata').text(configurazione.quantitaStaffe);
+      // Set initial quantity to 1
+      configurazione.quantitaStaffe = 1;
+      $('#quantita-staffe').val(1);
 
       checkPersonalizzazioneCompletion();
     } else {
@@ -1218,6 +1228,21 @@ function mostraSezioneConfigurazioneStaffe(staffa) {
       configurazione.quantitaStaffe = null;
       checkPersonalizzazioneCompletion();
     }
+  });
+
+  // Add event handler for quantity changes
+  $('#quantita-staffe').on('input change', function() {
+    const quantita = parseInt($(this).val()) || 1;
+
+    // Ensure minimum is 1
+    if (quantita < 1) {
+      $(this).val(1);
+      configurazione.quantitaStaffe = 1;
+    } else {
+      configurazione.quantitaStaffe = quantita;
+    }
+
+    checkPersonalizzazioneCompletion();
   });
 }
 
