@@ -1630,10 +1630,11 @@ export function finalizzaConfigurazione() {
                     </tr>
         `;
 
-        if (riepilogo.lunghezzaRichiesta) {
+        // Only show lunghezza richiesta here if it wasn't already shown in the DRITTO_SEMPLICE section above
+        if (riepilogo.lunghezzaRichiesta && riepilogo.formaDiTaglioSelezionata !== 'DRITTO_SEMPLICE') {
           riepilogoHtml += `
                     <tr>
-                      <th scope="row">Lunghezza richiesta</th>
+                      <th scope="row">Lunghezza totale</th>
                       <td>${riepilogo.lunghezzaRichiesta}mm</td>
                     </tr>
           `;

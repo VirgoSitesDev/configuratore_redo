@@ -73,21 +73,23 @@ $(document).ready(function() {
       $('#homepage-main').fadeIn(300);
       $('.step-progress').hide();
       $('body').addClass('on-homepage');
-      
+
       Object.keys(configurazione).forEach(key => {
         if (typeof configurazione[key] !== 'function') {
           configurazione[key] = null;
         }
       });
-      
+
+      // Clear outdoor flow visual state
+      $('.tipologia-strip-card').removeClass('selected');
+      $('.special-strip-card').removeClass('selected');
+      $('.special-strip-card').parent().hide();
+      $('#special-strip-container').hide();
+
       updateProgressBar(0);
     });
   };
 
-  $('a[href="javascript:location.reload(true)"]').attr('href', 'javascript:void(0)').on('click', function(e) {
-    e.preventDefault();
-    goToHomepage();
-  });
 
   initHomepageListeners();
   initStep0Listeners();

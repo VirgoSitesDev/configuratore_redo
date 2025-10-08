@@ -840,7 +840,8 @@ def finalizza_configurazione():
     if 'potenzaSelezionata' in configurazione and configurazione['potenzaSelezionata']:
         potenza_str = configurazione['potenzaSelezionata'].split('W/m')[0]
         try:
-            potenza_per_metro = float(potenza_str)
+            # Replace comma with dot for Italian decimal format
+            potenza_per_metro = float(potenza_str.replace(',', '.'))
         except ValueError:
             potenza_per_metro = 0
     

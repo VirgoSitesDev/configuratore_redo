@@ -11,7 +11,7 @@
   <div class="container-fluid">
     <header class="row bg-light py-3 mb-4 align-items-center">
       <div class="col-md-3 text-start">
-        <a href="javascript:location.reload(true)" title="Torna alla home">
+        <a href="/" class="logo-home-link" title="Torna alla home">
           <img src="{{ url_for('static', filename='img/logo-redo-nero.png') }}" alt="Logo Redo" class="site-logo">
         </a>
         <span class="beta-tag">beta</span>
@@ -538,7 +538,6 @@
           <div class="form-group mb-4 lunghezza-personalizzata-container">
             <label for="lunghezza-personalizzata">Lunghezza richiesta (mm):</label>
             <input type="number" class="form-control" id="lunghezza-personalizzata" placeholder="Inserisci la lunghezza in millimetri" min="100">
-            <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
           </div>
         </div>
         

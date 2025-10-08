@@ -159,15 +159,21 @@ class SimpleNavigationProtection {
             if (link && this.hasChanges && !this.isSubmitting && !this.isShowingModal) {
                 const href = link.getAttribute('href');
 
-                if (href && !href.startsWith('#') && !href.startsWith('javascript:') && 
+                if (href && !href.startsWith('#') && !href.startsWith('javascript:') &&
                     (href.startsWith('http') || href.startsWith('/'))) {
-                    
+
                     e.preventDefault();
-                    
+
                     this.showConfirmModal(() => {
-                        window.location.href = href;
+                        // If navigating to home ("/"), use goToHomepage instead
+                        if (href === '/' && typeof window.goToHomepage === 'function') {
+                            this.markAsSaved();
+                            window.goToHomepage();
+                        } else {
+                            window.location.href = href;
+                        }
                     });
-                    
+
                     return false;
                 }
             }

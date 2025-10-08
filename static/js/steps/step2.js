@@ -82,9 +82,20 @@ export function initStep2Listeners() {
 
   $('#btn-torna-step2-option-strip').on('click', function(e) {
     e.preventDefault();
-    
+
     $("#step2-tipologia-strip").fadeOut(300, function() {
       if (configurazione.isFlussoProfiliEsterni) {
+        // Clear strip selections when going back in outdoor flow
+        configurazione.tipologiaStripSelezionata = null;
+        configurazione.specialStripSelezionata = null;
+        configurazione.categoriaSelezionata = null;
+
+        // Remove selected classes from cards and reset visibility
+        $('.tipologia-strip-card').removeClass('selected');
+        $('.special-strip-card').removeClass('selected');
+        $('.special-strip-card').parent().hide();
+        $('#special-strip-container').hide();
+
         $("#step1-tipologia-outdoor").fadeIn(300);
         updateProgressBar(1);
       } else {
@@ -456,7 +467,6 @@ export function vaiAllaPersonalizzazione() {
           <div class="alert alert-info">
             <p>Hai selezionato un profilo intero con una lunghezza di ${lunghezzaMetri}mm.</p>
           </div>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `;
       
@@ -1446,7 +1456,6 @@ function togglePersonalizzazioneLunghezza() {
         <div class="alert alert-info">
           <p>Hai selezionato un profilo intero che ha una lunghezza di ${lunghezzaMetri}m (${lunghezzaMassima}mm).</p>
         </div>
-        <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
       </div>
     `;
 
@@ -1503,7 +1512,6 @@ export function updateIstruzioniMisurazione(forma) {
           <input type="number" class="form-control" id="lunghezza-personalizzata"
                  placeholder="Inserisci la lunghezza in millimetri" min="100" ${maxAttr}>
           <p class="assembly-warning mt-2">NOTA: la lunghezza massima per strip 24V è 10mt, per le strip 48V è 30mt mentre per le strip 220v è 50mt</p>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
 
@@ -1557,7 +1565,6 @@ export function updateIstruzioniMisurazione(forma) {
           <label for="lunghezza-lato2">Lunghezza lato verticale (mm):</label>
           <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
                  data-lato="lato2" placeholder="Lato verticale" min="100" ${maxAttrLDx}>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
       mostraNonAssemblatoWarning();
@@ -1587,7 +1594,6 @@ export function updateIstruzioniMisurazione(forma) {
           <label for="lunghezza-lato2">Lunghezza lato verticale (mm):</label>
           <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
                  data-lato="lato2" placeholder="Lato verticale" min="100" ${maxAttrLSx}>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
       mostraNonAssemblatoWarning();
@@ -1622,7 +1628,6 @@ export function updateIstruzioniMisurazione(forma) {
           <label for="lunghezza-lato3">Lunghezza lato orizzontale inferiore (mm):</label>
           <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato3"
                  data-lato="lato3" placeholder="Lato orizzontale inferiore" min="100" ${maxAttrC}>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
       mostraNonAssemblatoWarning();
@@ -1652,7 +1657,6 @@ export function updateIstruzioniMisurazione(forma) {
           <label for="lunghezza-lato2">Larghezza (mm):</label>
           <input type="number" class="form-control campo-lunghezza-multipla" id="lunghezza-lato2"
                  data-lato="lato2" placeholder="Larghezza" min="100" ${maxAttrRect}>
-          <p class="alert-dialog mt-4">ATTENZIONE: la lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto.</p>
         </div>
       `);
       mostraNonAssemblatoWarning();
