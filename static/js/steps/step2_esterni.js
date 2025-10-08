@@ -110,24 +110,26 @@ export function caricaProfiliCompatibiliConStrip() {
             profiliCompatibili.forEach(function(profilo) {
                 const profiloId = profilo.id || 'unknown';
                 const profiloNome = profilo.nome || 'Profilo senza nome';
-                
+                const descrizione = profilo.note ? `<p class="card-text text-muted small mb-0">${profilo.note}</p>` : '';
+
                 let profiloCard = $(`
                     <div class="col-md-4 col-sm-6 mb-4 profilo-card-row">
-                        <div class="card profilo-card-esterni" 
-                             data-id="${profiloId}" 
+                        <div class="card profilo-card-esterni"
+                             data-id="${profiloId}"
                              data-nome="${profiloNome}"
                              style="cursor: pointer;">
-                            <img src="${profilo.immagine || '/static/img/placeholder_logo.jpg'}" 
-                                 class="card-img-top" alt="${profiloNome}" 
+                            <img src="${profilo.immagine || '/static/img/placeholder_logo.jpg'}"
+                                 class="card-img-top" alt="${profiloNome}"
                                  onerror="this.src='/static/img/placeholder_logo.jpg'">
                             <div class="card-body">
                                 <h5 class="card-title">${profiloNome}</h5>
+                                ${descrizione}
                                 <p class="card-text small text-muted">Compatibile con la tua strip LED</p>
                             </div>
                         </div>
                     </div>
                 `);
-                
+
                 grid.append(profiloCard);
             });
 

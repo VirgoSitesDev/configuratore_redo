@@ -190,6 +190,9 @@ class DatabaseManager:
             # Update due_tagli if any variant has it set to True
             if item.get('due_tagli', False):
                 profili_map[famiglia]['due_tagli'] = True
+            # Update descrizione if current item has one and we don't have one yet
+            if item.get('descrizione') and not profili_map[famiglia]['note']:
+                profili_map[famiglia]['note'] = item.get('descrizione')
 
         # Build final profili list (no longer need to query profili table for images)
         profili = []
@@ -382,6 +385,7 @@ class DatabaseManager:
                     'id': strip_id,
                     'nome': strip['nome'],
                     'nome_commerciale': strip['nome_commerciale'],
+                    'descrizione': strip.get('descrizione'),
                     'tipo': strip['tipo'],
                     'tensione': strip['tensione'],
                     'ip': strip['ip'],
@@ -406,6 +410,10 @@ class DatabaseManager:
                 # Store taglio_minimo per potenza
                 if strip['taglio_minimo']:
                     strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
+
+            # Update descrizione if current variant has one and we don't have one yet
+            if strip.get('descrizione') and not strips_by_id[strip_id]['descrizione']:
+                strips_by_id[strip_id]['descrizione'] = strip.get('descrizione')
 
         # Apply compatibility filters
         compatible_strips = []
@@ -574,6 +582,7 @@ class DatabaseManager:
                     'id': strip_id,
                     'nome': strip['nome'],
                     'nome_commerciale': strip['nome_commerciale'],
+                    'descrizione': strip.get('descrizione'),
                     'tipo': strip['tipo'],
                     'tensione': strip['tensione'],
                     'ip': strip['ip'],
@@ -598,6 +607,10 @@ class DatabaseManager:
                 # Store taglio_minimo per potenza
                 if strip['taglio_minimo']:
                     strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
+
+            # Update descrizione if current variant has one and we don't have one yet
+            if strip.get('descrizione') and not strips_by_id[strip_id]['descrizione']:
+                strips_by_id[strip_id]['descrizione'] = strip.get('descrizione')
 
         result = []
         for strip_id, strip in strips_by_id.items():

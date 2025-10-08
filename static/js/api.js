@@ -24,17 +24,19 @@ export function caricaProfili(categoria) {
       $('#profili-container').append(grid);
       
       data.forEach(function(profilo) {
+        const descrizione = profilo.note ? `<p class="card-text text-muted small mb-0">${profilo.note}</p>` : '';
         let profiloCard = $(`
           <div class="col-md-4 col-sm-6 mb-4 profilo-card-row">
             <div class="card profilo-card" data-id="${profilo.id}" data-nome="${profilo.nome}" data-lunghezza-massima="${profilo.lunghezzaMassima || 3000}">
               <img src="${profilo.immagine || '/static/img/placeholder_logo.jpg'}" class="card-img-top" alt="${profilo.nome}" onerror="this.src='/static/img/placeholder_logo.jpg'">
               <div class="card-body">
                 <h5 class="card-title">${profilo.nome}</h5>
+                ${descrizione}
               </div>
             </div>
           </div>
         `);
-        
+
         grid.append(profiloCard);
       });
       
@@ -770,25 +772,28 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
           infoText = `Tensione: ${strip.tensione}, IP: ${strip.ip}, Temperatura: ${formatTemperatura ? formatTemperatura(strip.temperatura) : strip.temperatura}`;
         }
         
+        const hasStripDescription = strip.descrizione && strip.descrizione.trim() !== '';
+
         stripHtml += `
           <div class="col-md-4 mb-3">
-            <div class="card option-card strip-led-compatibile-card" 
-                data-strip-id="${strip.id}" 
+            <div class="card option-card strip-led-compatibile-card"
+                data-strip-id="${strip.id}"
                 data-nome-commerciale="${strip.nomeCommerciale || ''}"
                 data-lunghezza-massima="${strip.lunghezzaMassima || 5000}">
-              <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}" 
-                  style="height: 180px; object-fit: cover;" 
+              <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}"
+                  style="height: 180px; object-fit: cover;"
                   onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px';">
-              <img src="${imgPath2}" class="card-img-strip-detail" alt="Dettaglio ${nomeVisualizzato}" 
-                  style="height: 60px; width: 100%; object-fit: cover; margin-top: -10px;" 
+              <img src="${imgPath2}" class="card-img-strip-detail" alt="Dettaglio ${nomeVisualizzato}"
+                  style="height: 60px; width: 100%; object-fit: cover; margin-top: -10px;"
                   onerror="this.style.display='none';">
               <div class="card-body">
                 <h5 class="card-title">${nomeVisualizzato}</h5>
                 ${showTechnicalName && strip.nomeCommerciale ? `<p class="card-subtitle mb-2 text-muted">${technicalNameDisplay}</p>` : ''}
-                <p class="card-text small">
+                ${hasStripDescription ? `<p class="card-text text-muted small mb-1">${strip.descrizione}</p>` : ''}
+                <p class="card-text small mb-1">
                   ${infoText}
                 </p>
-                <p class="card-text small">Potenza: ${potenza}</p>
+                <p class="card-text small mb-0">Potenza: ${potenza}</p>
               </div>
             </div>
           </div>

@@ -163,21 +163,23 @@ function caricaStripLedFiltrate() {
         data.strip_led.forEach(function(strip) {
           const nomeVisualizzato = strip.nomeCommerciale || strip.nome;
           const imgPath = `/static/img/strip/${strip.id}.jpg`;
-          
+          const hasStripDescription = strip.descrizione && strip.descrizione.trim() !== '';
+
           stripHtml += `
             <div class="col-md-4 mb-3">
-              <div class="card option-card strip-led-compatibile-card" 
-                  data-strip-id="${strip.id}" 
+              <div class="card option-card strip-led-compatibile-card"
+                  data-strip-id="${strip.id}"
                   data-nome-commerciale="${strip.nomeCommerciale || ''}">
-                <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}" 
-                    style="height: 180px; object-fit: cover;" 
+                <img src="${imgPath}" class="card-img-top" alt="${nomeVisualizzato}"
+                    style="height: 180px; object-fit: cover;"
                     onerror="this.src='/static/img/placeholder_logo.jpg'; this.style.height='180px';">
                 <div class="card-body">
                   <h5 class="card-title">${nomeVisualizzato}</h5>
-                  <p class="card-text small">
+                  ${hasStripDescription ? `<p class="card-text text-muted small mb-1">${strip.descrizione}</p>` : ''}
+                  <p class="card-text small mb-1">
                     Tensione: ${strip.tensione}, IP: ${strip.ip}, Temperatura: ${strip.temperatura}
                   </p>
-                  <p class="card-text small">Potenza: ${configurazione.potenzaSelezionata}</p>
+                  <p class="card-text small mb-0">Potenza: ${configurazione.potenzaSelezionata}</p>
                 </div>
               </div>
             </div>

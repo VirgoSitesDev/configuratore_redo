@@ -21,6 +21,7 @@ app = Flask(__name__)
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', '587'))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() in ['true', 'on', '1']
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
@@ -1510,6 +1511,7 @@ def get_strip_led_filtrate_standalone():
                     'id': sid,
                     'nome': s['nome'],
                     'nome_commerciale': s['nome_commerciale'],
+                    'descrizione': s.get('descrizione'),
                     'tipo': s['tipo'],
                     'tensione': s['tensione'],
                     'ip': s['ip'],
@@ -1531,6 +1533,10 @@ def get_strip_led_filtrate_standalone():
                 strips_by_id[sid]['codiciProdotto'].append(s['codice_completo'])
                 if s['taglio_minimo']:
                     strips_by_id[sid]['taglioMinimo'][s['potenza']] = s['taglio_minimo']
+
+            # Update descrizione if current variant has one and we don't have one yet
+            if s.get('descrizione') and not strips_by_id[sid]['descrizione']:
+                strips_by_id[sid]['descrizione'] = s.get('descrizione')
 
         result = []
         for strip_id, strip in strips_by_id.items():
@@ -1696,7 +1702,7 @@ def invia_con_flask_mail(email_html, nome_agente, email_agente, ragione_sociale,
         
         msg = Message(
             subject=subject,
-            recipients=['furlaninicoletta@gmail.com', 'realizzazioni@redogroup.it', email_agente],
+            recipients=['realizzazioni@redogroup.it', email_agente],
             html=email_html,
             sender=app.config['MAIL_DEFAULT_SENDER']
         )
@@ -2595,6 +2601,29 @@ def verifica_doppia_strip():
     except Exception as e:
         logging.error(f"Errore in verifica_doppia_strip: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/test_email_app')
+def test_email_app():
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        
+        msg = MIMEText('<h1>Test OK!</h1>', 'html')
+        msg['Subject'] = 'Test REDO'
+        msg['From'] = os.environ.get('MAIL_DEFAULT_SENDER')
+        msg['To'] = 'realizzazioni@redogroup.it'
+        
+        server = smtplib.SMTP_SSL('out.postassl.it', 465, timeout=30)
+        server.login(
+            os.environ.get('MAIL_USERNAME'),
+            os.environ.get('MAIL_PASSWORD')
+        )
+        server.send_message(msg)
+        server.quit()
+        
+        return "Email inviata con successo!"
+    except Exception as e:
+        return f"Errore: {e}"
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
