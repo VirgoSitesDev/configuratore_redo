@@ -313,8 +313,50 @@ def update_profilo_prezzo(codice_listino):
         return auth_check
 
     try:
-        data = request.json
+        # Check if this is a file upload (FormData) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload
+            data = {}
+            for key, value in request.form.items():
+                if key in ['lunghezza', 'larghezza', 'prezzo']:
+                    data[key] = float(value) if '.' in value else int(value)
+                else:
+                    data[key] = value
+
+            # Handle image file if present
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    import os
+                    from werkzeug.utils import secure_filename
+
+                    # Create upload directory if it doesn't exist
+                    upload_dir = os.path.join('static', 'uploads', 'profili')
+                    os.makedirs(upload_dir, exist_ok=True)
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(upload_dir, unique_filename)
+
+                    # Save file
+                    file.save(filepath)
+
+                    # Store relative URL path in database
+                    data['immagine'] = f"/static/uploads/profili/{unique_filename}"
+        else:
+            # Handle regular JSON update
+            data = request.json
+
+        # Update profili_test table
         result = db.supabase.table('profili_test').update(data).eq('codice_listino', codice_listino).execute()
+
+        # If categoria is being updated, also update the profili table
+        if 'categoria' in data and 'famiglia' in data:
+            profilo_id = data['famiglia']
+            db.supabase.table('profili').update({'categoria': data['categoria']}).eq('id', profilo_id).execute()
+
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
         logging.error(f"Errore aggiornamento prezzo: {str(e)}")

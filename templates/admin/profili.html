@@ -67,7 +67,15 @@
                                    value="{{ item.codice_listino }}" onchange="toggleBulkActions()">
                         </td>
                         <td><strong>{{ item.nome or 'N/A' }}</strong></td>
-                        <td><span class="badge bg-secondary">{{ item.categoria or 'N/A' }}</span></td>
+                        <td class="editable-cell editable-categoria" data-field="categoria" data-original="{{ item.categoria or '' }}">
+                            <span class="cell-value badge bg-secondary">{{ item.categoria or 'N/A' }}</span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona categoria...</option>
+                                {% for categoria in categorie %}
+                                    <option value="{{ categoria.id }}" {% if item.categoria == categoria.id %}selected{% endif %}>{{ categoria.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
                         <td class="editable-cell" data-field="finitura" data-original="{{ item.finitura or '' }}">
                             <span class="cell-value badge bg-info">{{ item.finitura or '-' }}</span>
                             <input type="text" class="cell-input form-control form-control-sm" value="{{ item.finitura or '' }}" style="display: none;">
@@ -81,20 +89,23 @@
                             <input type="number" step="0.1" class="cell-input form-control form-control-sm" value="{{ item.larghezza or '' }}" style="display: none;">
                         </td>
                         <td class="editable-cell" data-field="codice_listino" data-original="{{ item.codice_listino or '' }}">
-                            <span class="cell-value"><code class="small">{{ item.codice_listino or '-' }}</code></span>
+                            <span class="cell-value">{{ item.codice_listino or '-' }}</span>
                             <input type="text" class="cell-input form-control form-control-sm" value="{{ item.codice_listino or '' }}" style="display: none;">
                         </td>
                         <td class="editable-cell" data-field="prezzo_euro" data-original="{{ item.prezzo or '' }}">
                             <span class="cell-value"><strong>€{{ '%.2f'|format(item.prezzo|float) if item.prezzo else '-' }}</strong></span>
                             <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ item.prezzo or '' }}" style="display: none;">
                         </td>
-                        <td>
-                            {% if item.immagine %}
-                                <img src="{{ item.immagine }}" alt="Immagine"
-                                     class="img-thumbnail" style="max-width: 40px; max-height: 30px;">
-                            {% else %}
-                                <span class="text-muted small">-</span>
-                            {% endif %}
+                        <td class="editable-cell editable-image" data-field="immagine" data-original="{{ item.immagine or '' }}">
+                            <div class="cell-value" style="cursor: pointer;">
+                                {% if item.immagine %}
+                                    <img src="{{ item.immagine }}" alt="Immagine"
+                                         class="img-thumbnail" style="max-width: 40px; max-height: 30px;">
+                                {% else %}
+                                    <span class="text-muted small">Carica immagine</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" class="cell-input form-control form-control-sm" accept="image/*" style="display: none;">
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
@@ -386,7 +397,15 @@ $(document).ready(function() {
 
         cell.addClass('editing');
         cell.find('.cell-value').hide();
-        cell.find('.cell-input').show().focus();
+        const input = cell.find('.cell-input');
+        input.show();
+
+        // For file inputs, trigger click to open file dialog
+        if (input.is('input[type="file"]')) {
+            input.click();
+        } else {
+            input.focus();
+        }
 
         // Show save button for this row
         cell.closest('tr').find('.save-btn').show();
@@ -412,6 +431,16 @@ $(document).ready(function() {
         e.stopPropagation();
     });
 
+    // Handle file selection - show filename
+    $('input[type="file"].cell-input').on('change', function() {
+        const cell = $(this).closest('.editable-cell');
+        const file = this.files[0];
+        if (file) {
+            // Show filename instead of the original image
+            cell.find('.cell-value').html(`<span class="text-primary small"><i class="bi bi-image me-1"></i>${file.name}</span>`).show();
+        }
+    });
+
     // Click anywhere else to cancel edit
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.editable-cell').length &&
@@ -434,7 +463,15 @@ function cancelEdit(row) {
         cell.find('.cell-value').show();
         // Reset to original value
         const original = cell.data('original');
-        cell.find('.cell-input').val(original);
+        const input = cell.find('.cell-input');
+
+        if (input.is('select')) {
+            input.val(original);
+        } else if (input.is('input[type="file"]')) {
+            input.val(''); // Clear file input
+        } else {
+            input.val(original);
+        }
     });
     row.find('.save-btn').hide();
 }
@@ -444,46 +481,113 @@ function saveRow(button) {
     const codiceListino = row.data('codice-listino');
     const profiloId = row.data('profilo-id');
 
-    const data = {
-        famiglia: profiloId
-    };
+    // Check if image upload is present
+    const imageInput = row.find('.editable-image input[type="file"]')[0];
+    const hasImageUpload = imageInput && imageInput.files && imageInput.files.length > 0;
 
-    // Collect edited values
-    row.find('.editable-cell').each(function() {
-        const cell = $(this);
-        const field = cell.data('field');
-        const value = cell.find('.cell-input').val();
+    if (hasImageUpload) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('famiglia', profiloId);
+        formData.append('immagine', imageInput.files[0]);
 
-        if (field === 'lunghezza_mm') {
-            data['lunghezza'] = parseInt(value) || 0;
-        } else if (field === 'larghezza_mm') {
-            data['larghezza'] = parseFloat(value) || 0;
-        } else if (field === 'prezzo_euro') {
-            data['prezzo'] = parseFloat(value) || 0;
-        } else {
-            data[field] = value;
-        }
-    });
+        // Collect other edited values
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
 
-    $.ajax({
-        url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
-        method: 'PUT',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function(response) {
-            if (response.success) {
-                showAlert('Modifiche salvate con successo!', 'success');
-                setTimeout(() => location.reload(), 800);
+            if (field === 'immagine') return; // Skip, already added
+
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (input.is('select')) {
+                value = input.val();
             } else {
-                showAlert('Errore: ' + response.error, 'danger');
+                value = input.val();
+            }
+
+            if (field === 'lunghezza_mm') {
+                formData.append('lunghezza', parseInt(value) || 0);
+            } else if (field === 'larghezza_mm') {
+                formData.append('larghezza', parseFloat(value) || 0);
+            } else if (field === 'prezzo_euro') {
+                formData.append('prezzo', parseFloat(value) || 0);
+            } else {
+                formData.append(field, value);
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
+            method: 'PUT',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
                 cancelEdit(row);
             }
-        },
-        error: function(xhr, status, error) {
-            handleAjaxError(xhr, status, error);
-            cancelEdit(row);
-        }
-    });
+        });
+    } else {
+        // Use JSON for regular updates
+        const data = {
+            famiglia: profiloId
+        };
+
+        // Collect edited values
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (input.is('select')) {
+                value = input.val();
+            } else {
+                value = input.val();
+            }
+
+            if (field === 'lunghezza_mm') {
+                data['lunghezza'] = parseInt(value) || 0;
+            } else if (field === 'larghezza_mm') {
+                data['larghezza'] = parseFloat(value) || 0;
+            } else if (field === 'prezzo_euro') {
+                data['prezzo'] = parseFloat(value) || 0;
+            } else if (field !== 'immagine') { // Skip image field for JSON updates
+                data[field] = value;
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_profilo_prezzo", codice_listino='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codiceListino)),
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
+                cancelEdit(row);
+            }
+        });
+    }
 }
 
 // Add complete profilo with all fields

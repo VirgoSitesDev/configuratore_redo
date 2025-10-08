@@ -65,14 +65,31 @@
                                    value="{{ alimentatore.codice }}" onchange="toggleBulkActions()">
                         </td>
                         <td><strong>{{ alimentatore.nome or 'N/A' }}</strong></td>
-                        <td><span class="badge bg-secondary">{{ alimentatore.tensione or '-' }}</span></td>
-                        <td><span class="badge bg-info">{{ alimentatore.ip or '-' }}</span></td>
+                        <td class="editable-cell" data-field="tensione" data-original="{{ alimentatore.tensione or '' }}">
+                            <span class="cell-value badge bg-secondary">{{ alimentatore.tensione or '-' }}</span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona tensione...</option>
+                                <option value="24V" {% if alimentatore.tensione == '24V' %}selected{% endif %}>24V</option>
+                                <option value="48V" {% if alimentatore.tensione == '48V' %}selected{% endif %}>48V</option>
+                                <option value="220V" {% if alimentatore.tensione == '220V' %}selected{% endif %}>220V</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="ip" data-original="{{ alimentatore.ip or '' }}">
+                            <span class="cell-value badge bg-info">{{ alimentatore.ip or '-' }}</span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona IP...</option>
+                                <option value="IP20" {% if alimentatore.ip == 'IP20' %}selected{% endif %}>IP20</option>
+                                <option value="IP65" {% if alimentatore.ip == 'IP65' %}selected{% endif %}>IP65</option>
+                                <option value="IP66" {% if alimentatore.ip == 'IP66' %}selected{% endif %}>IP66</option>
+                                <option value="IP67" {% if alimentatore.ip == 'IP67' %}selected{% endif %}>IP67</option>
+                            </select>
+                        </td>
                         <td class="editable-cell" data-field="potenza" data-original="{{ alimentatore.potenza or '' }}">
                             <span class="cell-value"><strong>{{ alimentatore.potenza or '-' }}W</strong></span>
                             <input type="number" class="cell-input form-control form-control-sm" value="{{ alimentatore.potenza or '' }}" style="display: none;">
                         </td>
                         <td class="editable-cell" data-field="codice" data-original="{{ alimentatore.codice or '' }}">
-                            <span class="cell-value"><code class="small">{{ alimentatore.codice or '-' }}</code></span>
+                            <span class="cell-value">{{ alimentatore.codice or '-' }}</span>
                             <input type="text" class="cell-input form-control form-control-sm" value="{{ alimentatore.codice or '' }}" style="display: none;">
                         </td>
                         <td class="editable-cell" data-field="prezzo" data-original="{{ alimentatore.prezzo or '' }}">
