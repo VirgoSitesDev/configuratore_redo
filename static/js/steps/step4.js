@@ -188,97 +188,185 @@ export function vaiAllAlimentazione() {
 export function prepareAlimentazioneListeners() {
 
   $(document).off('click', '.alimentazione-card');
-  $(document).off('click', '.alimentatore-card');  
+  $(document).off('click', '.alimentatore-card');
   $(document).off('click', '.potenza-alimentatore-card');
 
   configurazione.alimentazioneSelezionata = null;
   configurazione.tipologiaAlimentatoreSelezionata = null;
   configurazione.potenzaAlimentatoreSelezionata = null;
-  
+
   $('#alimentatore-section').hide();
   $('#potenza-alimentatore-section').hide();
-  
+
   $('#btn-continua-step4').prop('disabled', true);
-  
+
   $('.alimentazione-card').removeClass('selected');
 
-  const isRGBStrip = 
-    (configurazione.stripLedSelezionata && configurazione.stripLedSelezionata.includes('RGB')) || 
-    configurazione.temperaturaColoreSelezionata === 'RGB' || 
+  const isRGBStrip =
+    (configurazione.stripLedSelezionata && configurazione.stripLedSelezionata.includes('RGB')) ||
+    configurazione.temperaturaColoreSelezionata === 'RGB' ||
     configurazione.temperaturaColoreSelezionata === 'RGBW';
 
-  let alimentazioneHtml = '';
-  
-  if (isRGBStrip) {
-    alimentazioneHtml = `
-      <div class="col-md-6 mb-3">
-        <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
-          <div class="card-body text-center">
-            <h5 class="card-title">ON/OFF</h5>
-            <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-6 mb-3">
-        <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
-          <div class="card-body text-center">
-            <h5 class="card-title">Senza alimentatore</h5>
-            <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    alimentazioneHtml = `
-      <div class="col-md-4 mb-3">
-        <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
-          <div class="card-body text-center">
-            <h5 class="card-title">ON/OFF</h5>
-            <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-4 mb-3">
-        <div class="card option-card alimentazione-card" data-alimentazione="DIMMERABILE_TRIAC">
-          <div class="card-body text-center">
-            <h5 class="card-title">Dimmerabile TRIAC</h5>
-            <p class="card-text small text-muted">Alimentazione con controllo dell'intensità luminosa TRIAC</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-4 mb-3">
-        <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
-          <div class="card-body text-center">
-            <h5 class="card-title">Senza alimentatore</h5>
-            <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
-          </div>
-        </div>
-      </div>
-    `;
+  // Show loading state
+  $('#alimentazione-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento opzioni di alimentazione...</p></div>');
+
+  // Check availability of drivers for each alimentazione type
+  let tensioneStripLed = configurazione.tensioneSelezionato;
+  if (configurazione.modalitaConfigurazione === 'solo_strip' && !tensioneStripLed) {
+    tensioneStripLed = configurazione.tensione || '24V';
+    configurazione.tensioneSelezionato = tensioneStripLed;
   }
 
-  $('#alimentazione-container').html(alimentazioneHtml);
+  const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
 
+  // Check both ON-OFF and DIMMERABILE_TRIAC availability
+  const checkPromises = [];
+  const tipiDaControllare = isRGBStrip ? ['ON-OFF'] : ['ON-OFF', 'DIMMERABILE_TRIAC'];
+
+  tipiDaControllare.forEach(tipo => {
+    checkPromises.push(
+      $.ajax({
+        url: `/get_opzioni_alimentatore/${tipo}/${tensioneStripLed}/${potenzaConsigliata}`,
+        method: 'GET'
+      }).then(data => ({
+        tipo: tipo,
+        hasDrivers: data.success && data.alimentatori && data.alimentatori.length > 0
+      })).catch(() => ({
+        tipo: tipo,
+        hasDrivers: false
+      }))
+    );
+  });
+
+  Promise.all(checkPromises).then(results => {
+    const availability = {};
+    results.forEach(result => {
+      availability[result.tipo] = result.hasDrivers;
+    });
+
+    // Build HTML only for available options
+    let alimentazioneHtml = '';
+    const colClass = isRGBStrip ? 'col-md-6' : 'col-md-4';
+
+    if (availability['ON-OFF']) {
+      alimentazioneHtml += `
+        <div class="${colClass} mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
+            <div class="card-body text-center">
+              <h5 class="card-title">ON/OFF</h5>
+              <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (!isRGBStrip && availability['DIMMERABILE_TRIAC']) {
+      alimentazioneHtml += `
+        <div class="${colClass} mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="DIMMERABILE_TRIAC">
+            <div class="card-body text-center">
+              <h5 class="card-title">Dimmerabile TRIAC</h5>
+              <p class="card-text small text-muted">Alimentazione con controllo dell'intensità luminosa TRIAC</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Always show "Senza alimentatore" option
+    alimentazioneHtml += `
+      <div class="${colClass} mb-3">
+        <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
+          <div class="card-body text-center">
+            <h5 class="card-title">Senza alimentatore</h5>
+            <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $('#alimentazione-container').html(alimentazioneHtml);
+    bindAlimentazioneCardListeners();
+  }).catch(error => {
+    console.error("Error checking driver availability:", error);
+    // Fallback: show all options
+    let alimentazioneHtml = '';
+
+    if (isRGBStrip) {
+      alimentazioneHtml = `
+        <div class="col-md-6 mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
+            <div class="card-body text-center">
+              <h5 class="card-title">ON/OFF</h5>
+              <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
+            <div class="card-body text-center">
+              <h5 class="card-title">Senza alimentatore</h5>
+              <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      alimentazioneHtml = `
+        <div class="col-md-4 mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="ON-OFF">
+            <div class="card-body text-center">
+              <h5 class="card-title">ON/OFF</h5>
+              <p class="card-text small text-muted">Alimentazione standard ON/OFF</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="DIMMERABILE_TRIAC">
+            <div class="card-body text-center">
+              <h5 class="card-title">Dimmerabile TRIAC</h5>
+              <p class="card-text small text-muted">Alimentazione con controllo dell'intensità luminosa TRIAC</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <div class="card option-card alimentazione-card" data-alimentazione="SENZA_ALIMENTATORE">
+            <div class="card-body text-center">
+              <h5 class="card-title">Senza alimentatore</h5>
+              <p class="card-text small text-muted">Configurazione senza alimentatore incluso</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    $('#alimentazione-container').html(alimentazioneHtml);
+    bindAlimentazioneCardListeners();
+  });
+}
+
+function bindAlimentazioneCardListeners() {
   const opzioniAlimentazione = $('.alimentazione-card');
   if (opzioniAlimentazione.length === 1) {
     const $unicaAlimentazione = $(opzioniAlimentazione[0]);
     $unicaAlimentazione.addClass('selected');
     const alimentazione = $unicaAlimentazione.data('alimentazione');
     configurazione.alimentazioneSelezionata = alimentazione;
-    
+
     if (alimentazione === 'SENZA_ALIMENTATORE') {
       $('#alimentatore-section').hide();
       $('#potenza-alimentatore-section').hide();
       configurazione.tipologiaAlimentatoreSelezionata = null;
       configurazione.potenzaAlimentatoreSelezionata = null;
-      
+
       $('#btn-continua-step4').prop('disabled', false);
     } else {
       caricaOpzioniAlimentatore(alimentazione);
-      
+
       $('#alimentatore-section').show();
       $('#potenza-alimentatore-section').hide();
       $('#btn-continua-step4').prop('disabled', true);
