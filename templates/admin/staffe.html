@@ -33,9 +33,14 @@
         <h6 class="m-0 font-weight-bold text-primary">
             <i class="bi bi-link-45deg me-2"></i>Elenco Staffe ({{ staffe|length }})
         </h6>
-        <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDeleteItems()">
-                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+        <div class="d-flex gap-2">
+            <div class="bulk-actions" style="display: none;">
+                <button class="btn btn-danger btn-sm" onclick="bulkDeleteItems()">
+                    <i class="bi bi-trash me-1"></i>Elimina Selezionati
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSort('prf_riferimento')" id="sortButton">
+                <i class="bi bi-sort-alpha-down" id="sortIcon"></i> Ordina per Profilo
             </button>
         </div>
     </div>
@@ -55,9 +60,9 @@
                         <th width="150">Azioni</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for item in staffe %}
-                    <tr data-codice="{{ item.codice }}" data-descrizione="{{ item.descrizione or '' }}">
+                    <tr data-codice="{{ item.codice }}" data-descrizione="{{ item.descrizione or '' }}" data-prf-riferimento="{{ item.prf_riferimento }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ item.codice }}" onchange="toggleBulkActions()">
@@ -428,6 +433,55 @@ function saveDescrizione() {
         },
         error: handleAjaxError
     });
+}
+
+// Sorting functionality
+let sortState = 'none'; // 'none', 'asc', 'desc'
+
+function toggleSort(field) {
+    const tbody = document.getElementById('tableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const sortIcon = document.getElementById('sortIcon');
+
+    // Toggle sort state
+    if (sortState === 'none') {
+        sortState = 'asc';
+    } else if (sortState === 'asc') {
+        sortState = 'desc';
+    } else {
+        sortState = 'none';
+    }
+
+    // Update icon
+    if (sortState === 'asc') {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    } else if (sortState === 'desc') {
+        sortIcon.className = 'bi bi-sort-alpha-up';
+    } else {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    }
+
+    // Sort or restore original order
+    if (sortState === 'none') {
+        // Restore original order by reloading
+        location.reload();
+        return;
+    }
+
+    rows.sort((a, b) => {
+        const aValue = (a.dataset.prfRiferimento || '').toLowerCase();
+        const bValue = (b.dataset.prfRiferimento || '').toLowerCase();
+
+        if (sortState === 'asc') {
+            return aValue.localeCompare(bValue);
+        } else {
+            return bValue.localeCompare(aValue);
+        }
+    });
+
+    // Clear and re-append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
 }
 </script>
 {% endblock %}

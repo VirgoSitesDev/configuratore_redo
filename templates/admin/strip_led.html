@@ -33,9 +33,14 @@
         <h6 class="m-0 font-weight-bold text-primary">
             <i class="bi bi-lightning me-2"></i>Elenco Strip LED ({{ strips|length }})
         </h6>
-        <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDelete('strip_led')">
-                <i class="bi bi-trash me-1"></i>Elimina Selezionate
+        <div class="d-flex gap-2">
+            <div class="bulk-actions" style="display: none;">
+                <button class="btn btn-danger btn-sm" onclick="bulkDelete('strip_led')">
+                    <i class="bi bi-trash me-1"></i>Elimina Selezionate
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSort('nome_commerciale')" id="sortButton">
+                <i class="bi bi-sort-alpha-down" id="sortIcon"></i> Ordina per Nome
             </button>
         </div>
     </div>
@@ -63,30 +68,83 @@
                         <th width="150">Azioni</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for strip in strips %}
-                    <tr data-codice-completo="{{ strip.codice_completo }}" data-strip-id="{{ strip.strip_id }}" data-descrizione="{{ strip.descrizione or '' }}">
+                    <tr data-codice-completo="{{ strip.codice_completo }}" data-strip-id="{{ strip.strip_id }}" data-descrizione="{{ strip.descrizione or '' }}" data-nome-commerciale="{{ strip.nome_commerciale or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ strip.codice_completo }}" onchange="toggleBulkActions()">
                         </td>
-                        <td><strong>{{ strip.nome_commerciale or '-' }}</strong></td>
-                        <td><span class="badge bg-info">{{ strip.tipo or 'N/A' }}</span></td>
-                        <td><span class="badge bg-secondary">{{ strip.tensione or '-' }}</span></td>
-                        <td><span class="badge bg-secondary">{{ strip.ip or '-' }}</span></td>
-                        <td>{{ strip.lunghezza or '-' }}</td>
-                        <td>{{ strip.larghezza or '-' }}</td>
-                        <td>
-                            {% if strip.giuntabile %}
-                                <span class="badge bg-success">Sì</span>
-                            {% else %}
-                                <span class="badge bg-danger">No</span>
-                            {% endif %}
+                        <td class="editable-cell" data-field="nome_commerciale" data-original="{{ strip.nome_commerciale or '' }}">
+                            <span class="cell-value"><strong>{{ strip.nome_commerciale or '-' }}</strong></span>
+                            <input type="text" class="cell-input form-control form-control-sm" value="{{ strip.nome_commerciale or '' }}" style="display: none;">
                         </td>
-                        <td>{{ strip.taglio_minimo or '-' }}</td>
+                        <td class="editable-cell" data-field="tipo" data-original="{{ strip.tipo or '' }}">
+                            <span class="cell-value"><span class="badge bg-info">{{ strip.tipo or 'N/A' }}</span></span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona...</option>
+                                <option value="COB" {% if strip.tipo == 'COB' %}selected{% endif %}>COB</option>
+                                <option value="SMD" {% if strip.tipo == 'SMD' %}selected{% endif %}>SMD</option>
+                                <option value="SPECIAL" {% if strip.tipo == 'SPECIAL' %}selected{% endif %}>SPECIAL</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="tensione" data-original="{{ strip.tensione or '' }}">
+                            <span class="cell-value"><span class="badge bg-secondary">{{ strip.tensione or '-' }}</span></span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona...</option>
+                                <option value="24V" {% if strip.tensione == '24V' %}selected{% endif %}>24V</option>
+                                <option value="48V" {% if strip.tensione == '48V' %}selected{% endif %}>48V</option>
+                                <option value="220V" {% if strip.tensione == '220V' %}selected{% endif %}>220V</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="ip" data-original="{{ strip.ip or '' }}">
+                            <span class="cell-value"><span class="badge bg-secondary">{{ strip.ip or '-' }}</span></span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona...</option>
+                                <option value="IP20" {% if strip.ip == 'IP20' %}selected{% endif %}>IP20</option>
+                                <option value="IP65" {% if strip.ip == 'IP65' %}selected{% endif %}>IP65</option>
+                                <option value="IP66" {% if strip.ip == 'IP66' %}selected{% endif %}>IP66</option>
+                                <option value="IP67" {% if strip.ip == 'IP67' %}selected{% endif %}>IP67</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="lunghezza" data-original="{{ strip.lunghezza or '' }}">
+                            <span class="cell-value">{{ strip.lunghezza or '-' }}</span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ strip.lunghezza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="larghezza" data-original="{{ strip.larghezza or '' }}">
+                            <span class="cell-value">{{ strip.larghezza or '-' }}</span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ strip.larghezza or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell" data-field="giuntabile" data-original="{{ 'true' if strip.giuntabile else 'false' }}">
+                            <span class="cell-value">
+                                {% if strip.giuntabile %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="true" {% if strip.giuntabile %}selected{% endif %}>Sì</option>
+                                <option value="false" {% if not strip.giuntabile %}selected{% endif %}>No</option>
+                            </select>
+                        </td>
+                        <td class="editable-cell" data-field="taglio_minimo" data-original="{{ strip.taglio_minimo or '' }}">
+                            <span class="cell-value">{{ strip.taglio_minimo or '-' }}</span>
+                            <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ strip.taglio_minimo or '' }}" style="display: none;">
+                        </td>
                         <td class="editable-cell" data-field="temperatura" data-original="{{ strip.temperatura or '' }}">
                             <span class="cell-value">{{ strip.temperatura or '-' }}</span>
-                            <input type="text" class="cell-input form-control form-control-sm" value="{{ strip.temperatura or '' }}" style="display: none;">
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona...</option>
+                                <option value="2700K" {% if strip.temperatura == '2700K' %}selected{% endif %}>2700K</option>
+                                <option value="3000K" {% if strip.temperatura == '3000K' %}selected{% endif %}>3000K</option>
+                                <option value="4000K" {% if strip.temperatura == '4000K' %}selected{% endif %}>4000K</option>
+                                <option value="6000K" {% if strip.temperatura == '6000K' %}selected{% endif %}>6000K</option>
+                                <option value="6500K" {% if strip.temperatura == '6500K' %}selected{% endif %}>6500K</option>
+                                <option value="CCT" {% if strip.temperatura == 'CCT' %}selected{% endif %}>CCT</option>
+                                <option value="RGB" {% if strip.temperatura == 'RGB' %}selected{% endif %}>RGB</option>
+                                <option value="RGBW" {% if strip.temperatura == 'RGBW' %}selected{% endif %}>RGBW</option>
+                            </select>
                         </td>
                         <td class="editable-cell" data-field="potenza" data-original="{{ strip.potenza or '' }}">
                             <span class="cell-value">{{ strip.potenza or '-' }}</span>
@@ -712,6 +770,10 @@ function saveRow(button, table) {
 
         if (field === 'prezzo') {
             data[field] = value ? parseFloat(value) : null;
+        } else if (field === 'giuntabile') {
+            data[field] = value === 'true';
+        } else if (field === 'lunghezza' || field === 'larghezza' || field === 'taglio_minimo') {
+            data[field] = value ? parseFloat(value) : null;
         } else {
             data[field] = value || null;
         }
@@ -886,6 +948,55 @@ function renderProfiloFamiglie(famiglie) {
         `);
         container.append(checkbox);
     });
+}
+
+// Sorting functionality
+let sortState = 'none'; // 'none', 'asc', 'desc'
+
+function toggleSort(field) {
+    const tbody = document.getElementById('tableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const sortIcon = document.getElementById('sortIcon');
+
+    // Toggle sort state
+    if (sortState === 'none') {
+        sortState = 'asc';
+    } else if (sortState === 'asc') {
+        sortState = 'desc';
+    } else {
+        sortState = 'none';
+    }
+
+    // Update icon
+    if (sortState === 'asc') {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    } else if (sortState === 'desc') {
+        sortIcon.className = 'bi bi-sort-alpha-up';
+    } else {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    }
+
+    // Sort or restore original order
+    if (sortState === 'none') {
+        // Restore original order by reloading
+        location.reload();
+        return;
+    }
+
+    rows.sort((a, b) => {
+        const aValue = (a.dataset.nomeCommerciale || '').toLowerCase();
+        const bValue = (b.dataset.nomeCommerciale || '').toLowerCase();
+
+        if (sortState === 'asc') {
+            return aValue.localeCompare(bValue);
+        } else {
+            return bValue.localeCompare(aValue);
+        }
+    });
+
+    // Clear and re-append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
 }
 
 function saveEccezioni() {
