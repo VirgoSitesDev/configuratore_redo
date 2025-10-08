@@ -273,8 +273,23 @@ def get_opzioni_potenza(profilo_id, tensione, ip, temperatura, tipologia_strip=N
         if not tutte_potenze_disponibili:
             return jsonify({'success': False, 'message': 'Nessuna potenza disponibile per i parametri selezionati'})
 
-        potenze_complete = []
+        # Validate each power option by checking if strips are actually available for that specific power
+        potenze_valide = []
         for potenza in tutte_potenze_disponibili:
+            if profilo_id == 'ESTERNI':
+                strips_con_potenza = db.get_all_strip_led_filtrate(tensione, ip, temperatura, potenza, tipologia_strip)
+            else:
+                strips_con_potenza = db.get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipologia_strip, lunghezza)
+
+            # Only include this power option if there are actually strips available for it
+            if strips_con_potenza:
+                potenze_valide.append(potenza)
+
+        if not potenze_valide:
+            return jsonify({'success': False, 'message': 'Nessuna potenza disponibile per i parametri selezionati'})
+
+        potenze_complete = []
+        for potenza in potenze_valide:
             potenze_complete.append({
                 'id': potenza,
                 'nome': potenza,
