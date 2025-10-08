@@ -25,6 +25,7 @@ export function initStep6Listeners() {
     const valore = parseInt($(this).data('valore'), 10);
 
     configurazione.lunghezzaRichiesta = valore;
+    configurazione.lunghezzaRichiestaMetri = valore / 1000;
     $('#step6-lunghezza-finale').text(valore);
     $('#spazio-buio-warning').remove();
 
@@ -60,6 +61,7 @@ export function initStep6Listeners() {
 
     configurazione.lunghezzeMultiple = Object.assign({}, combinazione.lunghezze);
     configurazione.lunghezzaRichiesta = combinazione.lunghezza_totale;
+    configurazione.lunghezzaRichiestaMetri = combinazione.lunghezza_totale / 1000;
 
     $('#step6-lunghezza-finale').text(combinazione.lunghezza_totale);
   
@@ -85,7 +87,9 @@ function calcolaProposte(lunghezzaRichiesta) {
       stripLedSelezionata: configurazione.stripLedSelezionata || configurazione.stripLedSceltaFinale,
       potenzaSelezionata: configurazione.potenzaSelezionata,
       formaDiTaglioSelezionata: configurazione.formaDiTaglioSelezionata,
-      tappiSelezionati: configurazione.tappiSelezionati
+      tappiSelezionati: configurazione.tappiSelezionati,
+      modalitaConfigurazione: configurazione.modalitaConfigurazione,
+      categoriaSelezionata: configurazione.categoriaSelezionata
     };
 
     if (configurazione.formaDiTaglioSelezionata !== 'DRITTO_SEMPLICE' && configurazione.lunghezzeMultiple) {
@@ -280,13 +284,14 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
     spaziBuioTotale: 0
   });
 
-  // For outdoor flow, don't show proposals with spazio buio
+  // For outdoor flow and solo_strip flow, don't show proposals with spazio buio
   const isOutdoorFlow = configurazione.categoriaSelezionata === 'esterni' ||
                         configurazione.categoriaSelezionata === 'wall_washer_ext';
+  const isSoloStripFlow = configurazione.modalitaConfigurazione === 'solo_strip';
 
   if (!coincideConProposte && spazioBuio > 0) {
-    // Only add this proposal if it's NOT an outdoor flow
-    if (!isOutdoorFlow) {
+    // Only add this proposal if it's NOT an outdoor flow or solo_strip flow
+    if (!isOutdoorFlow && !isSoloStripFlow) {
       proposte.push({
         id: 'originale',
         titolo: 'Combinazione 3',
@@ -353,6 +358,7 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
     setTimeout(() => {
       $('.btn-seleziona-proposta[data-proposta="proposta1"]').addClass('active');
       configurazione.lunghezzaRichiesta = data.proposte.proposta1;
+      configurazione.lunghezzaRichiestaMetri = data.proposte.proposta1 / 1000;
       $('#step6-lunghezza-finale').text(data.proposte.proposta1);
       $('#btn-continua-step6').prop('disabled', false);
     }, 100);
@@ -360,6 +366,7 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
     setTimeout(() => {
       $('.btn-seleziona-proposta[data-proposta="proposta2"]').addClass('active');
       configurazione.lunghezzaRichiesta = data.proposte.proposta2;
+      configurazione.lunghezzaRichiestaMetri = data.proposte.proposta2 / 1000;
       $('#step6-lunghezza-finale').text(data.proposte.proposta2);
       $('#btn-continua-step6').prop('disabled', false);
     }, 100);
@@ -379,12 +386,13 @@ function renderProposteCombinazioni(data) {
     }
   });
 
-  // For outdoor flow, filter out combinations with spazio buio
+  // For outdoor flow and solo_strip flow, filter out combinations with spazio buio
   const isOutdoorFlow = configurazione.categoriaSelezionata === 'esterni' ||
                         configurazione.categoriaSelezionata === 'wall_washer_ext';
+  const isSoloStripFlow = configurazione.modalitaConfigurazione === 'solo_strip';
 
   let combinazioniFiltrate = data.combinazioni;
-  if (isOutdoorFlow) {
+  if (isOutdoorFlow || isSoloStripFlow) {
     combinazioniFiltrate = data.combinazioni.filter(c => !c.ha_spazio_buio);
   }
 

@@ -1272,7 +1272,7 @@ export function finalizzaConfigurazione() {
                         ` : ''}
                         <tr>
                           <th scope="row">Lunghezza</th>
-                          <td>${configurazione.lunghezzaRichiestaMetri}m</td>
+                          <td>${configurazione.lunghezzaRichiesta}mm</td>
                         </tr>
                         <tr>
                           <th scope="row">Potenza</th>

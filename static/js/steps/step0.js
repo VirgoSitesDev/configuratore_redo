@@ -747,15 +747,7 @@ function caricaStripLedPerSoloStrip() {
 
         if (data.strip_led.length === 1) {
           setTimeout(() => {
-            $('.step2b-strip-led-card').addClass('selected');
-            const stripSelezionata = data.strip_led[0];
-            configurazione.stripLedSceltaFinale = stripSelezionata.id;
-            configurazione.nomeCommercialeStripLed = stripSelezionata.nomeCommerciale || '';
-            configurazione.stripLedSelezionata = stripSelezionata.id;
-            configurazione.lunghezzaMassimaStripLed = stripSelezionata.lunghezzaMassima || 5000;
-            configurazione.stripGiuntabile = stripSelezionata.giuntabile !== undefined ? stripSelezionata.giuntabile : true;
-
-            checkStep2bPotenzaCompletion();
+            $('.step2b-strip-led-card').first().click();
           }, 100);
         }
       } else {
