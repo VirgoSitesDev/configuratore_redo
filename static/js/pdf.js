@@ -489,10 +489,21 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		datiTabella.push(['Potenza totale', `${configurazione.potenzaTotale}W`]);
 	  }
 
-	  // Add tappi if present
+	  // Add tappi if present (support both old and new format)
 	  if (configurazione.tappiSelezionati && configurazione.tappiSelezionati.codice) {
+		// Old format: single type
 		const quantitaTappi = configurazione.quantitaTappi || configurazione.tappiSelezionati.quantita || 2;
 		datiTabella.push(['Tappi', `${quantitaTappi}x ${configurazione.tappiSelezionati.codice}`]);
+	  } else {
+		// New format: separate types
+		if (configurazione.tappiCiechiSelezionati && configurazione.tappiCiechiSelezionati.codice) {
+		  const quantitaCiechi = configurazione.quantitaTappiCiechi || configurazione.tappiCiechiSelezionati.quantita || 2;
+		  datiTabella.push(['Tappi Ciechi', `${quantitaCiechi}x ${configurazione.tappiCiechiSelezionati.codice}`]);
+		}
+		if (configurazione.tappiForatiSelezionati && configurazione.tappiForatiSelezionati.codice) {
+		  const quantitaForati = configurazione.quantitaTappiForati || configurazione.tappiForatiSelezionati.quantita || 2;
+		  datiTabella.push(['Tappi Forati', `${quantitaForati}x ${configurazione.tappiForatiSelezionati.codice}`]);
+		}
 	  }
 
 	  // Add diffusore if present

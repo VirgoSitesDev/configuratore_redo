@@ -686,6 +686,32 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
     return;
   }
 
+  // Filter tappi by finish
+  const finituraMapping = {
+    'NERO': 'NERO',
+    'BIANCO': 'BIANCO',
+    'ALLUMINIO': ['ALLUMINIO', 'GRIGIO'],
+    'ALLUMINIO_ANODIZZATO': ['ALLUMINIO', 'GRIGIO']
+  };
+
+  const finituraRichiesta = configurazione.finituraSelezionata;
+  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta])
+    ? finituraMapping[finituraRichiesta]
+    : [finituraMapping[finituraRichiesta]];
+
+  let tappiFiltrati = tappiDisponibili.filter(tappo =>
+    finitureCompatibili.includes(tappo.finitura)
+  );
+
+  if (tappiFiltrati.length === 0) {
+    console.log('[DEBUG TAPPI] Nessun tappo trovato per finitura, usando tutti i tappi disponibili');
+    tappiFiltrati = tappiDisponibili;
+  }
+
+  // Check availability of both types
+  const haForati = tappiFiltrati.some(t => t.forati === true);
+  const haCiechi = tappiFiltrati.some(t => t.forati === false);
+
   const tappiHtml = `
     <div class="container mb-5" id="tappi-container">
       <h3 class="mb-3">Configurazione Tappi</h3>
@@ -712,32 +738,98 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
         </div>
       </div>
 
-      <div id="tappi-tipo-section" style="display: none;">
-        <div class="mb-4">
-          <h5 class="mb-3">Seleziona il tipo di tappi</h5>
-          <div class="row" id="tappi-tipo-container">
-            <!-- Verrà popolato dinamicamente -->
-          </div>
-        </div>
-      </div>
-
       <div id="tappi-dettagli-section" style="display: none;">
-        <div class="alert alert-info mb-3" id="tappi-info">
-          <p class="mb-0"><strong>Tappo selezionato:</strong> <span id="tappo-nome"></span></p>
-          <p class="mb-0"><strong>Codice:</strong> <span id="tappo-codice"></span></p>
-        </div>
+        ${haCiechi ? `
+        <!-- Tappi Ciechi Section -->
+        <div class="mb-5" id="tappi-ciechi-section">
+          <div class="mb-4">
+            <h5 class="mb-3">Vuoi inserire dei tappi ciechi?</h5>
+            <div class="row" id="tappi-ciechi-scelta-container">
+              <div class="col-md-6 mb-3">
+                <div class="card option-card tappi-ciechi-scelta-card" data-scelta="si">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Sì</h5>
+                    <p class="card-text small text-muted">Aggiungi tappi ciechi</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="card option-card tappi-ciechi-scelta-card" data-scelta="no">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">No</h5>
+                    <p class="card-text small text-muted">Nessun tappo cieco</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div class="mb-4">
-          <h5 class="mb-3">Quantità tappi</h5>
-          <div class="row">
-            <div class="col-md-6">
-              <label for="quantita-tappi" class="form-label">Quantità (multipli di <span id="tappo-quantita-minima"></span>):</label>
-              <input type="number" class="form-control" id="quantita-tappi"
-                     min="0" step="1" value="0">
-              <small class="text-muted">La quantità deve essere un multiplo di <span id="tappo-quantita-minima-text"></span></small>
+          <div id="tappi-ciechi-quantita-section" style="display: none;">
+            <div class="alert alert-info mb-3">
+              <p class="mb-0"><strong>Tappo selezionato:</strong> Tappi ciechi</p>
+              <p class="mb-0"><strong>Codice:</strong> <span id="tappo-cieco-codice"></span></p>
+            </div>
+
+            <div class="mb-4">
+              <h5 class="mb-3">Quantità tappi ciechi</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <label for="quantita-tappi-ciechi" class="form-label">Quantità (multipli di <span id="tappo-cieco-quantita-minima"></span>):</label>
+                  <input type="number" class="form-control" id="quantita-tappi-ciechi"
+                         min="0" step="1" value="0">
+                  <small class="text-muted">La quantità deve essere un multiplo di <span id="tappo-cieco-quantita-minima-text"></span></small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        ` : ''}
+
+        ${haForati ? `
+        <!-- Tappi Forati Section -->
+        <div class="mb-5" id="tappi-forati-section">
+          <div class="mb-4">
+            <h5 class="mb-3">Vuoi inserire dei tappi forati?</h5>
+            <div class="row" id="tappi-forati-scelta-container">
+              <div class="col-md-6 mb-3">
+                <div class="card option-card tappi-forati-scelta-card" data-scelta="si">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Sì</h5>
+                    <p class="card-text small text-muted">Aggiungi tappi forati</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="card option-card tappi-forati-scelta-card" data-scelta="no">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">No</h5>
+                    <p class="card-text small text-muted">Nessun tappo forato</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="tappi-forati-quantita-section" style="display: none;">
+            <div class="alert alert-info mb-3">
+              <p class="mb-0"><strong>Tappo selezionato:</strong> Tappi forati</p>
+              <p class="mb-0"><strong>Codice:</strong> <span id="tappo-forato-codice"></span></p>
+            </div>
+
+            <div class="mb-4">
+              <h5 class="mb-3">Quantità tappi forati</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <label for="quantita-tappi-forati" class="form-label">Quantità (multipli di <span id="tappo-forato-quantita-minima"></span>):</label>
+                  <input type="number" class="form-control" id="quantita-tappi-forati"
+                         min="0" step="1" value="0">
+                  <small class="text-muted">La quantità deve essere un multiplo di <span id="tappo-forato-quantita-minima-text"></span></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
 
         <div class="alert alert-warning" id="tappi-lunghezza-warning" style="display: none;">
           <strong>ATTENZIONE:</strong> La lunghezza effettiva del profilo sarà
@@ -751,10 +843,10 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
   insertAfter.after(tappiHtml);
 
   // Salva i dati dei tappi disponibili
-  window.tappiDisponibili = tappiDisponibili;
+  window.tappiDisponibili = tappiFiltrati;
   configurazione.tappiInclusi = false;
 
-  // Event listeners per scelta Sì/No
+  // Event listeners per scelta principale Sì/No
   $('.tappi-scelta-card').on('click', function() {
     $('.tappi-scelta-card').removeClass('selected');
     $(this).addClass('selected');
@@ -762,15 +854,26 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
     const scelta = $(this).data('scelta');
 
     if (scelta === 'si') {
-      mostraSceltaTipoTappi(tappiDisponibili);
-      $('#tappi-tipo-section').slideDown(300);
-      $('#tappi-dettagli-section').slideUp(300);
+      $('#tappi-dettagli-section').slideDown(300);
+      // Auto-select if only one type available
+      if (haCiechi && !haForati) {
+        setTimeout(() => {
+          $('.tappi-ciechi-scelta-card[data-scelta="si"]').trigger('click');
+        }, 100);
+      } else if (!haCiechi && haForati) {
+        setTimeout(() => {
+          $('.tappi-forati-scelta-card[data-scelta="si"]').trigger('click');
+        }, 100);
+      }
     } else {
-      $('#tappi-tipo-section').slideUp(300);
       $('#tappi-dettagli-section').slideUp(300);
+      // Reset all tappi configurations
+      configurazione.tappiCiechiSelezionati = null;
+      configurazione.quantitaTappiCiechi = null;
+      configurazione.tappiForatiSelezionati = null;
+      configurazione.quantitaTappiForati = null;
       configurazione.tappiSelezionati = null;
       configurazione.quantitaTappi = null;
-      configurazione.tipoTappiSelezionato = null;
       // Restore original length if it was modified
       if (configurazione.lunghezzaOriginalePreTappi !== undefined) {
         configurazione.lunghezzaRichiesta = configurazione.lunghezzaOriginalePreTappi;
@@ -780,169 +883,169 @@ function mostraSezioneConfigurazioneTappi(tappiDisponibili) {
     }
   });
 
-  $('#quantita-tappi').on('input change', function() {
-    aggiornaQuantitaTappi();
-  });
-}
-
-function mostraSceltaTipoTappi(tappiDisponibili) {
-  const finituraMapping = {
-    'NERO': 'NERO',
-    'BIANCO': 'BIANCO',
-    'ALLUMINIO': ['ALLUMINIO', 'GRIGIO'],
-    'ALLUMINIO_ANODIZZATO': ['ALLUMINIO', 'GRIGIO']
-  };
-
-  const finituraRichiesta = configurazione.finituraSelezionata;
-  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta])
-    ? finituraMapping[finituraRichiesta]
-    : [finituraMapping[finituraRichiesta]];
-
-  // Filtra tappi per finitura
-  let tappiFiltrati = tappiDisponibili.filter(tappo =>
-    finitureCompatibili.includes(tappo.finitura)
-  );
-
-  // Se non ci sono tappi filtrati (outdoor profiles), usa tutti i tappi disponibili
-  if (tappiFiltrati.length === 0) {
-    console.log('[DEBUG TAPPI] Nessun tappo trovato per finitura, usando tutti i tappi disponibili');
-    tappiFiltrati = tappiDisponibili;
-  }
-
-  // Verifica disponibilità di tappi ciechi e forati
-  const haForati = tappiFiltrati.some(t => t.forati === true);
-  const haCiechi = tappiFiltrati.some(t => t.forati === false);
-
-  const container = $('#tappi-tipo-container');
-  container.empty();
-
-  // Mostra solo le opzioni disponibili
+  // Event listeners for Tappi Ciechi
   if (haCiechi) {
-    container.append(`
-      <div class="col-md-6 mb-3">
-        <div class="card option-card tappi-tipo-card" data-tipo="ciechi">
-          <div class="card-body text-center">
-            <h5 class="card-title">Tappi Ciechi</h5>
-            <p class="card-text small text-muted">Senza foratura</p>
-          </div>
-        </div>
-      </div>
-    `);
+    $('.tappi-ciechi-scelta-card').on('click', function() {
+      $('.tappi-ciechi-scelta-card').removeClass('selected');
+      $(this).addClass('selected');
+
+      const scelta = $(this).data('scelta');
+
+      if (scelta === 'si') {
+        selezionaTappoCiecoAutomatico(tappiFiltrati);
+        $('#tappi-ciechi-quantita-section').slideDown(300);
+      } else {
+        $('#tappi-ciechi-quantita-section').slideUp(300);
+        configurazione.tappiCiechiSelezionati = null;
+        configurazione.quantitaTappiCiechi = null;
+        aggiornaLunghezzaEffettiva();
+        checkPersonalizzazioneCompletion();
+      }
+    });
+
+    $('#quantita-tappi-ciechi').on('input change', function() {
+      aggiornaQuantitaTappiCiechi();
+    });
   }
 
+  // Event listeners for Tappi Forati
   if (haForati) {
-    container.append(`
-      <div class="col-md-6 mb-3">
-        <div class="card option-card tappi-tipo-card" data-tipo="forati">
-          <div class="card-body text-center">
-            <h5 class="card-title">Tappi Forati</h5>
-            <p class="card-text small text-muted">Con foratura</p>
-          </div>
-        </div>
-      </div>
-    `);
-  }
+    $('.tappi-forati-scelta-card').on('click', function() {
+      $('.tappi-forati-scelta-card').removeClass('selected');
+      $(this).addClass('selected');
 
-  // Se c'è solo un'opzione, selezionala automaticamente
-  if ((haCiechi && !haForati) || (!haCiechi && haForati)) {
-    setTimeout(() => {
-      const $unicaOpzione = $('.tappi-tipo-card');
-      $unicaOpzione.addClass('selected');
-      const tipo = $unicaOpzione.data('tipo');
-      configurazione.tipoTappiSelezionato = tipo;
-      selezionaTappoAutomatico(tappiDisponibili, tipo === 'forati');
-      $('#tappi-dettagli-section').slideDown(300);
-    }, 100);
-  }
+      const scelta = $(this).data('scelta');
 
-  // Event listeners per scelta tipo tappi
-  $('.tappi-tipo-card').on('click', function() {
-    $('.tappi-tipo-card').removeClass('selected');
-    $(this).addClass('selected');
-    
-    const tipo = $(this).data('tipo');
-    configurazione.tipoTappiSelezionato = tipo;
-    
-    const forati = tipo === 'forati';
-    selezionaTappoAutomatico(tappiDisponibili, forati);
-    $('#tappi-dettagli-section').slideDown(300);
-  });
+      if (scelta === 'si') {
+        selezionaTappoForatoAutomatico(tappiFiltrati);
+        $('#tappi-forati-quantita-section').slideDown(300);
+      } else {
+        $('#tappi-forati-quantita-section').slideUp(300);
+        configurazione.tappiForatiSelezionati = null;
+        configurazione.quantitaTappiForati = null;
+        aggiornaLunghezzaEffettiva();
+        checkPersonalizzazioneCompletion();
+      }
+    });
+
+    $('#quantita-tappi-forati').on('input change', function() {
+      aggiornaQuantitaTappiForati();
+    });
+  }
 }
 
-function selezionaTappoAutomatico(tappiDisponibili, forati) {
+function selezionaTappoCiecoAutomatico(tappiDisponibili) {
   if (!tappiDisponibili || tappiDisponibili.length === 0) {
     return;
   }
 
-  // Trova il tappo che corrisponde alla famiglia, finitura E tipo (forati/ciechi)
-  const finituraMapping = {
-    'NERO': 'NERO',
-    'BIANCO': 'BIANCO',
-    'ALLUMINIO': ['ALLUMINIO', 'GRIGIO'],
-    'ALLUMINIO_ANODIZZATO': ['ALLUMINIO', 'GRIGIO']
-  };
-
-  const finituraRichiesta = configurazione.finituraSelezionata;
-  const finitureCompatibili = Array.isArray(finituraMapping[finituraRichiesta])
-    ? finituraMapping[finituraRichiesta]
-    : [finituraMapping[finituraRichiesta]];
-
-  let tappoCompatibile = tappiDisponibili.find(tappo =>
-    finitureCompatibili.includes(tappo.finitura) && tappo.forati === forati
-  );
-
-  // Se non trova tappo con finitura, cerca solo per tipo (forati/ciechi)
-  if (!tappoCompatibile) {
-    console.log('[DEBUG TAPPI] Nessun tappo trovato per finitura, cercando solo per tipo');
-    tappoCompatibile = tappiDisponibili.find(tappo => tappo.forati === forati);
-  }
+  // Trova il tappo cieco compatibile
+  let tappoCompatibile = tappiDisponibili.find(tappo => tappo.forati === false);
 
   if (tappoCompatibile) {
-    configurazione.tappiSelezionati = tappoCompatibile;
-    
+    configurazione.tappiCiechiSelezionati = tappoCompatibile;
+
     // Aggiorna UI
-    $('#tappo-nome').text(tappoCompatibile.forati ? 'Tappi forati' : 'Tappi ciechi');
-    $('#tappo-codice').text(tappoCompatibile.codice);
-    $('#tappo-quantita-minima').text(tappoCompatibile.quantita);
-    $('#tappo-quantita-minima-text').text(tappoCompatibile.quantita);
-    
+    $('#tappo-cieco-codice').text(tappoCompatibile.codice);
+    $('#tappo-cieco-quantita-minima').text(tappoCompatibile.quantita);
+    $('#tappo-cieco-quantita-minima-text').text(tappoCompatibile.quantita);
+
     // Imposta quantità di default
-    $('#quantita-tappi').attr('min', tappoCompatibile.quantita);
-    $('#quantita-tappi').attr('step', tappoCompatibile.quantita);
-    $('#quantita-tappi').val(tappoCompatibile.quantita);
-    
-    configurazione.quantitaTappi = tappoCompatibile.quantita;
-    
+    $('#quantita-tappi-ciechi').attr('min', tappoCompatibile.quantita);
+    $('#quantita-tappi-ciechi').attr('step', tappoCompatibile.quantita);
+    $('#quantita-tappi-ciechi').val(tappoCompatibile.quantita);
+
+    configurazione.quantitaTappiCiechi = tappoCompatibile.quantita;
+
     aggiornaLunghezzaEffettiva();
     checkPersonalizzazioneCompletion();
   } else {
-    console.error("Nessun tappo compatibile trovato per i criteri selezionati");
-    $('#tappi-dettagli-section').html(`
+    console.error("Nessun tappo cieco compatibile trovato");
+    $('#tappi-ciechi-quantita-section').html(`
       <div class="alert alert-danger">
-        <strong>Errore:</strong> Nessun tappo disponibile per questa combinazione di finitura e tipo.
+        <strong>Errore:</strong> Nessun tappo cieco disponibile.
       </div>
     `);
   }
 }
 
-function aggiornaQuantitaTappi() {
-  const tappo = configurazione.tappiSelezionati;
+function selezionaTappoForatoAutomatico(tappiDisponibili) {
+  if (!tappiDisponibili || tappiDisponibili.length === 0) {
+    return;
+  }
+
+  // Trova il tappo forato compatibile
+  let tappoCompatibile = tappiDisponibili.find(tappo => tappo.forati === true);
+
+  if (tappoCompatibile) {
+    configurazione.tappiForatiSelezionati = tappoCompatibile;
+
+    // Aggiorna UI
+    $('#tappo-forato-codice').text(tappoCompatibile.codice);
+    $('#tappo-forato-quantita-minima').text(tappoCompatibile.quantita);
+    $('#tappo-forato-quantita-minima-text').text(tappoCompatibile.quantita);
+
+    // Imposta quantità di default
+    $('#quantita-tappi-forati').attr('min', tappoCompatibile.quantita);
+    $('#quantita-tappi-forati').attr('step', tappoCompatibile.quantita);
+    $('#quantita-tappi-forati').val(tappoCompatibile.quantita);
+
+    configurazione.quantitaTappiForati = tappoCompatibile.quantita;
+
+    aggiornaLunghezzaEffettiva();
+    checkPersonalizzazioneCompletion();
+  } else {
+    console.error("Nessun tappo forato compatibile trovato");
+    $('#tappi-forati-quantita-section').html(`
+      <div class="alert alert-danger">
+        <strong>Errore:</strong> Nessun tappo forato disponibile.
+      </div>
+    `);
+  }
+}
+
+function aggiornaQuantitaTappiCiechi() {
+  const tappo = configurazione.tappiCiechiSelezionati;
   if (!tappo) return;
 
-  const quantitaInserita = parseInt($('#quantita-tappi').val()) || 0;
+  const quantitaInserita = parseInt($('#quantita-tappi-ciechi').val()) || 0;
   const quantitaMinima = tappo.quantita;
 
   // Verifica che sia un multiplo della quantità minima
   if (quantitaInserita < quantitaMinima) {
-    $('#quantita-tappi').val(quantitaMinima);
-    configurazione.quantitaTappi = quantitaMinima;
+    $('#quantita-tappi-ciechi').val(quantitaMinima);
+    configurazione.quantitaTappiCiechi = quantitaMinima;
   } else if (quantitaInserita % quantitaMinima !== 0) {
     // Arrotonda al multiplo più vicino
     const multiplo = Math.round(quantitaInserita / quantitaMinima) * quantitaMinima;
-    $('#quantita-tappi').val(multiplo);
-    configurazione.quantitaTappi = multiplo;
+    $('#quantita-tappi-ciechi').val(multiplo);
+    configurazione.quantitaTappiCiechi = multiplo;
   } else {
-    configurazione.quantitaTappi = quantitaInserita;
+    configurazione.quantitaTappiCiechi = quantitaInserita;
+  }
+
+  aggiornaLunghezzaEffettiva();
+  checkPersonalizzazioneCompletion();
+}
+
+function aggiornaQuantitaTappiForati() {
+  const tappo = configurazione.tappiForatiSelezionati;
+  if (!tappo) return;
+
+  const quantitaInserita = parseInt($('#quantita-tappi-forati').val()) || 0;
+  const quantitaMinima = tappo.quantita;
+
+  // Verifica che sia un multiplo della quantità minima
+  if (quantitaInserita < quantitaMinima) {
+    $('#quantita-tappi-forati').val(quantitaMinima);
+    configurazione.quantitaTappiForati = quantitaMinima;
+  } else if (quantitaInserita % quantitaMinima !== 0) {
+    // Arrotonda al multiplo più vicino
+    const multiplo = Math.round(quantitaInserita / quantitaMinima) * quantitaMinima;
+    $('#quantita-tappi-forati').val(multiplo);
+    configurazione.quantitaTappiForati = multiplo;
+  } else {
+    configurazione.quantitaTappiForati = quantitaInserita;
   }
 
   aggiornaLunghezzaEffettiva();
@@ -950,23 +1053,64 @@ function aggiornaQuantitaTappi() {
 }
 
 function aggiornaLunghezzaEffettiva() {
-  const tappo = configurazione.tappiSelezionati;
-
   // Store original length if not already stored
   if (configurazione.lunghezzaOriginalePreTappi === undefined && configurazione.lunghezzaRichiesta) {
     configurazione.lunghezzaOriginalePreTappi = configurazione.lunghezzaRichiesta;
   }
 
-  if (!tappo || !configurazione.lunghezzaOriginalePreTappi) return;
+  const tappoCieco = configurazione.tappiCiechiSelezionati;
+  const tappoForato = configurazione.tappiForatiSelezionati;
+
+  // Check if any tappi are selected
+  if ((!tappoCieco || !configurazione.quantitaTappiCiechi) &&
+      (!tappoForato || !configurazione.quantitaTappiForati)) {
+    // No tappi selected, restore original length
+    if (configurazione.lunghezzaOriginalePreTappi !== undefined) {
+      configurazione.lunghezzaRichiesta = configurazione.lunghezzaOriginalePreTappi;
+      configurazione.lunghezzaEffettivaProfilo = configurazione.lunghezzaOriginalePreTappi;
+    }
+    $('#tappi-lunghezza-warning').hide();
+    return;
+  }
+
+  if (!configurazione.lunghezzaOriginalePreTappi) return;
 
   if (configurazione.tipologiaSelezionata === 'taglio_misura') {
     const lunghezzaOriginale = configurazione.lunghezzaOriginalePreTappi;
-    // Calculate effective quantity: use actual quantity selected, capped at 2
-    const effectiveQty = Math.min(configurazione.quantitaTappi || tappo.quantita || 1, 2);
-    const lunghezzaEsternatappi = (tappo.lunghezza_esterna || 0) * effectiveQty;
-    const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappi;
 
-    $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappi);
+    // Calculate combined external length from both tappi types
+    let lunghezzaEsternatappiTotale = 0;
+
+    // Add length from tappi ciechi
+    if (tappoCieco && configurazione.quantitaTappiCiechi) {
+      const effectiveQtyCiechi = Math.min(configurazione.quantitaTappiCiechi, 2);
+      lunghezzaEsternatappiTotale += (tappoCieco.lunghezza_esterna || 0) * effectiveQtyCiechi;
+    }
+
+    // Add length from tappi forati
+    if (tappoForato && configurazione.quantitaTappiForati) {
+      const effectiveQtyForati = Math.min(configurazione.quantitaTappiForati, 2);
+      lunghezzaEsternatappiTotale += (tappoForato.lunghezza_esterna || 0) * effectiveQtyForati;
+    }
+
+    // Cap total effective quantity at 2 if both types are selected
+    if (tappoCieco && tappoForato && configurazione.quantitaTappiCiechi && configurazione.quantitaTappiForati) {
+      const qtyCiechi = Math.min(configurazione.quantitaTappiCiechi, 2);
+      const qtyForati = Math.min(configurazione.quantitaTappiForati, 2);
+      const totalQty = qtyCiechi + qtyForati;
+
+      if (totalQty > 2) {
+        // Recalculate proportionally
+        const lunghezzaCiechi = (tappoCieco.lunghezza_esterna || 0) * qtyCiechi;
+        const lunghezzaForati = (tappoForato.lunghezza_esterna || 0) * qtyForati;
+        lunghezzaEsternatappiTotale = Math.min(lunghezzaCiechi + lunghezzaForati,
+          (tappoCieco.lunghezza_esterna || 0) * 2);
+      }
+    }
+
+    const lunghezzaEffettiva = lunghezzaOriginale - lunghezzaEsternatappiTotale;
+
+    $('#lunghezza-esterna-tappi').text(lunghezzaEsternatappiTotale);
     $('#lunghezza-effettiva-profilo').text(lunghezzaEffettiva);
 
     // Override lunghezzaRichiesta with effective length

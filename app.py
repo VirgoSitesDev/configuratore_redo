@@ -950,6 +950,10 @@ def finalizza_configurazione():
         lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
         tappi_selezionati=configurazione.get('tappiSelezionati'),
         quantita_tappi=configurazione.get('quantitaTappi', 0),
+        tappi_ciechi_selezionati=configurazione.get('tappiCiechiSelezionati'),
+        quantita_tappi_ciechi=configurazione.get('quantitaTappiCiechi', 0),
+        tappi_forati_selezionati=configurazione.get('tappiForatiSelezionati'),
+        quantita_tappi_forati=configurazione.get('quantitaTappiForati', 0),
         diffusore_selezionato=configurazione.get('diffusoreSelezionato'),
         quantita_diffusore=configurazione.get('quantitaDiffusore', 0)
     )
@@ -1823,6 +1827,10 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         lunghezze_multiple=configurazione.get('lunghezzeMultiple'),
         tappi_selezionati=configurazione.get('tappiSelezionati'),
         quantita_tappi=configurazione.get('quantitaTappi', 0),
+        tappi_ciechi_selezionati=configurazione.get('tappiCiechiSelezionati'),
+        quantita_tappi_ciechi=configurazione.get('quantitaTappiCiechi', 0),
+        tappi_forati_selezionati=configurazione.get('tappiForatiSelezionati'),
+        quantita_tappi_forati=configurazione.get('quantitaTappiForati', 0),
         diffusore_selezionato=configurazione.get('diffusoreSelezionato'),
         quantita_diffusore=configurazione.get('quantitaDiffusore', 0)
     )
@@ -2110,10 +2118,6 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         if configurazione['tipoAlimentazioneCavo'] == 'ALIMENTAZIONE_DOPPIA' and configurazione.get('lunghezzaCavoUscita'):
             html += f"<tr><th>Lunghezza cavo uscita</th><td>{configurazione['lunghezzaCavoUscita']}mm</td></tr>"
 
-    # 🔧 AGGIUNTA: Lunghezza cavo totale
-    if lunghezza_cavo_totale_mm > 0:
-        html += f"<tr><th>Lunghezza cavo</th><td>{lunghezza_cavo_totale_mm}mm</td></tr>"
-
     if configurazione.get('uscitaCavoSelezionata') and configurazione.get('categoriaSelezionata') not in ['esterni', 'wall_washer_ext']:
         uscita_cavo_text = configurazione['uscitaCavoSelezionata']
         if uscita_cavo_text == 'DRITTA':
@@ -2138,10 +2142,24 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
 
     # Only show tappi in riepilogo if they are not automatically included
     if configurazione.get('tappiSelezionati') and configurazione.get('quantitaTappi', 0) > 0 and not configurazione.get('tappiInclusi', False):
+        # Old format: single type of tappi
         tappo = configurazione['tappiSelezionati']
         quantita_selezionata = configurazione['quantitaTappi']
         prezzo_tappi = prezzi.get('tappi', 0)
         html += f"<tr><th>Tappi</th><td>{quantita_selezionata}x {tappo['codice']} - €{prezzo_tappi:.2f}</td></tr>"
+    else:
+        # New format: separate tappi ciechi and tappi forati
+        if configurazione.get('tappiCiechiSelezionati') and configurazione.get('quantitaTappiCiechi', 0) > 0 and not configurazione.get('tappiInclusi', False):
+            tappo_cieco = configurazione['tappiCiechiSelezionati']
+            quantita_ciechi = configurazione['quantitaTappiCiechi']
+            prezzo_tappi_ciechi = prezzi.get('tappiCiechi', 0)
+            html += f"<tr><th>Tappi Ciechi</th><td>{quantita_ciechi}x {tappo_cieco['codice']} - €{prezzo_tappi_ciechi:.2f}</td></tr>"
+
+        if configurazione.get('tappiForatiSelezionati') and configurazione.get('quantitaTappiForati', 0) > 0 and not configurazione.get('tappiInclusi', False):
+            tappo_forato = configurazione['tappiForatiSelezionati']
+            quantita_forati = configurazione['quantitaTappiForati']
+            prezzo_tappi_forati = prezzi.get('tappiForati', 0)
+            html += f"<tr><th>Tappi Forati</th><td>{quantita_forati}x {tappo_forato['codice']} - €{prezzo_tappi_forati:.2f}</td></tr>"
 
     if configurazione.get('diffusoreSelezionato') and configurazione.get('quantitaDiffusore', 0) > 0:
         diffusore = configurazione['diffusoreSelezionato']
@@ -2172,18 +2190,11 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         </div>
     """
 
-    html += """
-        <div class="alert-warning">
-            <strong>Note importanti:</strong><br>
-            • Eventuali staffe aggiuntive non incluse<br>
-    """
-
-    if configurazione.get('categoriaSelezionata') in ['esterni', 'wall_washer_ext']:
-        html += "• La lunghezza richiesta fa riferimento alla strip led esclusa di tappi e il profilo risulterà leggermente più corto<br>"
-    else:
-        html += "• Verrà aggiunto automaticamente uno spazio di 5mm per i tappi e la saldatura<br>"
-
     if configurazione.get('formaDiTaglioSelezionata') and configurazione['formaDiTaglioSelezionata'] != 'DRITTO_SEMPLICE':
+        html += """
+            <div class="alert-warning">
+                <strong>Note importanti:</strong><br>
+        """
         html += "• I profili verranno consegnati non assemblati tra di loro e la strip verrà consegnata non installata<br>"
 
     html += """

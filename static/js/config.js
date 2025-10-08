@@ -52,6 +52,10 @@ const configurazione = {
     lunghezzaEffettivaProfilo: null,
     lunghezzaOriginalePreTappi: undefined,
 	tipoTappiSelezionato: null,
+	tappiCiechiSelezionati: null,
+	quantitaTappiCiechi: null,
+	tappiForatiSelezionati: null,
+	quantitaTappiForati: null,
 	doppiaStripSelezionata: false,
 	moltiplicatoreStrip: 1,
 	lunghezzaMassimaLato: null

@@ -217,12 +217,45 @@ function renderProposteSemplici(data, lunghezzaOriginale) {
 
   // NEW FORMULA (Using lunghezza_interna from selected end cap, or 0 if no caps):
   // Calculate effective quantity: use actual quantity selected, capped at 2
-  const effectiveQty = configurazione.tappiSelezionati
-    ? Math.min(configurazione.quantitaTappi || configurazione.tappiSelezionati.quantita || 1, 2)
-    : 0;
-  const extraSpace = (configurazione.tappiSelezionati && configurazione.tappiSelezionati.lunghezza_interna)
-    ? configurazione.tappiSelezionati.lunghezza_interna * effectiveQty
-    : 0;
+  let effectiveQty = 0;
+  let extraSpace = 0;
+
+  // Old format: single type of tappi
+  if (configurazione.tappiSelezionati) {
+    effectiveQty = Math.min(configurazione.quantitaTappi || configurazione.tappiSelezionati.quantita || 1, 2);
+    extraSpace = configurazione.tappiSelezionati.lunghezza_interna
+      ? configurazione.tappiSelezionati.lunghezza_interna * effectiveQty
+      : 0;
+  }
+  // New format: separate tappi ciechi and tappi forati
+  else {
+    let totalExtraSpace = 0;
+    let totalQty = 0;
+
+    if (configurazione.tappiCiechiSelezionati) {
+      const qtyCiechi = Math.min(configurazione.quantitaTappiCiechi || configurazione.tappiCiechiSelezionati.quantita || 1, 2);
+      totalQty += qtyCiechi;
+      totalExtraSpace += configurazione.tappiCiechiSelezionati.lunghezza_interna
+        ? configurazione.tappiCiechiSelezionati.lunghezza_interna * qtyCiechi
+        : 0;
+    }
+
+    if (configurazione.tappiForatiSelezionati) {
+      const qtyForati = Math.min(configurazione.quantitaTappiForati || configurazione.tappiForatiSelezionati.quantita || 1, 2);
+      totalQty += qtyForati;
+      totalExtraSpace += configurazione.tappiForatiSelezionati.lunghezza_interna
+        ? configurazione.tappiForatiSelezionati.lunghezza_interna * qtyForati
+        : 0;
+    }
+
+    // Cap total quantity at 2
+    if (totalQty > 2) {
+      totalExtraSpace = totalExtraSpace * (2 / totalQty);
+    }
+
+    effectiveQty = Math.min(totalQty, 2);
+    extraSpace = totalExtraSpace;
+  }
   let spazioBuio = data.proposte.proposta1 >= data.proposte.proposta2
     ? Math.abs(lunghezzaOriginale - data.proposte.proposta1) + extraSpace
     : Math.abs(lunghezzaOriginale - data.proposte.proposta2) + extraSpace;

@@ -906,6 +906,8 @@ class DatabaseManager:
                                 quantita_profilo: int = 1, quantita_strip: int = 1,
                                 lunghezze_multiple: dict = None,
                                 tappi_selezionati: dict = None, quantita_tappi: int = 0,
+                                tappi_ciechi_selezionati: dict = None, quantita_tappi_ciechi: int = 0,
+                                tappi_forati_selezionati: dict = None, quantita_tappi_forati: int = 0,
                                 diffusore_selezionato: dict = None, quantita_diffusore: int = 0) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa con quantità"""
         try:
@@ -930,13 +932,29 @@ class DatabaseManager:
                 'alimentatore': prezzo_unitario_alimentatore,
                 'dimmer': prezzo_unitario_dimmer,
                 'tappi': 0.0,
+                'tappiCiechi': 0.0,
+                'tappiForati': 0.0,
                 'diffusore': 0.0
             }
+            # Old format: single type of tappi
             if tappi_selezionati and quantita_tappi > 0:
                 quantita_db = tappi_selezionati.get('quantita', 1)
                 num_pezzi = int(quantita_tappi / quantita_db)
                 prezzo_unitario_tappo = float(tappi_selezionati.get('prezzo', 0))
                 prezzi['tappi'] = prezzo_unitario_tappo * num_pezzi
+
+            # New format: separate tappi ciechi and tappi forati
+            if tappi_ciechi_selezionati and quantita_tappi_ciechi > 0:
+                quantita_db_ciechi = tappi_ciechi_selezionati.get('quantita', 1)
+                num_pezzi_ciechi = int(quantita_tappi_ciechi / quantita_db_ciechi)
+                prezzo_unitario_tappo_cieco = float(tappi_ciechi_selezionati.get('prezzo', 0))
+                prezzi['tappiCiechi'] = prezzo_unitario_tappo_cieco * num_pezzi_ciechi
+
+            if tappi_forati_selezionati and quantita_tappi_forati > 0:
+                quantita_db_forati = tappi_forati_selezionati.get('quantita', 1)
+                num_pezzi_forati = int(quantita_tappi_forati / quantita_db_forati)
+                prezzo_unitario_tappo_forato = float(tappi_forati_selezionati.get('prezzo', 0))
+                prezzi['tappiForati'] = prezzo_unitario_tappo_forato * num_pezzi_forati
 
             if diffusore_selezionato and quantita_diffusore > 0:
                 prezzo_unitario_diffusore = float(diffusore_selezionato.get('prezzo', 0))

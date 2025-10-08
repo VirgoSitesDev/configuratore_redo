@@ -1151,6 +1151,10 @@ export function finalizzaConfigurazione() {
       ...configurazione,
       tappiSelezionati: configurazione.tappiSelezionati,
       quantitaTappi: configurazione.quantitaTappi,
+      tappiCiechiSelezionati: configurazione.tappiCiechiSelezionati,
+      quantitaTappiCiechi: configurazione.quantitaTappiCiechi,
+      tappiForatiSelezionati: configurazione.tappiForatiSelezionati,
+      quantitaTappiForati: configurazione.quantitaTappiForati,
       diffusoreSelezionato: configurazione.diffusoreSelezionato,
       quantitaDiffusore: configurazione.quantitaDiffusore,
       staffaSelezionata: configurazione.staffaSelezionata,
@@ -1638,7 +1642,9 @@ export function finalizzaConfigurazione() {
                     </tr>
           `;
         }
+        // Display tappi (both old single-type and new dual-type format)
         if (configurazione.tappiSelezionati && configurazione.quantitaTappi > 0) {
+          // Old format: single type of tappi
           const tappo = configurazione.tappiSelezionati;
           const quantitaSelezionata = configurazione.quantitaTappi;
 
@@ -1648,6 +1654,31 @@ export function finalizzaConfigurazione() {
                           <td>${quantitaSelezionata > 1 ? quantitaSelezionata + 'x ' : ''}${tappo.codice}</td>
                         </tr>
           `;
+        } else {
+          // New format: separate tappi ciechi and tappi forati
+          if (configurazione.tappiCiechiSelezionati && configurazione.quantitaTappiCiechi > 0) {
+            const tappoCieco = configurazione.tappiCiechiSelezionati;
+            const quantitaCiechi = configurazione.quantitaTappiCiechi;
+
+            riepilogoHtml += `
+                          <tr>
+                            <th scope="row">Tappi Ciechi</th>
+                            <td>${quantitaCiechi > 1 ? quantitaCiechi + 'x ' : ''}${tappoCieco.codice}</td>
+                          </tr>
+            `;
+          }
+
+          if (configurazione.tappiForatiSelezionati && configurazione.quantitaTappiForati > 0) {
+            const tappoForato = configurazione.tappiForatiSelezionati;
+            const quantitaForati = configurazione.quantitaTappiForati;
+
+            riepilogoHtml += `
+                          <tr>
+                            <th scope="row">Tappi Forati</th>
+                            <td>${quantitaForati > 1 ? quantitaForati + 'x ' : ''}${tappoForato.codice}</td>
+                          </tr>
+            `;
+          }
         }
 
         if (configurazione.diffusoreSelezionato && configurazione.quantitaDiffusore > 0) {
