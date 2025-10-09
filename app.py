@@ -1801,7 +1801,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         'XMAGIS': 'XMAGIS'
     }
     
-    data_corrente = datetime.now().strftime("%d/%m/%Y %H:%M")
+    data_corrente = datetime.now().strftime("%d/%m/%Y")
 
     def calcola_codici_prodotto():
         codici = {
@@ -2202,7 +2202,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         totale_con_staffe = prezzi['totale'] + prezzo_totale_staffe
         html += f"""
                 <tr style="border-top: 2px solid #e83f34; font-weight: bold;">
-                    <th scope="row"><strong style="color: #e83f34;">Totale configurazione (prezzi di listino)</strong></th>
+                    <th scope="row"><strong>Totale configurazione <span style="color: #e83f34;">(prezzi di listino)</span></strong></th>
                     <td><strong>€{totale_con_staffe:.2f}</strong></td>
                 </tr>
         """
@@ -2277,7 +2277,7 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
                 <td>€{costo_gestione:.2f}</td>
             </tr>
             <tr class="totale-row" style="border-top: 2px solid #e83f34;">
-                <th><strong style="color: #e83f34;">Totale costi di lavorazione (netti)</strong></th>
+                <th><strong>Totale costi di lavorazione <span style="color: #e83f34;">(netti)</span></strong></th>
                 <td><strong>€{totale_lavorazioni:.2f}</strong></td>
             </tr>
         </table>
