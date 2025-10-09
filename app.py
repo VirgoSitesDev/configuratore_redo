@@ -2003,12 +2003,12 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         </div>
 
         <div class="section">
-            <h3>Dati Agente</h3>
+            <h3>Dati utente</h3>
             <table class="data-table">
-                <tr><th>Nome Agente</th><td>{nome_agente}</td></tr>
-                <tr><th>Email Agente</th><td>{email_agente}</td></tr>
-                <tr><th>Ragione Sociale</th><td>{ragione_sociale or 'Non specificata'}</td></tr>
-                <tr><th>Riferimento</th><td>{riferimento}</td></tr>
+                <tr><th>Ragione sociale</th><td>{nome_agente}</td></tr>
+                <tr><th>Email</th><td>{email_agente}</td></tr>
+                <tr><th>Agenzia / Agente di zona</th><td>{ragione_sociale or 'Non specificata'}</td></tr>
+                <tr><th>Riferimento configurazione</th><td>{riferimento}</td></tr>
                 {f'<tr><th>Note</th><td>{note}</td></tr>' if note else ''}
             </table>
         </div>

@@ -1329,21 +1329,21 @@ export function finalizzaConfigurazione() {
                     <form id="preventivoForm">
                       <div class="row">
                         <div class="col-md-6 mb-3">
-                          <label for="nomeAgente" class="form-label">Nome Agente *</label>
+                          <label for="nomeAgente" class="form-label">Ragione sociale *</label>
                           <input type="text" class="form-control" id="nomeAgente" name="nomeAgente" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                          <label for="emailAgente" class="form-label">Email Agente *</label>
+                          <label for="emailAgente" class="form-label">Email *</label>
                           <input type="email" class="form-control" id="emailAgente" name="emailAgente" required>
                         </div>
                       </div>
                       <div class="row">
                         <div class="col-md-6 mb-3">
-                          <label for="ragioneSociale" class="form-label">Ragione Sociale</label>
+                          <label for="ragioneSociale" class="form-label">Agenzia / Agente di zona</label>
                           <input type="text" class="form-control" id="ragioneSociale" name="ragioneSociale">
                         </div>
                         <div class="col-md-6 mb-3">
-                          <label for="riferimento" class="form-label">Riferimento *</label>
+                          <label for="riferimento" class="form-label">Riferimento configurazione *</label>
                           <input type="text" class="form-control" id="riferimento" name="riferimento" required>
                         </div>
                       </div>
