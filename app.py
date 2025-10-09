@@ -1650,10 +1650,10 @@ def richiedi_preventivo():
         configurazione = data.get('configurazione', {})
         codice_prodotto = data.get('codiceProdotto', '')
 
-        if not nome_agente or not email_agente or not riferimento:
+        if not nome_agente or not email_agente or not ragione_sociale or not riferimento:
             return jsonify({
-                'success': False, 
-                'message': 'Nome agente, email agente e riferimento sono obbligatori'
+                'success': False,
+                'message': 'Ragione sociale, Email, Agenzia / Agente di zona e Riferimento configurazione sono obbligatori'
             }), 400
 
         email_html = genera_email_preventivo(
