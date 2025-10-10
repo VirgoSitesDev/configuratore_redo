@@ -733,12 +733,14 @@ export function caricaStripLedCompatibili(profiloId, tensione, ip, temperatura, 
       
       data.strip_led.forEach(function(strip, index) {
         const nomeVisualizzato = strip.nomeCommerciale || strip.nome;
-        const imgPath = `/static/img/strip/${strip.id}.jpg`;
+        // Priority: 1. Database image, 2. Hardcoded path, 3. Placeholder
+        const hardcodedPath = `/static/img/strip/${strip.id}.jpg`;
+        const imgPath = strip.immagine || hardcodedPath;
         const imgPath2 = `/static/img/strip/${strip.id}_2.jpg`;
-        const ipAlreadyInName = nomeVisualizzato && 
-                             (nomeVisualizzato.includes('IP65') || 
-                              nomeVisualizzato.includes('IP66') || 
-                              nomeVisualizzato.includes('IP67') || 
+        const ipAlreadyInName = nomeVisualizzato &&
+                             (nomeVisualizzato.includes('IP65') ||
+                              nomeVisualizzato.includes('IP66') ||
+                              nomeVisualizzato.includes('IP67') ||
                               nomeVisualizzato.includes('IP20') ||
                               nomeVisualizzato.includes('IP44'));
 

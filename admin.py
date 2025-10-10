@@ -447,6 +447,7 @@ def strip_led():
                 'codice_prodotto': strip.get('codice_prodotto'),
                 'prezzo': strip.get('prezzo'),
                 'descrizione': strip.get('descrizione'),
+                'immagine': strip.get('immagine'),  # Include image field
                 'visibile': strip.get('visibile', True)
             })
 
@@ -463,27 +464,109 @@ def add_strip_led():
         return auth_check
 
     try:
-        data = request.json
-        eccezioni = data.pop('eccezioni', [])  # Extract eccezioni before inserting strip
+        # Check if this is a file upload (FormData) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload with FormData
+            data = {}
+            for key, value in request.form.items():
+                if key == 'giuntabile':
+                    data[key] = value == 'true'
+                elif key == 'eccezioni':
+                    # Parse JSON string for eccezioni
+                    continue  # Handle separately
+                elif key == 'lunghezza':
+                    # lunghezza should be integer (meters converted to mm would be int anyway)
+                    data[key] = int(float(value)) if value else None
+                elif key in ['larghezza', 'taglio_minimo']:
+                    data[key] = float(value) if value else None
+                elif key == 'prezzo':
+                    data[key] = float(value) if value else None
+                else:
+                    data[key] = value if value else None
 
-        # Insert strip
+            # Extract eccezioni
+            eccezioni = json.loads(request.form.get('eccezioni', '[]'))
+
+            # Handle image file if present
+            immagine_url = None
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    from werkzeug.utils import secure_filename
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+
+                    # Read file content
+                    file_content = file.read()
+
+                    # Upload to Supabase Storage bucket 'strip-images'
+                    upload_result = db.supabase_admin.storage.from_('strip-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    immagine_url = db.supabase_admin.storage.from_('strip-images').get_public_url(unique_filename)
+                    data['immagine'] = immagine_url
+                    logging.info(f"Strip image uploaded to Supabase Storage: {immagine_url}")
+
+            # Remove empty values
+            data = {k: v for k, v in data.items() if v not in [None, '']}
+        else:
+            # Handle regular JSON request
+            data = request.json
+            eccezioni = data.pop('eccezioni', [])
+
+        # Auto-generate strip_id and nome from parameters
+        nome_commerciale = data.get('nome_commerciale', '')
+        tensione = data.get('tensione', '')
+        ip = data.get('ip', '')
+        temperatura = data.get('temperatura', '')
+
+        # Build strip_id: STRIP_{tensione}_{ip}_{nome_commerciale}[_{temperatura}]
+        # Add temperatura suffix only for RGB, RGBW, CCT
+        base_id = f"STRIP_{tensione}_{ip}_{nome_commerciale}".replace(' ', '_').upper()
+
+        if temperatura and temperatura.upper() in ['RGB', 'RGBW', 'CCT']:
+            strip_id = f"{base_id}_{temperatura.upper()}"
+        else:
+            strip_id = base_id
+
+        # Generate nome: same as strip_id but with spaces instead of underscores
+        nome = strip_id.replace('_', ' ')
+
+        # Add auto-generated fields to data
+        data['strip_id'] = strip_id
+        data['nome'] = nome
+
+        # Insert strip into strip_test table
         result = db.supabase.table('strip_test').insert(data).execute()
 
         # If strip was created successfully and there are eccezioni, insert them
         if result.data and eccezioni:
-            strip_codice = data['id']  # The strip ID/codice
             for profilo_famiglia in eccezioni:
                 try:
                     db.supabase.table('strip_profilo_eccezioni').insert({
-                        'strip_codice': strip_codice,
+                        'strip_codice': strip_id,
                         'profilo_famiglia': profilo_famiglia
                     }).execute()
                 except Exception as eccezione_err:
-                    logging.warning(f"Errore inserimento eccezione {strip_codice} -> {profilo_famiglia}: {str(eccezione_err)}")
+                    logging.warning(f"Errore inserimento eccezione {strip_id} -> {profilo_famiglia}: {str(eccezione_err)}")
+
+        # Clear cache if image was uploaded
+        if immagine_url:
+            db.clear_cache()
+            logging.info(f"Cache cleared after adding new strip with image")
 
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
-        logging.error(f"Errore aggiunta strip LED: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiunta strip LED: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/strip_led/update/<path:codice_completo>', methods=['PUT'])
@@ -493,11 +576,98 @@ def update_strip_led(codice_completo):
         return auth_check
 
     try:
-        data = request.json
+        # Check if this is a file upload (FormData) or JSON request
+        immagine_url = None
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload
+            data = {}
+            for key, value in request.form.items():
+                if key == 'giuntabile':
+                    data[key] = value == 'true'
+                elif key == 'lunghezza':
+                    # lunghezza should be integer
+                    data[key] = int(float(value)) if value else None
+                elif key in ['larghezza', 'taglio_minimo']:
+                    data[key] = float(value) if value else None
+                elif key == 'prezzo':
+                    data[key] = float(value) if value else None
+                else:
+                    data[key] = value if value else None
+
+            # Handle image file if present
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    from werkzeug.utils import secure_filename
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+
+                    # Read file content
+                    file_content = file.read()
+
+                    # Upload to Supabase Storage bucket 'strip-images'
+                    upload_result = db.supabase_admin.storage.from_('strip-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    immagine_url = db.supabase_admin.storage.from_('strip-images').get_public_url(unique_filename)
+                    data['immagine'] = immagine_url
+                    logging.info(f"Strip image uploaded to Supabase Storage: {immagine_url}")
+
+            # Remove empty values
+            data = {k: v for k, v in data.items() if v not in [None, '']}
+        else:
+            # Handle regular JSON update
+            data = request.json
+
+        # Auto-regenerate strip_id and nome if key fields are being updated
+        # Get current strip data to check if we need to regenerate
+        if any(key in data for key in ['nome_commerciale', 'tensione', 'ip', 'temperatura']):
+            # Fetch current strip to get missing values
+            current_strip = db.supabase.table('strip_test').select('*').eq('codice_completo', codice_completo).execute()
+            if current_strip.data and len(current_strip.data) > 0:
+                current = current_strip.data[0]
+
+                # Use new values if provided, otherwise use current values
+                nome_commerciale = data.get('nome_commerciale', current.get('nome_commerciale', ''))
+                tensione = data.get('tensione', current.get('tensione', ''))
+                ip = data.get('ip', current.get('ip', ''))
+                temperatura = data.get('temperatura', current.get('temperatura', ''))
+
+                # Build strip_id: STRIP_{tensione}_{ip}_{nome_commerciale}[_{temperatura}]
+                base_id = f"STRIP_{tensione}_{ip}_{nome_commerciale}".replace(' ', '_').upper()
+
+                if temperatura and temperatura.upper() in ['RGB', 'RGBW', 'CCT']:
+                    strip_id = f"{base_id}_{temperatura.upper()}"
+                else:
+                    strip_id = base_id
+
+                # Generate nome: same as strip_id but with spaces
+                nome = strip_id.replace('_', ' ')
+
+                # Update data with auto-generated fields
+                data['strip_id'] = strip_id
+                data['nome'] = nome
+
+        # Update strip_test table
         result = db.supabase.table('strip_test').update(data).eq('codice_completo', codice_completo).execute()
+
+        # Clear cache if image was uploaded
+        if immagine_url:
+            db.clear_cache()
+            logging.info(f"Cache cleared after strip image update")
+
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
-        logging.error(f"Errore aggiornamento strip LED: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiornamento strip LED: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/strip_led/delete/<path:codice_completo>', methods=['DELETE'])

@@ -162,7 +162,9 @@ function caricaStripLedFiltrate() {
         
         data.strip_led.forEach(function(strip) {
           const nomeVisualizzato = strip.nomeCommerciale || strip.nome;
-          const imgPath = `/static/img/strip/${strip.id}.jpg`;
+          // Priority: 1. Database image, 2. Hardcoded path, 3. Placeholder
+          const hardcodedPath = `/static/img/strip/${strip.id}.jpg`;
+          const imgPath = strip.immagine || hardcodedPath;
           const hasStripDescription = strip.descrizione && strip.descrizione.trim() !== '';
 
           stripHtml += `

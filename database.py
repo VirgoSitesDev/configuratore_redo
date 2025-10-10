@@ -409,6 +409,7 @@ class DatabaseManager:
                     'potenzeDisponibili': [],
                     'codiciProdotto': [],
                     'taglioMinimo': {},
+                    'immagine': strip.get('immagine'),  # Store strip image from database
                     'variants': []
                 }
 
@@ -427,6 +428,10 @@ class DatabaseManager:
             # Update descrizione if current variant has one and we don't have one yet
             if strip.get('descrizione') and not strips_by_id[strip_id]['descrizione']:
                 strips_by_id[strip_id]['descrizione'] = strip.get('descrizione')
+
+            # Update immagine if current variant has one (ensures all variants have same image)
+            if strip.get('immagine'):
+                strips_by_id[strip_id]['immagine'] = strip.get('immagine')
 
         # Apply compatibility filters
         compatible_strips = []
@@ -535,6 +540,7 @@ class DatabaseManager:
                             'potenzeDisponibili': [],
                             'codiciProdotto': [],
                             'taglioMinimo': {},
+                            'immagine': strip.get('immagine'),  # Store strip image from database
                             'variants': []
                         }
 
@@ -546,6 +552,10 @@ class DatabaseManager:
                         strips_by_id[strip_id]['codiciProdotto'].append(strip['codice_completo'])
                         if strip['taglio_minimo']:
                             strips_by_id[strip_id]['taglioMinimo'][strip['potenza']] = strip['taglio_minimo']
+
+                    # Update immagine if current variant has one (ensures all variants have same image)
+                    if strip.get('immagine'):
+                        strips_by_id[strip_id]['immagine'] = strip.get('immagine')
 
                     # Add to compatible_strips
                     exception_strip_obj = strips_by_id[strip_id].copy()
@@ -606,6 +616,7 @@ class DatabaseManager:
                     'potenzeDisponibili': [],
                     'codiciProdotto': [],
                     'taglioMinimo': {},
+                    'immagine': strip.get('immagine'),  # Store strip image from database
                     'variants': []
                 }
 
@@ -624,6 +635,10 @@ class DatabaseManager:
             # Update descrizione if current variant has one and we don't have one yet
             if strip.get('descrizione') and not strips_by_id[strip_id]['descrizione']:
                 strips_by_id[strip_id]['descrizione'] = strip.get('descrizione')
+
+            # Update immagine if current variant has one (ensures all variants have same image)
+            if strip.get('immagine'):
+                strips_by_id[strip_id]['immagine'] = strip.get('immagine')
 
         result = []
         for strip_id, strip in strips_by_id.items():
