@@ -1476,10 +1476,13 @@ export function finalizzaConfigurazione() {
           `;
 
           if (configurazione.doppiaStripSelezionata && configurazione.moltiplicatoreStrip === 2) {
+            // lunghezzaTotale already contains the correct profile length (including *2 for rectangles)
+            // For double strip, we need lunghezzaTotale * 2
+            const lunghezzaTotaleDoppiaStrip = configurazione.lunghezzaTotale * 2;
             riepilogoHtml += `
                       <tr>
                         <th scope="row">Lunghezza totale doppia strip LED</th>
-                        <td>${(configurazione.lunghezzaTotale / 1000 * 2).toFixed(2)}m (${configurazione.lunghezzaTotale * 2}mm)</td>
+                        <td>${(lunghezzaTotaleDoppiaStrip / 1000).toFixed(2)}m (${lunghezzaTotaleDoppiaStrip}mm)</td>
                       </tr>
             `;
           }
@@ -1637,14 +1640,18 @@ export function finalizzaConfigurazione() {
                     </tr>
         `;
 
-        // Only show lunghezza richiesta here if it wasn't already shown in the DRITTO_SEMPLICE section above
-        if (riepilogo.lunghezzaRichiesta && riepilogo.formaDiTaglioSelezionata !== 'DRITTO_SEMPLICE') {
-          riepilogoHtml += `
-                    <tr>
-                      <th scope="row">Lunghezza totale</th>
-                      <td>${riepilogo.lunghezzaRichiesta}mm</td>
-                    </tr>
-          `;
+        // Only show lunghezza totale here if it wasn't already shown in the DRITTO_SEMPLICE section above
+        if (riepilogo.formaDiTaglioSelezionata !== 'DRITTO_SEMPLICE') {
+          // For complex shapes, display lunghezzaTotale which includes the perimeter calculation
+          const lunghezzaTotaleDisplay = configurazione.lunghezzaTotale || riepilogo.lunghezzaRichiesta;
+          if (lunghezzaTotaleDisplay) {
+            riepilogoHtml += `
+                      <tr>
+                        <th scope="row">Lunghezza totale</th>
+                        <td>${lunghezzaTotaleDisplay}mm</td>
+                      </tr>
+            `;
+          }
         }
 
         if (riepilogo.stripLedSelezionata !== 'NO_STRIP' && riepilogo.includeStripLed && potenzaTotale) {

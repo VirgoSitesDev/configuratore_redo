@@ -844,18 +844,9 @@ def finalizza_configurazione():
             potenza_per_metro = float(potenza_str.replace(',', '.'))
         except ValueError:
             potenza_per_metro = 0
-    
-    lunghezza_in_metri = 0
-    if 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
-        try:
-            lunghezza_in_metri = float(configurazione['lunghezzaRichiesta']) / 1000
-        except ValueError:
-            lunghezza_in_metri = 0
-    
+
     # Get strip multiplier (1 or 2) for double strip
     moltiplicatore_strip = configurazione.get('moltiplicatoreStrip') or 1
-
-    potenza_totale = potenza_per_metro * lunghezza_in_metri * moltiplicatore_strip
 
     quantita_profilo = 1
     quantita_strip_led = 1
@@ -866,11 +857,18 @@ def finalizza_configurazione():
     lunghezza_totale = 0
     if 'lunghezzeMultiple' in configurazione and configurazione['lunghezzeMultiple']:
         lunghezza_totale = sum(v for v in configurazione['lunghezzeMultiple'].values() if v and v > 0)
+        # For RETTANGOLO_QUADRATO, multiply by 2 since we need 2 lengths and 2 widths
+        if configurazione.get('formaDiTaglioSelezionata') == 'RETTANGOLO_QUADRATO':
+            lunghezza_totale = lunghezza_totale * 2
     elif 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
         lunghezza_totale = float(configurazione['lunghezzaRichiesta'])
 
     # Apply multiplier to total length for strip calculations
     lunghezza_totale_strip = lunghezza_totale * moltiplicatore_strip
+
+    # Calculate total power using lunghezza_totale_strip (accounts for both shape and double strip)
+    lunghezza_in_metri = lunghezza_totale_strip / 1000 if lunghezza_totale_strip > 0 else 0
+    potenza_totale = potenza_per_metro * lunghezza_in_metri
 
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
@@ -1729,6 +1727,29 @@ def salva_preventivo_log(email_html, nome_agente, email_agente, ragione_sociale,
 def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferimento, note, configurazione, codice_prodotto):
     """Genera l'HTML dell'email del preventivo con tutti i dati del riepilogo"""
 
+    # Recalculate potenzaTotale correctly (override any incorrect value from frontend)
+    potenza_per_metro = 0
+    if 'potenzaSelezionata' in configurazione and configurazione['potenzaSelezionata']:
+        potenza_str = configurazione['potenzaSelezionata'].split('W/m')[0]
+        try:
+            potenza_per_metro = float(potenza_str.replace(',', '.'))
+        except ValueError:
+            potenza_per_metro = 0
+
+    moltiplicatore_strip = configurazione.get('moltiplicatoreStrip', 1)
+
+    lunghezza_totale = 0
+    if 'lunghezzeMultiple' in configurazione and configurazione['lunghezzeMultiple']:
+        lunghezza_totale = sum(v for v in configurazione['lunghezzeMultiple'].values() if v and v > 0)
+        if configurazione.get('formaDiTaglioSelezionata') == 'RETTANGOLO_QUADRATO':
+            lunghezza_totale = lunghezza_totale * 2
+    elif 'lunghezzaRichiesta' in configurazione and configurazione['lunghezzaRichiesta']:
+        lunghezza_totale = float(configurazione['lunghezzaRichiesta'])
+
+    lunghezza_totale_strip = lunghezza_totale * moltiplicatore_strip
+    lunghezza_in_metri = lunghezza_totale_strip / 1000 if lunghezza_totale_strip > 0 else 0
+    configurazione['potenzaTotale'] = round(potenza_per_metro * lunghezza_in_metri, 2)
+
     mappaCategorieVisualizzazione = {
         'nanoprofili': 'Nanoprofili',
         'incasso': 'Profili a Incasso',
@@ -1845,8 +1866,30 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
         tappi_forati_selezionati=configurazione.get('tappiForatiSelezionati'),
         quantita_tappi_forati=configurazione.get('quantitaTappiForati', 0),
         diffusore_selezionato=configurazione.get('diffusoreSelezionato'),
-        quantita_diffusore=configurazione.get('quantitaDiffusore', 0)
+        quantita_diffusore=configurazione.get('quantitaDiffusore', 0),
+        moltiplicatore_strip=configurazione.get('moltiplicatoreStrip', 1),
+        forma_di_taglio=configurazione.get('formaDiTaglioSelezionata')
     )
+
+    # Recalculate profile price correctly for combinazioneProfiloOttimale
+    if configurazione.get('combinazioneProfiloOttimale') and len(configurazione['combinazioneProfiloOttimale']) > 0:
+        prezzo_profilo_totale = 0.0
+        for combo in configurazione['combinazioneProfiloOttimale']:
+            codice_specifico = db.get_codice_profilo(
+                configurazione['profiloSelezionato'],
+                configurazione.get('finituraSelezionata'),
+                combo['lunghezza']
+            )
+            prezzo_singolo = db.get_prezzo_profilo(
+                codice_specifico,
+                configurazione.get('finituraSelezionata'),
+                combo['lunghezza']
+            )
+            prezzo_profilo_totale += prezzo_singolo * combo['quantita']
+
+        # Override the profile price with the correct calculation
+        prezzi['profilo'] = prezzo_profilo_totale
+        prezzi['totale'] = sum(prezzi.values())
 
     lunghezza_cavo_totale_mm = 0
     if configurazione.get('lunghezzaCavoIngresso'):
@@ -2015,32 +2058,49 @@ def genera_email_preventivo(nome_agente, email_agente, ragione_sociale, riferime
     if configurazione.get('nomeModello'):
         modello_text = configurazione['nomeModello']
 
-        if codici_email['profilo']:
-            modello_text += f" - {codici_email['profilo']}"
-
         if configurazione.get('quantitaProfilo', 1) > 1:
             if configurazione.get('combinazioneProfiloOttimale'):
                 parti = []
                 for combo in configurazione['combinazioneProfiloOttimale']:
+                    # Get the code for THIS specific length, not the max length
+                    codice_per_lunghezza = ''
+                    if configurazione.get('profiloSelezionato') and configurazione.get('finituraSelezionata'):
+                        codice_per_lunghezza = db.get_codice_profilo(
+                            configurazione['profiloSelezionato'],
+                            configurazione['finituraSelezionata'],
+                            combo['lunghezza']
+                        )
+
                     if combo['quantita'] > 1:
                         parte = f"{combo['quantita']}x {modello_text} ({combo['lunghezza']}mm cad.)"
                     else:
                         parte = f"{modello_text} ({combo['lunghezza']}mm)"
+
+                    if codice_per_lunghezza:
+                        parte += f" - {codice_per_lunghezza}"
+
                     parti.append(parte)
                 modello_text = " + ".join(parti)
             else:
                 modello_text = f"{configurazione['quantitaProfilo']}x {modello_text}"
+                if codici_email['profilo']:
+                    modello_text += f" - {codici_email['profilo']}"
+        else:
+            # Single profile, use the code from codici_email
+            if codici_email['profilo']:
+                modello_text += f" - {codici_email['profilo']}"
 
         prezzo_profilo_text = format_prezzo(prezzi['profilo'])
         modello_text += prezzo_profilo_text
-        
+
         html += f"<tr><th>Modello</th><td>{modello_text}</td></tr>"
 
     if configurazione.get('tipologiaSelezionata'):
         html += f"<tr><th>Tipologia</th><td>{get_nome_visualizzabile(configurazione['tipologiaSelezionata'], mappaTipologieVisualizzazione)}</td></tr>"
 
-    if configurazione.get('lunghezzaRichiesta'):
-        html += f"<tr><th>Lunghezza richiesta</th><td>{configurazione['lunghezzaRichiesta']}mm</td></tr>"
+    if configurazione.get('lunghezzaRichiesta') or configurazione.get('lunghezzeMultiple'):
+        # Use the correctly calculated lunghezza_totale (accounts for RETTANGOLO_QUADRATO *2)
+        html += f"<tr><th>Lunghezza richiesta</th><td>{int(lunghezza_totale)}mm</td></tr>"
 
     if configurazione.get('lunghezzeMultiple') and configurazione.get('formaDiTaglioSelezionata') != 'DRITTO_SEMPLICE':
         etichette_lati = {

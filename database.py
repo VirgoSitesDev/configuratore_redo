@@ -952,7 +952,8 @@ class DatabaseManager:
                                 tappi_selezionati: dict = None, quantita_tappi: int = 0,
                                 tappi_ciechi_selezionati: dict = None, quantita_tappi_ciechi: int = 0,
                                 tappi_forati_selezionati: dict = None, quantita_tappi_forati: int = 0,
-                                diffusore_selezionato: dict = None, quantita_diffusore: int = 0) -> Dict[str, float]:
+                                diffusore_selezionato: dict = None, quantita_diffusore: int = 0,
+                                moltiplicatore_strip: int = 1, forma_di_taglio: str = None) -> Dict[str, float]:
         """Ottiene tutti i prezzi per una configurazione completa con quantità"""
         try:
             # codice_profilo now comes directly from profili_test.codice_listino (already has correct format)
@@ -962,13 +963,18 @@ class DatabaseManager:
             prezzo_unitario_dimmer = self.get_prezzo_dimmer(codice_dimmer)
 
             lunghezza_totale_mm = 0
-            
+
             if lunghezze_multiple:
                 lunghezza_totale_mm = sum(v for v in lunghezze_multiple.values() if v and v > 0)
+                # For RETTANGOLO_QUADRATO, multiply by 2 since we need 2 lengths and 2 widths
+                if forma_di_taglio == 'RETTANGOLO_QUADRATO':
+                    lunghezza_totale_mm = lunghezza_totale_mm * 2
             elif lunghezza_profilo:
                 lunghezza_totale_mm = lunghezza_profilo
 
-            metri_totali = math.ceil(lunghezza_totale_mm / 1000) if lunghezza_totale_mm > 0 else 0
+            # Apply moltiplicatore_strip (for double strip) to calculate total strip length
+            lunghezza_totale_strip_mm = lunghezza_totale_mm * moltiplicatore_strip
+            metri_totali = math.ceil(lunghezza_totale_strip_mm / 1000) if lunghezza_totale_strip_mm > 0 else 0
 
             prezzi = {
                 'profilo': prezzo_unitario_profilo * quantita_profilo,
@@ -1005,9 +1011,9 @@ class DatabaseManager:
                 prezzi['diffusore'] = prezzo_unitario_diffusore * quantita_diffusore
 
             prezzi['totale'] = sum(prezzi.values())
-            
-            logging.info(f"Prezzi calcolati - Profilo: €{prezzi['profilo']:.2f} (€{prezzo_unitario_profilo:.2f} x {quantita_profilo}), Strip: €{prezzi['strip_led']:.2f} (€{prezzo_unitario_strip:.2f} x {metri_totali}m)")
-            
+
+            logging.info(f"Prezzi calcolati - Profilo: €{prezzi['profilo']:.2f} (€{prezzo_unitario_profilo:.2f} x {quantita_profilo}), Strip: €{prezzi['strip_led']:.2f} (€{prezzo_unitario_strip:.2f} x {metri_totali}m, moltiplicatore={moltiplicatore_strip})")
+
             return prezzi
             
         except Exception as e:

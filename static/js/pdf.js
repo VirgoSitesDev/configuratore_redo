@@ -373,10 +373,6 @@ function generaPDFContenuto(codiceProdotto, configurazione) {
 		datiTabella.push(['Tipologia', getNomeVisualizzabile(configurazione.tipologiaSelezionata)]);
 	  }
   
-	  if (configurazione.lunghezzaRichiesta) {
-		datiTabella.push(['Lunghezza richiesta', `${configurazione.lunghezzaRichiesta}mm`]);
-	  }
-  
 	  if (configurazione.stripLedSelezionata && configurazione.stripLedSelezionata !== 'NO_STRIP' && configurazione.includeStripLed !== false) {
 		let stripText = (configurazione.nomeCommercialeStripLed || configurazione.stripLedSelezionata);
 		if (configurazione.quantitaStripLed > 1) {

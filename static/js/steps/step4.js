@@ -55,8 +55,8 @@ export function initStep4Listeners() {
 }
 
 function calcolaPotenzaAlimentatoreConsigliata() {
-  if (configurazione.stripLedSelezionata === 'senza_strip' || 
-      configurazione.stripLedSelezionata === 'NO_STRIP' || 
+  if (configurazione.stripLedSelezionata === 'senza_strip' ||
+      configurazione.stripLedSelezionata === 'NO_STRIP' ||
       !configurazione.potenzaSelezionata) {
     $('#potenza-consigliata-section').hide();
     return;
@@ -68,21 +68,39 @@ function calcolaPotenzaAlimentatoreConsigliata() {
     potenzaPerMetro = parseFloat(potenzaMatch[1]);
   }
 
-  let lunghezzaMetri = 0;
-  if (configurazione.lunghezzaRichiesta) {
-    lunghezzaMetri = parseFloat(configurazione.lunghezzaRichiesta) / 1000;
+  let lunghezzaTotaleMetri = 0;
+
+  // Calculate total length based on shape
+  if (configurazione.lunghezzeMultiple) {
+    // For complex shapes (L, C, Rectangle)
+    let lunghezzaTotaleMm = Object.values(configurazione.lunghezzeMultiple)
+      .filter(val => val && val > 0)
+      .reduce((sum, val) => sum + val, 0);
+
+    // For RETTANGOLO_QUADRATO, multiply by 2 (2 lengths + 2 widths)
+    if (configurazione.formaDiTaglioSelezionata === 'RETTANGOLO_QUADRATO') {
+      lunghezzaTotaleMm = lunghezzaTotaleMm * 2;
+    }
+
+    lunghezzaTotaleMetri = lunghezzaTotaleMm / 1000;
+  } else if (configurazione.lunghezzaRichiesta) {
+    lunghezzaTotaleMetri = parseFloat(configurazione.lunghezzaRichiesta) / 1000;
   } else if (configurazione.lunghezzaSelezionata) {
-    lunghezzaMetri = parseFloat(configurazione.lunghezzaSelezionata) / 1000;
+    lunghezzaTotaleMetri = parseFloat(configurazione.lunghezzaSelezionata) / 1000;
   }
 
-  if (potenzaPerMetro > 0 && lunghezzaMetri > 0) {
+  // Apply double strip multiplier if selected
+  const moltiplicatoreStrip = configurazione.moltiplicatoreStrip || 1;
+  lunghezzaTotaleMetri = lunghezzaTotaleMetri * moltiplicatoreStrip;
+
+  if (potenzaPerMetro > 0 && lunghezzaTotaleMetri > 0) {
     $.ajax({
       url: '/calcola_potenza_alimentatore',
       method: 'POST',
       contentType: 'application/json',
       data: JSON.stringify({
         potenzaPerMetro: potenzaPerMetro,
-        lunghezzaMetri: lunghezzaMetri
+        lunghezzaMetri: lunghezzaTotaleMetri
       }),
       success: function(response) {
         if (response.success) {
