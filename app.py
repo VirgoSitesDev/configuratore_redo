@@ -854,8 +854,6 @@ def finalizza_configurazione():
     
     # Get strip multiplier (1 or 2) for double strip
     moltiplicatore_strip = configurazione.get('moltiplicatoreStrip') or 1
-    logging.info(f"[DEBUG DOPPIA STRIP BACKEND] Moltiplicatore ricevuto: {moltiplicatore_strip}")
-    logging.info(f"[DEBUG DOPPIA STRIP BACKEND] doppiaStripSelezionata: {configurazione.get('doppiaStripSelezionata', False)}")
 
     potenza_totale = potenza_per_metro * lunghezza_in_metri * moltiplicatore_strip
 
@@ -873,9 +871,6 @@ def finalizza_configurazione():
 
     # Apply multiplier to total length for strip calculations
     lunghezza_totale_strip = lunghezza_totale * moltiplicatore_strip
-    print(f"[DEBUG] lunghezza_totale: {lunghezza_totale}")
-    print(f"[DEBUG] moltiplicatore_strip: {moltiplicatore_strip}")
-    print(f"[DEBUG] lunghezza_totale_strip: {lunghezza_totale_strip}")
 
     if 'profiloSelezionato' in configurazione and configurazione['profiloSelezionato']:
         try:
@@ -927,13 +922,9 @@ def finalizza_configurazione():
             if strip_data.data and len(strip_data.data) > 0 and strip_data.data[0].get('lunghezza'):
                 lunghezza_massima_strip = strip_data.data[0]['lunghezza']
                 strip_giuntabile = strip_data.data[0].get('giuntabile', True)
-                print(f"[DEBUG] Lunghezza massima strip: {lunghezza_massima_strip}mm")
-                print(f"[DEBUG] Strip giuntabile: {strip_giuntabile}")
 
                 if lunghezza_totale_strip > 0:
                     quantita_strip_led = math.ceil(lunghezza_totale_strip / (lunghezza_massima_strip * 1000))
-                    print(f"[DEBUG] Quantità strip calcolata: {quantita_strip_led}")
-                    print(f"[DEBUG] Calcolo: ceil({lunghezza_totale_strip} / ({lunghezza_massima_strip} * 1000))")
         except Exception as e:
             print(f"[DEBUG] ERRORE nel recupero lunghezza strip: {str(e)}")
 
@@ -2351,9 +2342,6 @@ def verifica_tappi_profilo():
     try:
         data = request.json
         profilo_id = data.get('profilo_id')
-
-        print(f"[DEBUG TAPPI] Profilo ID ricevuto: '{profilo_id}'")
-        print(f"[DEBUG TAPPI] Tipo: {type(profilo_id)}")
 
         # First split by underscore (for indoor profiles like "PROFILE_123")
         profilo_id = profilo_id.split('_')[0]

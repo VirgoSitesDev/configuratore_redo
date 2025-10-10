@@ -33,9 +33,14 @@
         <h6 class="m-0 font-weight-bold text-primary">
             <i class="bi bi-battery-charging me-2"></i>Elenco Alimentatori ({{ alimentatori|length }})
         </h6>
-        <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDelete('alimentatori_test')">
-                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+        <div class="d-flex gap-2">
+            <div class="bulk-actions" style="display: none;">
+                <button class="btn btn-danger btn-sm" onclick="bulkDelete('alimentatori_test')">
+                    <i class="bi bi-trash me-1"></i>Elimina Selezionati
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSort('nome')" id="sortButton">
+                <i class="bi bi-sort-alpha-down" id="sortIcon"></i> Ordina per Nome
             </button>
         </div>
     </div>
@@ -53,13 +58,15 @@
                         <th>IP</th>
                         <th>Potenza</th>
                         <th>Codice</th>
+                        <th>Tipo</th>
                         <th>Prezzo (€)</th>
+                        <th>Immagine</th>
                         <th width="150">Azioni</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for alimentatore in alimentatori %}
-                    <tr data-codice="{{ alimentatore.codice }}" data-alimentatore-id="{{ alimentatore.alimentatore_id }}" data-descrizione="{{ alimentatore.descrizione or '' }}">
+                    <tr data-codice="{{ alimentatore.codice }}" data-alimentatore-id="{{ alimentatore.alimentatore_id }}" data-descrizione="{{ alimentatore.descrizione or '' }}" data-nome="{{ alimentatore.nome or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ alimentatore.codice }}" onchange="toggleBulkActions()">
@@ -92,9 +99,28 @@
                             <span class="cell-value">{{ alimentatore.codice or '-' }}</span>
                             <input type="text" class="cell-input form-control form-control-sm" value="{{ alimentatore.codice or '' }}" style="display: none;">
                         </td>
+                        <td class="editable-cell" data-field="tipo" data-original="{{ alimentatore.tipo or '' }}">
+                            <span class="cell-value badge bg-warning">{{ alimentatore.tipo or '-' }}</span>
+                            <select class="cell-input form-select form-select-sm" style="display: none;">
+                                <option value="">Seleziona tipo...</option>
+                                <option value="ON-OFF" {% if alimentatore.tipo == 'ON-OFF' %}selected{% endif %}>ON-OFF</option>
+                                <option value="DIMMERABILE_TRIAC" {% if alimentatore.tipo == 'DIMMERABILE_TRIAC' %}selected{% endif %}>DIMMERABILE_TRIAC</option>
+                            </select>
+                        </td>
                         <td class="editable-cell" data-field="prezzo" data-original="{{ alimentatore.prezzo or '' }}">
                             <span class="cell-value"><strong>€{{ '%.2f'|format(alimentatore.prezzo|float) if alimentatore.prezzo else '-' }}</strong></span>
                             <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ alimentatore.prezzo or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell editable-image" data-field="immagine" data-original="{{ alimentatore.immagine or '' }}">
+                            <div class="cell-value" style="cursor: pointer;">
+                                {% if alimentatore.immagine %}
+                                    <img src="{{ alimentatore.immagine }}" alt="Immagine"
+                                         class="img-thumbnail" style="max-width: 40px; max-height: 30px;">
+                                {% else %}
+                                    <span class="text-muted small">Carica immagine</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" class="cell-input form-control form-control-sm" accept="image/*" style="display: none;">
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
@@ -147,7 +173,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="addAlimentatoreForm" onsubmit="addAlimentatore(event)">
+            <form id="addAlimentatoreForm" onsubmit="addAlimentatore(event)" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -199,7 +225,17 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_tipo" class="form-label">Tipo *</label>
+                                <select class="form-select" id="add_tipo" name="tipo" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="ON-OFF">ON-OFF</option>
+                                    <option value="DIMMERABILE_TRIAC">DIMMERABILE_TRIAC</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="add_prezzo" class="form-label">Prezzo (€)</label>
                                 <input type="number" step="0.01" class="form-control" id="add_prezzo" name="prezzo"
@@ -212,6 +248,12 @@
                         <label for="add_descrizione" class="form-label">Descrizione</label>
                         <textarea class="form-control" id="add_descrizione" name="descrizione" rows="3"
                                   placeholder="Inserisci una descrizione opzionale per l'alimentatore..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="add_immagine" class="form-label">Immagine</label>
+                        <input type="file" class="form-control" id="add_immagine" name="immagine" accept="image/*">
+                        <div class="form-text">Carica un'immagine dell'alimentatore</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -386,7 +428,15 @@ $(document).ready(function() {
 
         cell.addClass('editing');
         cell.find('.cell-value').hide();
-        cell.find('.cell-input').show().focus();
+        const input = cell.find('.cell-input');
+        input.show();
+
+        // For file inputs, trigger click to open file dialog
+        if (input.is('input[type="file"]')) {
+            input.click();
+        } else {
+            input.focus();
+        }
 
         cell.closest('tr').find('.save-btn').show();
     });
@@ -412,6 +462,16 @@ $(document).ready(function() {
         e.stopPropagation();
     });
 
+    // Handle file selection - show filename
+    $('input[type="file"].cell-input').on('change', function() {
+        const cell = $(this).closest('.editable-cell');
+        const file = this.files[0];
+        if (file) {
+            // Show filename instead of the original image
+            cell.find('.cell-value').html(`<span class="text-primary small"><i class="bi bi-image me-1"></i>${file.name}</span>`).show();
+        }
+    });
+
     // Click anywhere else to cancel edit
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.editable-cell').length &&
@@ -432,7 +492,15 @@ function cancelEdit(row) {
         cell.find('.cell-input').hide();
         cell.find('.cell-value').show();
         const original = cell.data('original');
-        cell.find('.cell-input').val(original);
+        const input = cell.find('.cell-input');
+
+        if (input.is('select')) {
+            input.val(original);
+        } else if (input.is('input[type="file"]')) {
+            input.val(''); // Clear file input
+        } else {
+            input.val(original);
+        }
     });
     row.find('.save-btn').hide();
 }
@@ -440,74 +508,129 @@ function cancelEdit(row) {
 function saveRow(button) {
     const row = $(button).closest('tr');
     const codice = row.data('codice');
-    const data = {};
+    const alimentatoreId = row.data('alimentatore-id');
 
-    row.find('.editable-cell').each(function() {
-        const cell = $(this);
-        const field = cell.data('field');
-        let value = cell.find('.cell-input').val();
+    // Check if image upload is present
+    const imageInput = row.find('.editable-image input[type="file"]')[0];
+    const hasImageUpload = imageInput && imageInput.files && imageInput.files.length > 0;
 
-        if (field === 'potenza') {
-            data[field] = value ? parseInt(value) : null;
-        } else if (field === 'prezzo') {
-            data[field] = value ? parseFloat(value) : null;
-        } else {
-            data[field] = value || null;
-        }
-    });
+    if (hasImageUpload) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('alimentatore_id', alimentatoreId);
+        formData.append('immagine', imageInput.files[0]);
 
-    $.ajax({
-        url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
-        method: 'PUT',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function(response) {
-            if (response.success) {
-                showAlert('Modifiche salvate con successo!', 'success');
-                setTimeout(() => location.reload(), 800);
+        // Collect other edited values
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
+
+            if (field === 'immagine') return; // Skip, already added
+
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (input.is('select')) {
+                value = input.val();
             } else {
-                showAlert('Errore: ' + response.error, 'danger');
+                value = input.val();
+            }
+
+            if (field === 'potenza') {
+                formData.append(field, parseInt(value) || 0);
+            } else if (field === 'prezzo') {
+                formData.append(field, parseFloat(value) || 0);
+            } else {
+                formData.append(field, value);
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
+            method: 'PUT',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
                 cancelEdit(row);
             }
-        },
-        error: function(xhr, status, error) {
-            handleAjaxError(xhr, status, error);
-            cancelEdit(row);
-        }
-    });
+        });
+    } else {
+        // Use JSON for regular updates
+        const data = {
+            alimentatore_id: alimentatoreId
+        };
+
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (input.is('select')) {
+                value = input.val();
+            } else {
+                value = input.val();
+            }
+
+            if (field === 'potenza') {
+                data[field] = value ? parseInt(value) : null;
+            } else if (field === 'prezzo') {
+                data[field] = value ? parseFloat(value) : null;
+            } else if (field !== 'immagine') { // Skip image field for JSON updates
+                data[field] = value || null;
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_alimentatore", codice='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(codice)),
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
+                cancelEdit(row);
+            }
+        });
+    }
 }
 
 function addAlimentatore(event) {
     event.preventDefault();
 
     const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
 
     // Generate alimentatore_id from nome by replacing spaces with underscores
-    if (data.nome) {
-        data.alimentatore_id = data.nome.replace(/\s+/g, '_');
+    const nome = formData.get('nome');
+    if (nome) {
+        formData.set('alimentatore_id', nome.replace(/\s+/g, '_'));
     }
-
-    // Convert potenza to integer
-    if (data.potenza) {
-        data.potenza = parseInt(data.potenza);
-    }
-
-    // Convert prezzo to float or remove if empty
-    if (data.prezzo) {
-        data.prezzo = parseFloat(data.prezzo);
-    } else {
-        delete data.prezzo;
-    }
-
-    // Remove empty descrizione
-    if (!data.descrizione) delete data.descrizione;
 
     $.ajax({
         url: '{{ url_for("admin.add_alimentatore") }}',
         method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function(response) {
             if (response.success) {
                 showAlert('Alimentatore aggiunto con successo!', 'success');
@@ -662,6 +785,55 @@ function saveDescrizione() {
         },
         error: handleAjaxError
     });
+}
+
+// Sorting functionality
+let sortState = 'none'; // 'none', 'asc', 'desc'
+
+function toggleSort(field) {
+    const tbody = document.getElementById('tableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const sortIcon = document.getElementById('sortIcon');
+
+    // Toggle sort state
+    if (sortState === 'none') {
+        sortState = 'asc';
+    } else if (sortState === 'asc') {
+        sortState = 'desc';
+    } else {
+        sortState = 'none';
+    }
+
+    // Update icon
+    if (sortState === 'asc') {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    } else if (sortState === 'desc') {
+        sortIcon.className = 'bi bi-sort-alpha-up';
+    } else {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    }
+
+    // Sort or restore original order
+    if (sortState === 'none') {
+        // Restore original order by reloading
+        location.reload();
+        return;
+    }
+
+    rows.sort((a, b) => {
+        const aValue = (a.dataset.nome || '').toLowerCase();
+        const bValue = (b.dataset.nome || '').toLowerCase();
+
+        if (sortState === 'asc') {
+            return aValue.localeCompare(bValue);
+        } else {
+            return bValue.localeCompare(aValue);
+        }
+    });
+
+    // Clear and re-append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
 }
 </script>
 {% endblock %}

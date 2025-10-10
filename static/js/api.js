@@ -1130,7 +1130,7 @@ export function finalizzaConfigurazione() {
         'CON_TELECOMANDO': 'Con telecomando',
         'CENTRALINA_TUYA': 'Centralina TUYA',
         'DIMMER_A_PULSANTE_SEMPLICE': 'Dimmer a pulsante semplice',
-        'DIMMERABILE_PWM': 'Dimmerabile PWM',
+        'DIMMERABILE_o': 'Dimmerabile PWM',
         'DIMMERABILE_DALI': 'Dimmerabile DALI'
       };
 
@@ -1565,7 +1565,12 @@ export function finalizzaConfigurazione() {
                     </tr>
           `;
 
-          if (riepilogo.dimmerSelezionato === 'TOUCH_SU_PROFILO') {
+          if (riepilogo.dimmerSelezionato &&
+              (riepilogo.dimmerSelezionato.includes('TOUCH_SU_PROFILO') ||
+               riepilogo.dimmerSelezionato.includes('PRFIRSW') ||
+               riepilogo.dimmerSelezionato.includes('PRFIRDIMM') ||
+               riepilogo.dimmerSelezionato.includes('PRFTSW') ||
+               riepilogo.dimmerSelezionato.includes('PRFTDIMM'))) {
             riepilogoHtml += `
                     <tr>
                       <th scope="row">Nota dimmer</th>

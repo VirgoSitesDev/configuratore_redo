@@ -217,26 +217,27 @@ def add_profilo_complete():
         if 'immagine' in request.files:
             file = request.files['immagine']
             if file and file.filename:
-                import os
                 from werkzeug.utils import secure_filename
-                import time
 
-                # Get the absolute path to static/img folder
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-                upload_folder = os.path.join(base_dir, 'static', 'img', 'profili')
-                os.makedirs(upload_folder, exist_ok=True)
-
-                # Save file with secure filename and timestamp
+                # Generate unique filename
                 filename = secure_filename(file.filename)
-                timestamp = str(int(time.time()))
-                name, ext = os.path.splitext(filename)
-                filename = f"{name}_{timestamp}{ext}"
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_filename = f"{timestamp}_{filename}"
 
-                file_path = os.path.join(upload_folder, filename)
-                file.save(file_path)
+                # Upload to Supabase Storage
+                # Read file content
+                file_content = file.read()
 
-                # Store relative URL for database
-                immagine_url = f"/static/img/profili/{filename}"
+                # Upload to Supabase Storage bucket 'profili-images'
+                upload_result = db.supabase_admin.storage.from_('profili-images').upload(
+                    unique_filename,
+                    file_content,
+                    {'content-type': file.content_type}
+                )
+
+                # Generate public URL
+                immagine_url = db.supabase_admin.storage.from_('profili-images').get_public_url(unique_filename)
+                logging.info(f"Image uploaded to Supabase Storage: {immagine_url}")
 
         # Insert into profili_test table (simplified approach)
         profilo_test_data = {
@@ -256,6 +257,12 @@ def add_profilo_complete():
             profilo_test_data['immagine'] = immagine_url
 
         test_result = db.supabase.table('profili_test').insert(profilo_test_data).execute()
+
+        # If image was provided, propagate to all existing variants in the same famiglia
+        if immagine_url:
+            # Update all other variants in the same famiglia with the new image
+            db.supabase.table('profili_test').update({'immagine': immagine_url}).eq('famiglia', nome).execute()
+            logging.info(f"Propagated image {immagine_url} to all variants of famiglia {nome}")
 
         return jsonify({'success': True, 'data': test_result.data})
     except Exception as e:
@@ -327,30 +334,47 @@ def update_profilo_prezzo(codice_listino):
             if 'immagine' in request.files:
                 file = request.files['immagine']
                 if file and file.filename:
-                    import os
                     from werkzeug.utils import secure_filename
-
-                    # Create upload directory if it doesn't exist
-                    upload_dir = os.path.join('static', 'uploads', 'profili')
-                    os.makedirs(upload_dir, exist_ok=True)
 
                     # Generate unique filename
                     filename = secure_filename(file.filename)
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    file_ext = filename.rsplit('.', 1)[1] if '.' in filename else 'jpg'
                     unique_filename = f"{timestamp}_{filename}"
-                    filepath = os.path.join(upload_dir, unique_filename)
 
-                    # Save file
-                    file.save(filepath)
+                    # Upload to Supabase Storage
+                    # Read file content
+                    file_content = file.read()
 
-                    # Store relative URL path in database
-                    data['immagine'] = f"/static/uploads/profili/{unique_filename}"
+                    # Upload to Supabase Storage bucket 'profili-images'
+                    upload_result = db.supabase_admin.storage.from_('profili-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    public_url = db.supabase_admin.storage.from_('profili-images').get_public_url(unique_filename)
+
+                    # Store public URL in database
+                    data['immagine'] = public_url
+                    logging.info(f"Image uploaded to Supabase Storage: {public_url}")
         else:
             # Handle regular JSON update
             data = request.json
 
         # Update profili_test table
         result = db.supabase.table('profili_test').update(data).eq('codice_listino', codice_listino).execute()
+
+        # If image was updated, propagate to all variants in the same famiglia
+        if 'immagine' in data and data['immagine']:
+            # Get the famiglia for this profile variant
+            profile_data = db.supabase.table('profili_test').select('famiglia').eq('codice_listino', codice_listino).execute()
+            if profile_data.data and len(profile_data.data) > 0:
+                famiglia = profile_data.data[0]['famiglia']
+                # Update all other variants in the same famiglia with the new image
+                db.supabase.table('profili_test').update({'immagine': data['immagine']}).eq('famiglia', famiglia).execute()
+                logging.info(f"Propagated image {data['immagine']} to all variants of famiglia {famiglia}")
 
         # If categoria is being updated, also update the profili table
         if 'categoria' in data and 'famiglia' in data:
@@ -528,15 +552,22 @@ def alimentatori():
         # Build list directly from alimentatori_test
         alimentatori_list = []
         for alimentatore in (alimentatori_data.data or []):
+            alimentatore_id = alimentatore.get('alimentatore_id', 'N/A')
+
+            # Generate image path from alimentatore_id (family name)
+            img_path = f"/static/img/{alimentatore_id.lower()}.jpg"
+
             alimentatori_list.append({
                 'codice': alimentatore.get('codice'),
-                'alimentatore_id': alimentatore.get('alimentatore_id'),
+                'alimentatore_id': alimentatore_id,
+                'tipo': alimentatore.get('tipo'),
                 'nome': alimentatore.get('nome'),
                 'descrizione': alimentatore.get('descrizione'),
                 'tensione': alimentatore.get('tensione'),
                 'ip': alimentatore.get('ip'),
                 'potenza': alimentatore.get('potenza'),
                 'prezzo': alimentatore.get('prezzo'),
+                'immagine': alimentatore.get('immagine') or img_path,  # Use DB value or generate from alimentatore_id (family)
                 'visibile': alimentatore.get('visibile', True)
             })
 
@@ -553,11 +584,69 @@ def add_alimentatore():
         return auth_check
 
     try:
-        data = request.json
-        result = db.supabase.table('alimentatori_test').insert(data).execute()
-        return jsonify({'success': True, 'data': result.data})
+        # Check if this is a file upload (FormData) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload with FormData
+            data = {}
+            for key, value in request.form.items():
+                if key == 'potenza':
+                    data[key] = int(value) if value else None
+                elif key == 'prezzo':
+                    data[key] = float(value) if value else None
+                else:
+                    data[key] = value if value else None
+
+            # Handle image file if present
+            immagine_url = None
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    from werkzeug.utils import secure_filename
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+
+                    # Read file content
+                    file_content = file.read()
+
+                    # Upload to Supabase Storage bucket 'alimentatori-images'
+                    upload_result = db.supabase_admin.storage.from_('alimentatori-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    immagine_url = db.supabase_admin.storage.from_('alimentatori-images').get_public_url(unique_filename)
+                    data['immagine'] = immagine_url
+                    logging.info(f"Image uploaded to Supabase Storage: {immagine_url}")
+
+            # Remove empty values
+            data = {k: v for k, v in data.items() if v not in [None, '']}
+
+            result = db.supabase.table('alimentatori_test').insert(data).execute()
+
+            # If image was provided, propagate to all existing variants in the same alimentatore_id
+            if immagine_url and 'alimentatore_id' in data:
+                alimentatore_id = data['alimentatore_id']
+                db.supabase.table('alimentatori_test').update({'immagine': immagine_url}).eq('alimentatore_id', alimentatore_id).execute()
+                logging.info(f"Propagated image {immagine_url} to all variants of alimentatore_id {alimentatore_id}")
+                # Clear cache so frontend gets updated image
+                db.clear_cache()
+                logging.info(f"Cache cleared after adding new alimentatore with image")
+
+            return jsonify({'success': True, 'data': result.data})
+        else:
+            # Handle regular JSON request
+            data = request.json
+            result = db.supabase.table('alimentatori_test').insert(data).execute()
+            return jsonify({'success': True, 'data': result.data})
     except Exception as e:
-        logging.error(f"Errore aggiunta alimentatore: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiunta alimentatore: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/alimentatori/update/<path:codice>', methods=['PUT'])
@@ -567,11 +656,71 @@ def update_alimentatore(codice):
         return auth_check
 
     try:
-        data = request.json
+        # Check if this is a file upload (FormData) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload
+            data = {}
+            for key, value in request.form.items():
+                if key == 'potenza':
+                    data[key] = int(value) if value else None
+                elif key == 'prezzo':
+                    data[key] = float(value) if value else None
+                else:
+                    data[key] = value if value else None
+
+            # Handle image file if present
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    from werkzeug.utils import secure_filename
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+
+                    # Read file content
+                    file_content = file.read()
+
+                    # Upload to Supabase Storage bucket 'alimentatori-images'
+                    upload_result = db.supabase_admin.storage.from_('alimentatori-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    public_url = db.supabase_admin.storage.from_('alimentatori-images').get_public_url(unique_filename)
+                    data['immagine'] = public_url
+                    logging.info(f"Image uploaded to Supabase Storage: {public_url}")
+
+            # Remove empty values
+            data = {k: v for k, v in data.items() if v not in [None, '']}
+        else:
+            # Handle regular JSON update
+            data = request.json
+
+        # Update alimentatori_test table
         result = db.supabase.table('alimentatori_test').update(data).eq('codice', codice).execute()
+
+        # If image was updated, propagate to all variants in the same alimentatore_id
+        if 'immagine' in data and data['immagine']:
+            # Get the alimentatore_id for this alimentatore variant
+            alimentatore_data = db.supabase.table('alimentatori_test').select('alimentatore_id').eq('codice', codice).execute()
+            if alimentatore_data.data and len(alimentatore_data.data) > 0:
+                alimentatore_id = alimentatore_data.data[0]['alimentatore_id']
+                # Update all other variants in the same alimentatore_id with the new image
+                db.supabase.table('alimentatori_test').update({'immagine': data['immagine']}).eq('alimentatore_id', alimentatore_id).execute()
+                logging.info(f"Propagated image {data['immagine']} to all variants of alimentatore_id {alimentatore_id}")
+                # Clear cache so frontend gets updated image
+                db.clear_cache()
+                logging.info(f"Cache cleared after image update")
+
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
-        logging.error(f"Errore aggiornamento alimentatore: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiornamento alimentatore: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/alimentatori/delete/<path:codice>', methods=['DELETE'])
@@ -598,8 +747,56 @@ def dimmer():
         return auth_check
 
     try:
-        dimmer = db.supabase.table('dimmer').select('*').execute()
-        return render_template('admin/dimmer.html', dimmer=dimmer.data or [])
+        dimmer_data = db.supabase.table('dimmer').select('*').execute()
+
+        # Hardcoded image mapping as fallback (matches frontend step5.js)
+        # This is ONLY used if there's no image uploaded in the database
+        dimmer_images_fallback = {
+            "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "/static/img/dimmer/touch_su_profilo.jpg",
+            "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "/static/img/dimmer/touch_su_profilo_dim.jpg",
+            "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "/static/img/dimmer/ir_su_profilo.jpg",
+            "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "/static/img/dimmer/ir_su_profilo_dim.jpg",
+            "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "/static/img/dimmer/con_telecomando_rgb.jpg",
+            "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "/static/img/dimmer/con_telecomando.jpg",
+            "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "/static/img/dimmer/con_telecomando_cct.jpg",
+            "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "/static/img/dimmer/dimmer_pulsante.jpg",
+            "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "/static/img/dimmer/dimmer_pulsante_48v.jpg",
+            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "/static/img/dimmer/centralina_tuya.jpg",
+            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "/static/img/dimmer/centralina_tuya_cct.jpg",
+            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "/static/img/dimmer/centralina_tuya_rgb.jpg",
+            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "/static/img/dimmer/centralina_tuya_rgbw.jpg",
+            "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "/static/img/dimmer/dimmer_triac_220v.jpg",
+            "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "/static/img/placeholder_logo.jpg",
+            "NESSUN_DIMMER": "/static/img/placeholder_logo.jpg"
+        }
+
+        # Process dimmer data - prioritize DB image, fallback to hardcoded mapping
+        dimmer_list = []
+        for d in (dimmer_data.data or []):
+            dimmer_id = d.get('id', 'N/A')
+
+            # Priority: 1. DB uploaded image, 2. Hardcoded mapping, 3. Placeholder
+            db_image = d.get('immagine')
+            fallback_image = dimmer_images_fallback.get(dimmer_id, "/static/img/placeholder_logo.jpg")
+
+            dimmer_list.append({
+                'id': d.get('id'),
+                'nome': d.get('nome'),
+                'codice': d.get('codice'),
+                'tipo': d.get('tipo'),
+                'tensione': d.get('tensione'),
+                'grado_protezione': d.get('grado_protezione'),
+                'potenza_massima': d.get('potenza_massima'),
+                'price': d.get('price'),
+                'descrizione': d.get('descrizione'),
+                'compatibileCon': d.get('compatibileCon'),
+                'spazio_non_illuminato': d.get('spazio_non_illuminato'),
+                'immagine': db_image if db_image else fallback_image,  # DB first, then fallback
+                'famiglia': d.get('famiglia', []),  # JSONB array
+                'visibile': d.get('visibile', True)
+            })
+
+        return render_template('admin/dimmer.html', dimmer=dimmer_list)
     except Exception as e:
         logging.error(f"Errore caricamento dimmer: {str(e)}")
         flash('Errore nel caricamento dei dimmer', 'error')
@@ -626,11 +823,58 @@ def update_dimmer(dimmer_id):
         return auth_check
 
     try:
-        data = request.json
+        # Check if this is a file upload (FormData) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload
+            data = {}
+            for key, value in request.form.items():
+                if key == 'potenza_massima':
+                    data[key] = int(value) if value else None
+                elif key == 'price':
+                    data[key] = float(value) if value else None
+                else:
+                    data[key] = value if value else None
+
+            # Handle image file if present
+            if 'immagine' in request.files:
+                file = request.files['immagine']
+                if file and file.filename:
+                    from werkzeug.utils import secure_filename
+
+                    # Generate unique filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+
+                    # Read file content
+                    file_content = file.read()
+
+                    # Upload to Supabase Storage bucket 'dimmer-images'
+                    upload_result = db.supabase_admin.storage.from_('dimmer-images').upload(
+                        unique_filename,
+                        file_content,
+                        {'content-type': file.content_type}
+                    )
+
+                    # Generate public URL
+                    public_url = db.supabase_admin.storage.from_('dimmer-images').get_public_url(unique_filename)
+                    data['immagine'] = public_url
+                    logging.info(f"Image uploaded to Supabase Storage: {public_url}")
+
+            # Remove empty values
+            data = {k: v for k, v in data.items() if v not in [None, '']}
+        else:
+            # Handle regular JSON update
+            data = request.json
+
+        # Update dimmer table
         result = db.supabase.table('dimmer').update(data).eq('id', dimmer_id).execute()
+
         return jsonify({'success': True, 'data': result.data})
     except Exception as e:
-        logging.error(f"Errore aggiornamento dimmer: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore aggiornamento dimmer: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/dimmer/delete/<dimmer_id>', methods=['DELETE'])
@@ -644,6 +888,52 @@ def delete_dimmer(dimmer_id):
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Errore eliminazione dimmer: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@admin_bp.route('/dimmer/upload_image/<dimmer_id>', methods=['POST'])
+def upload_dimmer_image(dimmer_id):
+    auth_check = require_admin_login()
+    if auth_check:
+        return auth_check
+
+    try:
+        if 'immagine' not in request.files:
+            return jsonify({'success': False, 'error': 'Nessuna immagine fornita'})
+
+        file = request.files['immagine']
+        if not file or not file.filename:
+            return jsonify({'success': False, 'error': 'Nessuna immagine fornita'})
+
+        from werkzeug.utils import secure_filename
+
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_filename = f"{timestamp}_{filename}"
+
+        # Read file content
+        file_content = file.read()
+
+        # Upload to Supabase Storage bucket 'dimmer-images'
+        upload_result = db.supabase_admin.storage.from_('dimmer-images').upload(
+            unique_filename,
+            file_content,
+            {'content-type': file.content_type}
+        )
+
+        # Generate public URL
+        immagine_url = db.supabase_admin.storage.from_('dimmer-images').get_public_url(unique_filename)
+
+        # Update dimmer record with image URL
+        result = db.supabase.table('dimmer').update({'immagine': immagine_url}).eq('id', dimmer_id).execute()
+
+        logging.info(f"Image uploaded for dimmer {dimmer_id}: {immagine_url}")
+
+        return jsonify({'success': True, 'immagine_url': immagine_url})
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Errore upload immagine dimmer: {str(e)}\n{error_trace}")
         return jsonify({'success': False, 'error': str(e)})
 
 # =========================

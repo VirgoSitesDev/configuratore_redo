@@ -15,17 +15,27 @@ class DatabaseManager:
         try:
             supabase_url = os.environ.get('SUPABASE_URL')
             supabase_key = os.environ.get('SUPABASE_KEY')
-            
+            supabase_service_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+
             if not supabase_url or not supabase_key:
                 raise ValueError("SUPABASE_URL o SUPABASE_KEY non configurati nel file .env")
-            
+
             self.supabase: Client = create_client(supabase_url, supabase_key)
+
+            # Create admin client with service role key for storage operations (bypasses RLS)
+            if supabase_service_key:
+                self.supabase_admin: Client = create_client(supabase_url, supabase_service_key)
+                logging.info("✓ Admin client initialized with service role key")
+            else:
+                self.supabase_admin = self.supabase  # Fallback to regular client
+                logging.warning("⚠ SUPABASE_SERVICE_ROLE_KEY not found, using regular key for admin operations")
+
             self._test_connection()
-            
+
         except Exception as e:
             logging.error(f"Errore inizializzazione database: {str(e)}")
             raise
-            
+
         self._cache = {}
         self._cache_timestamps = {}
         self._cache_duration = timedelta(minutes=30)
@@ -193,6 +203,9 @@ class DatabaseManager:
             # Update descrizione if current item has one and we don't have one yet
             if item.get('descrizione') and not profili_map[famiglia]['note']:
                 profili_map[famiglia]['note'] = item.get('descrizione')
+            # Update immagine if current item has one (ensures all variants have same image)
+            if item.get('immagine'):
+                profili_map[famiglia]['immagine'] = item.get('immagine')
 
         # Build final profili list (no longer need to query profili table for images)
         profili = []
@@ -624,25 +637,20 @@ class DatabaseManager:
 
     def get_alimentatori_by_tipo(self, tipo_alimentazione: str,
                                   tensione: str = '24V') -> List[Dict[str, Any]]:
-        alimentatori_map = {
-            'ON-OFF': ['SERIE_AT24', 'SERIE_ATUS', 'SERIE_ATSIP44',
-                       'SERIE_AT24IP67', 'SERIE_ATN24IP67'],
-            'DIMMERABILE_TRIAC': ['SERIE_ATD24', 'SERIE_ATD24IP67']
-        }
+        # First, let's see what's actually in the database
+        all_alim = self.supabase.table('alimentatori_test')\
+            .select('codice, alimentatore_id, tipo, tensione, visibile')\
+            .eq('tensione', tensione)\
+            .eq('visibile', True)\
+            .limit(5)\
+            .execute().data
 
-        if tensione == '48V':
-            alimentatori_map['ON-OFF'] = ['SERIE_ATS48IP44']
 
-        alimentatori_ids = alimentatori_map.get(tipo_alimentazione, [])
-
-        if not alimentatori_ids:
-            return []
-
-        # Fetch all matching alimentatori from alimentatori_test table
+        # Fetch all matching alimentatori from alimentatori_test table using the tipo column
         alimentatori_data = self.supabase.table('alimentatori_test')\
             .select('*')\
             .eq('tensione', tensione)\
-            .in_('alimentatore_id', alimentatori_ids)\
+            .eq('tipo', tipo_alimentazione)\
             .eq('visibile', True)\
             .order('potenza')\
             .execute().data
@@ -690,9 +698,9 @@ class DatabaseManager:
             .select('dimmer_id')\
             .eq('strip_id', strip_id)\
             .execute().data
-        
+
         dimmer_ids = [c['dimmer_id'] for c in compatibilita]
-        
+
         if not dimmer_ids:
             return {
                 'success': True,
@@ -700,7 +708,9 @@ class DatabaseManager:
                 'nomiDimmer': {'NESSUN_DIMMER': 'Nessun dimmer'},
                 'codiciDimmer': {},
                 'spaziNonIlluminati': {},
-                'potenzeMassime': {}
+                'potenzeMassime': {},
+                'immaginiDimmer': {},
+                'famiglieDimmer': {}
             }
 
         dimmer_details = self.supabase.table('dimmer')\
@@ -717,18 +727,24 @@ class DatabaseManager:
             'nomiDimmer': {'NESSUN_DIMMER': 'Nessun dimmer'},
             'codiciDimmer': {},
             'spaziNonIlluminati': {},
-            'potenzeMassime': {'NESSUN_DIMMER': 9999}
+            'potenzeMassime': {'NESSUN_DIMMER': 9999},
+            'immaginiDimmer': {},
+            'famiglieDimmer': {}
         }
-        
+
         for dimmer in dimmer_details:
             result['nomiDimmer'][dimmer['id']] = dimmer['nome']
-            if dimmer['codice']:
+            if dimmer.get('codice'):
                 result['codiciDimmer'][dimmer['id']] = dimmer['codice']
-            if dimmer['spazio_non_illuminato']:
+            if dimmer.get('spazio_non_illuminato'):
                 result['spaziNonIlluminati'][dimmer['id']] = dimmer['spazio_non_illuminato']
-            if dimmer['potenza_massima']:
+            if dimmer.get('potenza_massima'):
                 result['potenzeMassime'][dimmer['id']] = dimmer['potenza_massima']
-        
+            if dimmer.get('immagine'):
+                result['immaginiDimmer'][dimmer['id']] = dimmer['immagine']
+            if dimmer.get('famiglia'):
+                result['famiglieDimmer'][dimmer['id']] = dimmer['famiglia']
+
         return result
     
     def salva_configurazione(self, configurazione: Dict[str, Any], 

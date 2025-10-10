@@ -33,9 +33,14 @@
         <h6 class="m-0 font-weight-bold text-primary">
             <i class="bi bi-sliders me-2"></i>Elenco Dimmer ({{ dimmer|length }})
         </h6>
-        <div class="bulk-actions" style="display: none;">
-            <button class="btn btn-danger btn-sm" onclick="bulkDelete('dimmer')">
-                <i class="bi bi-trash me-1"></i>Elimina Selezionati
+        <div class="d-flex gap-2">
+            <div class="bulk-actions" style="display: none;">
+                <button class="btn btn-danger btn-sm" onclick="bulkDelete('dimmer')">
+                    <i class="bi bi-trash me-1"></i>Elimina Selezionati
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSort('nome')" id="sortButton">
+                <i class="bi bi-sort-alpha-down" id="sortIcon"></i> Ordina per Nome
             </button>
         </div>
     </div>
@@ -53,13 +58,15 @@
                         <th>Potenza Max</th>
                         <th>Tensione</th>
                         <th>IP</th>
+                        <th>Famiglia</th>
                         <th>Prezzo (€)</th>
+                        <th>Immagine</th>
                         <th width="150">Azioni</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for d in dimmer %}
-                    <tr data-dimmer-id="{{ d.id }}">
+                    <tr data-dimmer-id="{{ d.id }}" data-nome="{{ d.nome or '' }}">
                         <td>
                             <input type="checkbox" class="form-check-input item-checkbox"
                                    value="{{ d.id }}" onchange="toggleBulkActions()">
@@ -90,9 +97,53 @@
                             <span class="cell-value"><span class="badge bg-info">{{ d.grado_protezione or '-' }}</span></span>
                             <input type="text" class="cell-input form-control form-control-sm" value="{{ d.grado_protezione or '' }}" style="display: none;">
                         </td>
+                        <td class="editable-cell editable-famiglia" data-field="famiglia" data-original="{{ d.famiglia|tojson }}">
+                            <span class="cell-value">
+                                {% if d.famiglia and d.famiglia|length > 0 %}
+                                    {% for fam in d.famiglia %}
+                                        <span class="badge bg-primary me-1">{{ fam[0] }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </span>
+                            <div class="cell-input" style="display: none;">
+                                <div class="form-check">
+                                    <input class="form-check-input famiglia-checkbox" type="checkbox" value="TOUCH_SU_PROFILO" id="fam_{{ d.id }}_touch" {% if d.famiglia and 'TOUCH_SU_PROFILO' in d.famiglia %}checked{% endif %}>
+                                    <label class="form-check-label small" for="fam_{{ d.id }}_touch">Touch</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input famiglia-checkbox" type="checkbox" value="CON_TELECOMANDO" id="fam_{{ d.id }}_tel" {% if d.famiglia and 'CON_TELECOMANDO' in d.famiglia %}checked{% endif %}>
+                                    <label class="form-check-label small" for="fam_{{ d.id }}_tel">Telecomando</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input famiglia-checkbox" type="checkbox" value="CON_PULSANTE" id="fam_{{ d.id }}_puls" {% if d.famiglia and 'CON_PULSANTE' in d.famiglia %}checked{% endif %}>
+                                    <label class="form-check-label small" for="fam_{{ d.id }}_puls">Pulsante</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input famiglia-checkbox" type="checkbox" value="SISTEMA_TUYA" id="fam_{{ d.id }}_tuya" {% if d.famiglia and 'SISTEMA_TUYA' in d.famiglia %}checked{% endif %}>
+                                    <label class="form-check-label small" for="fam_{{ d.id }}_tuya">Tuya</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input famiglia-checkbox" type="checkbox" value="DALI" id="fam_{{ d.id }}_dali" {% if d.famiglia and 'DALI' in d.famiglia %}checked{% endif %}>
+                                    <label class="form-check-label small" for="fam_{{ d.id }}_dali">Dali</label>
+                                </div>
+                            </div>
+                        </td>
                         <td class="editable-cell" data-field="prezzo" data-original="{{ d.price or '' }}">
                             <span class="cell-value"><strong>€{{ '%.2f'|format(d.price|float) if d.price else '-' }}</strong></span>
                             <input type="number" step="0.01" class="cell-input form-control form-control-sm" value="{{ d.price or '' }}" style="display: none;">
+                        </td>
+                        <td class="editable-cell editable-image" data-field="immagine" data-original="{{ d.immagine or '' }}">
+                            <div class="cell-value" style="cursor: pointer;">
+                                {% if d.immagine %}
+                                    <img src="{{ d.immagine }}" alt="Immagine"
+                                         class="img-thumbnail" style="max-width: 40px; max-height: 30px;">
+                                {% else %}
+                                    <span class="text-muted small">Carica immagine</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" class="cell-input form-control form-control-sm" accept="image/*" style="display: none;">
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
@@ -203,6 +254,39 @@
                                 <div class="form-text">Tipi di strip LED compatibili</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Famiglia *</label>
+                        <div class="border rounded p-3 bg-light">
+                            <div class="form-check">
+                                <input class="form-check-input add-famiglia-checkbox" type="checkbox" value="TOUCH_SU_PROFILO" id="add_fam_touch">
+                                <label class="form-check-label" for="add_fam_touch">Touch su profilo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input add-famiglia-checkbox" type="checkbox" value="CON_TELECOMANDO" id="add_fam_tel">
+                                <label class="form-check-label" for="add_fam_tel">Con telecomando</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input add-famiglia-checkbox" type="checkbox" value="CON_PULSANTE" id="add_fam_puls">
+                                <label class="form-check-label" for="add_fam_puls">Con pulsante</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input add-famiglia-checkbox" type="checkbox" value="SISTEMA_TUYA" id="add_fam_tuya">
+                                <label class="form-check-label" for="add_fam_tuya">Sistema Tuya</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input add-famiglia-checkbox" type="checkbox" value="DALI" id="add_fam_dali">
+                                <label class="form-check-label" for="add_fam_dali">Dali</label>
+                            </div>
+                        </div>
+                        <div class="form-text">Seleziona almeno una famiglia</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="add_immagine" class="form-label">Immagine</label>
+                        <input type="file" class="form-control" id="add_immagine" name="immagine" accept="image/*">
+                        <div class="form-text">Carica un'immagine del dimmer (opzionale)</div>
                     </div>
 
                     <div class="mb-3">
@@ -347,7 +431,15 @@ $(document).ready(function() {
 
         cell.addClass('editing');
         cell.find('.cell-value').hide();
-        cell.find('.cell-input').show().focus();
+        const input = cell.find('.cell-input');
+        input.show();
+
+        // For file inputs, trigger click to open file dialog
+        if (input.is('input[type="file"]')) {
+            input.click();
+        } else {
+            input.focus();
+        }
 
         cell.closest('tr').find('.save-btn').show();
     });
@@ -373,6 +465,16 @@ $(document).ready(function() {
         e.stopPropagation();
     });
 
+    // Handle file selection - show filename
+    $('input[type="file"].cell-input').on('change', function() {
+        const cell = $(this).closest('.editable-cell');
+        const file = this.files[0];
+        if (file) {
+            // Show filename instead of the original image
+            cell.find('.cell-value').html(`<span class="text-primary small"><i class="bi bi-image me-1"></i>${file.name}</span>`).show();
+        }
+    });
+
     // Click anywhere else to cancel edit
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.editable-cell').length &&
@@ -393,7 +495,21 @@ function cancelEdit(row) {
         cell.find('.cell-input').hide();
         cell.find('.cell-value').show();
         const original = cell.data('original');
-        cell.find('.cell-input').val(original);
+        const input = cell.find('.cell-input');
+
+        if (cell.hasClass('editable-famiglia')) {
+            // For famiglia checkboxes, restore original array
+            const originalArray = typeof original === 'string' ? JSON.parse(original || '[]') : (original || []);
+            cell.find('.famiglia-checkbox').each(function() {
+                $(this).prop('checked', originalArray.includes($(this).val()));
+            });
+        } else if (input.is('select')) {
+            input.val(original);
+        } else if (input.is('input[type="file"]')) {
+            input.val(''); // Clear file input
+        } else {
+            input.val(original);
+        }
     });
     row.find('.save-btn').hide();
 }
@@ -401,74 +517,194 @@ function cancelEdit(row) {
 function saveRow(button, table) {
     const row = $(button).closest('tr');
     const dimmerId = row.data('dimmer-id');
-    const data = {};
 
-    row.find('.editable-cell').each(function() {
-        const cell = $(this);
-        const field = cell.data('field');
-        let value = cell.find('.cell-input').val();
+    // Check if image upload is present
+    const imageInput = row.find('.editable-image input[type="file"]')[0];
+    const hasImageUpload = imageInput && imageInput.files && imageInput.files.length > 0;
 
-        if (field === 'prezzo') {
-            data['price'] = value ? parseFloat(value) : null;
-        } else if (field === 'potenza_massima') {
-            data[field] = value ? parseInt(value) : null;
-        } else {
-            data[field] = value || null;
-        }
-    });
+    if (hasImageUpload) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('immagine', imageInput.files[0]);
 
-    $.ajax({
-        url: `{{ url_for("admin.update_dimmer", dimmer_id="") }}${dimmerId}`,
-        method: 'PUT',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function(response) {
-            if (response.success) {
-                showAlert('Modifiche salvate con successo!', 'success');
-                setTimeout(() => location.reload(), 800);
+        // Collect other edited values
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
+
+            if (field === 'immagine') return; // Skip, already added
+
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (input.is('select')) {
+                value = input.val();
             } else {
-                showAlert('Errore: ' + response.error, 'danger');
+                value = input.val();
+            }
+
+            if (field === 'potenza_massima') {
+                formData.append(field, parseInt(value) || 0);
+            } else if (field === 'prezzo') {
+                formData.append('price', parseFloat(value) || 0);
+            } else {
+                formData.append(field, value);
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_dimmer", dimmer_id="") }}${dimmerId}`,
+            method: 'PUT',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
                 cancelEdit(row);
             }
-        },
-        error: function(xhr, status, error) {
-            handleAjaxError(xhr, status, error);
-            cancelEdit(row);
-        }
-    });
+        });
+    } else {
+        // Use JSON for regular updates
+        const data = {};
+
+        row.find('.editable-cell').each(function() {
+            const cell = $(this);
+            const field = cell.data('field');
+            const input = cell.find('.cell-input');
+            let value;
+
+            if (cell.hasClass('editable-famiglia')) {
+                // For famiglia checkboxes, get array of checked values
+                value = [];
+                cell.find('.famiglia-checkbox:checked').each(function() {
+                    value.push($(this).val());
+                });
+            } else if (input.is('select')) {
+                value = input.val();
+            } else {
+                value = input.val();
+            }
+
+            if (field === 'potenza_massima') {
+                data[field] = value ? parseInt(value) : null;
+            } else if (field === 'prezzo') {
+                data['price'] = value ? parseFloat(value) : null;
+            } else if (field === 'famiglia') {
+                // famiglia is a JSONB array
+                data[field] = Array.isArray(value) ? value : [];
+            } else if (field !== 'immagine') { // Skip image field for JSON updates
+                data[field] = value || null;
+            }
+        });
+
+        $.ajax({
+            url: `{{ url_for("admin.update_dimmer", dimmer_id="") }}${dimmerId}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Modifiche salvate con successo!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                    cancelEdit(row);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
+                cancelEdit(row);
+            }
+        });
+    }
 }
 
 function addDimmer(event) {
     event.preventDefault();
 
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    if (data.prezzo) {
-        data.prezzo = parseFloat(data.prezzo);
-    } else {
-        delete data.prezzo;
-    }
-    if (!data.tipo) delete data.tipo;
-    if (!data.compatibileCon) delete data.compatibileCon;
-    if (!data.descrizione) delete data.descrizione;
-
-    $.ajax({
-        url: '{{ url_for("admin.add_dimmer") }}',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function(response) {
-            if (response.success) {
-                showAlert('Dimmer aggiunto con successo!', 'success');
-                $('#addDimmerModal').modal('hide');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert('Errore: ' + response.error, 'danger');
-            }
-        },
-        error: handleAjaxError
+    // Collect famiglia checkbox values
+    const famiglia = [];
+    $('.add-famiglia-checkbox:checked').each(function() {
+        famiglia.push($(this).val());
     });
+
+    if (famiglia.length === 0) {
+        showAlert('Seleziona almeno una famiglia', 'warning');
+        return;
+    }
+
+    const imageFile = document.getElementById('add_immagine').files[0];
+
+    if (imageFile) {
+        // Use FormData for file upload
+        const formData = new FormData(event.target);
+
+        // Override famiglia field with array (FormData would only capture last checkbox)
+        formData.delete('famiglia');
+        formData.set('famiglia', JSON.stringify(famiglia));
+
+        $.ajax({
+            url: '{{ url_for("admin.add_dimmer") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Dimmer aggiunto con successo!', 'success');
+                    $('#addDimmerModal').modal('hide');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                }
+            },
+            error: handleAjaxError
+        });
+    } else {
+        // Use JSON for regular upload (no image)
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        data.famiglia = famiglia;
+
+        if (data.prezzo) {
+            data.prezzo = parseFloat(data.prezzo);
+        } else {
+            delete data.prezzo;
+        }
+        if (!data.tipo) delete data.tipo;
+        if (!data.compatibileCon) delete data.compatibileCon;
+        if (!data.descrizione) delete data.descrizione;
+
+        // Remove empty immagine field from JSON
+        delete data.immagine;
+
+        $.ajax({
+            url: '{{ url_for("admin.add_dimmer") }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Dimmer aggiunto con successo!', 'success');
+                    $('#addDimmerModal').modal('hide');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('Errore: ' + response.error, 'danger');
+                }
+            },
+            error: handleAjaxError
+        });
+    }
 }
 
 function editDimmer(dimmer) {
@@ -568,6 +804,58 @@ function bulkDelete(table) {
         },
         error: handleAjaxError
     });
+}
+
+// Image upload is now handled through inline editing (saveRow function)
+// Modal-based upload functions removed - using editable cell pattern instead
+
+// Sorting functionality
+let sortState = 'none'; // 'none', 'asc', 'desc'
+
+function toggleSort(field) {
+    const tbody = document.getElementById('tableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const sortIcon = document.getElementById('sortIcon');
+
+    // Toggle sort state
+    if (sortState === 'none') {
+        sortState = 'asc';
+    } else if (sortState === 'asc') {
+        sortState = 'desc';
+    } else {
+        sortState = 'none';
+    }
+
+    // Update icon
+    if (sortState === 'asc') {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    } else if (sortState === 'desc') {
+        sortIcon.className = 'bi bi-sort-alpha-up';
+    } else {
+        sortIcon.className = 'bi bi-sort-alpha-down';
+    }
+
+    // Sort or restore original order
+    if (sortState === 'none') {
+        // Restore original order by reloading
+        location.reload();
+        return;
+    }
+
+    rows.sort((a, b) => {
+        const aValue = (a.dataset.nome || '').toLowerCase();
+        const bValue = (b.dataset.nome || '').toLowerCase();
+
+        if (sortState === 'asc') {
+            return aValue.localeCompare(bValue);
+        } else {
+            return bValue.localeCompare(aValue);
+        }
+    });
+
+    // Clear and re-append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
 }
 </script>
 {% endblock %}

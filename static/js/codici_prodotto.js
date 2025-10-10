@@ -229,25 +229,13 @@ export function calcolaCodiceDimmer() {
     return '';
   }
 
-  const codiciDimmer = {
-    "DIMMER_TOUCH_SU_PROFILO_PRFTSW01": "PRFTSW01",
-    "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01": "PRFTDIMM01",
-    "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01": "PRFIRSW01",
-    "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01": "PRFIRDIMM01",
-    "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW": "CTR104",
-    "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE": "CTR114",
-    "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE": "CTR124",
-    "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE": "CTR125",
-    "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE": "CTR129",
-    "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE": "CTR002SCTY",
-    "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE": "CTR003CCTTY",
-    "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB": "CTR004RGB2TY",
-    "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW": "CTR005RGBWTY",
-    "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V": "CTR130",
-    "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA": "CTR050IT"
-  };
+  // Use the dimmer code from database (set when dimmer is selected in step5)
+  // This ensures new dimmers added via admin will work automatically
+  if (configurazione.dimmerCodice) {
+    return ' - ' + configurazione.dimmerCodice;
+  }
 
-  return ' - ' + codiciDimmer[configurazione.dimmerSelezionato] || '';
+  return '';
 }
 
   export function calcolaCodiceProdottoCompleto() {

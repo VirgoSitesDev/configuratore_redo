@@ -208,39 +208,25 @@ function caricaDimmerCompatibili() {
           return potenzaMassima >= potenzaTotale;
         });
 
-        const dimmerCategories = {
-          "TOUCH_SU_PROFILO": [
-            "DIMMER_TOUCH_SU_PROFILO_PRFTSW01",
-            "DIMMER_TOUCH_SU_PROFILO_PRFTDIMM01", 
-            "DIMMER_TOUCH_SU_PROFILO_PRFIRSW01", 
-            "DIMMER_TOUCH_SU_PROFILO_PRFIRDIMM01"
-          ],
-          "CON_TELECOMANDO": [
-            "DIMMER_PWM_CON_TELECOMANDO_RGB_RGBW",
-            "DIMMER_PWM_CON_TELECOMANDO_MONOCOLORE",
-            "DIMMER_PWM_CON_TELECOMANDO_TUNABLE_WHITE"
-          ],
-          "CON_PULSANTE": [
-            "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE",
-            "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE",
-            "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V",
-            "DIMMER_PWM_DA_SCATOLA_CON_PULSANTE_NA"
-          ],
-          "SISTEMA_TUYA": [
-            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_MONOCOLORE",
-            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_TUNABLE_WHITE",
-            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGB",
-            "DIMMERABILE_PWM_CON_SISTEMA_TUYA_RGBW",
-            "DIMMERABILE_TRIAC_PULSANTE_TUYA_220V"
-          ],
-          "DALI": [
-            "DIMMER_PWM_CON_PULSANTE_24V_MONOCOLORE",
-            "DIMMER_PWM_CON_PULSANTE_48V_MONOCOLORE"
-          ],
-          "NESSUN_DIMMER": [
-            "NESSUN_DIMMER"
-          ]
-        };
+        // Build dimmerCategories dynamically from database famiglia field
+        const dimmerCategories = {};
+
+        // Add NESSUN_DIMMER category
+        dimmerCategories["NESSUN_DIMMER"] = ["NESSUN_DIMMER"];
+
+        // Build categories from famiglieDimmer field in database response
+        const famiglieDimmer = response.famiglieDimmer || {};
+        Object.keys(famiglieDimmer).forEach(dimmerId => {
+          const famiglie = famiglieDimmer[dimmerId];
+          if (Array.isArray(famiglie)) {
+            famiglie.forEach(famiglia => {
+              if (!dimmerCategories[famiglia]) {
+                dimmerCategories[famiglia] = [];
+              }
+              dimmerCategories[famiglia].push(dimmerId);
+            });
+          }
+        });
 
         const categorieDisponibili = {};
 
@@ -298,12 +284,16 @@ function caricaDimmerCompatibili() {
           "NESSUN_DIMMER": "/static/img/placeholder_logo.jpg"
         };
 
+        // Debug: Log dimmer images from database
+        console.log('Database dimmer images (immaginiDimmer):', response.immaginiDimmer);
+
         window.dimmerData = {
           categories: categorieDisponibili,
           nomiDimmer: response.nomiDimmer || {},
           codiciDimmer: response.codiciDimmer || {},
           spaziNonIlluminati: response.spaziNonIlluminati || {},
-          potenzeMassime: potenzeMassimeDimmer || {}
+          potenzeMassime: potenzeMassimeDimmer || {},
+          immaginiDimmer: response.immaginiDimmer || {}
         };
 
         if (Object.keys(categorieDisponibili).length === 1 && Object.keys(categorieDisponibili)[0] === 'NESSUN_DIMMER') {
@@ -490,7 +480,16 @@ function mostraDimmerSpecifici(categoria, dimmerImages, response, potenzaTotale)
       const dimmerCode = dimmerData.codiciDimmer[dimmer] || "";
       const spazioNonIlluminato = dimmerData.spaziNonIlluminati[dimmer];
       const potenzaMassima = dimmerData.potenzeMassime[dimmer] || 0;
-      const imgPath = dimmerImages[dimmer] || "/static/img/placeholder_logo.jpg";
+      // Use database image first (priority), fallback to hardcoded image, then placeholder
+      const imgPath = dimmerData.immaginiDimmer[dimmer] || dimmerImages[dimmer] || "/static/img/placeholder_logo.jpg";
+
+      // Debug: Log image selection for each dimmer
+      console.log(`Dimmer ${dimmer}:`, {
+        databasePath: dimmerData.immaginiDimmer[dimmer],
+        hardcodedPath: dimmerImages[dimmer],
+        finalPath: imgPath
+      });
+
       const potenzaEccessiva = potenzaTotale > potenzaMassima;
       
       specificContainer.append(`
