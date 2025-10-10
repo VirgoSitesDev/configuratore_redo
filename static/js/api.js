@@ -961,54 +961,56 @@ export function caricaOpzioniAlimentatore(tipoAlimentazione) {
 }
 
 export function caricaPotenzeAlimentatore(alimentatoreId) {
-  
+
   $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento potenze disponibili...</p></div>');
   $('#potenza-alimentatore-section').show();
-  
+
   configurazione.potenzaAlimentatoreSelezionata = null;
 
   $('#btn-continua-step4').prop('disabled', true);
-  
+
+  const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
+  const url = potenzaConsigliata > 0
+    ? `/get_potenze_alimentatore/${alimentatoreId}/${potenzaConsigliata}`
+    : `/get_potenze_alimentatore/${alimentatoreId}`;
+
   $.ajax({
-    url: `/get_potenze_alimentatore/${alimentatoreId}`,
+    url: url,
     method: 'GET',
     success: function(data) {
-      
+
       $('#potenza-alimentatore-container').empty();
-      
+
       if (!data.success) {
         $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle potenze disponibili.</p></div>');
         return;
       }
-      
+
       const potenze = data.potenze;
-      
+
       if (!potenze || potenze.length === 0) {
         $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><p>Nessuna potenza disponibile per questo alimentatore.</p></div>');
         return;
       }
 
-      const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
       const potenzeOrdinate = [...potenze].sort((a, b) => a - b);
 
+      // Find the smallest power that meets the requirement (this will be the "Consigliata")
       let potenzaConsigliataProssima = null;
       if (potenzaConsigliata > 0) {
         potenzaConsigliataProssima = potenzeOrdinate.find(p => p >= potenzaConsigliata);
       }
 
-      const potenzeAdeguate = potenzaConsigliata 
-        ? potenzeOrdinate.filter(p => p >= potenzaConsigliata) 
-        : potenzeOrdinate;
+      // Backend already filters, so all returned powers are adequate
+      const potenzeAdeguate = potenzeOrdinate;
       
       potenzeAdeguate.forEach(function(potenza) {
-        const isConsigliata = potenza === potenzaConsigliata;
-        const isProssimaConsigliata = potenza === potenzaConsigliataProssima && potenza !== potenzaConsigliata;
+        // Show "Consigliata" badge on the smallest power that's >= potenzaConsigliata
+        const isConsigliata = potenza === potenzaConsigliataProssima;
 
         let badgeText = '';
         if (isConsigliata) {
           badgeText = '<span class="badge bg-success ms-2">Consigliata</span>';
-        } else if (isProssimaConsigliata) {
-          badgeText = '<span class="badge bg-success ms-2">Potenza consigliata</span>';
         }
 
         $('#potenza-alimentatore-container').append(`

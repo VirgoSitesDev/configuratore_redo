@@ -71,7 +71,11 @@ function calcolaPotenzaAlimentatoreConsigliata() {
   let lunghezzaTotaleMetri = 0;
 
   // Calculate total length based on shape
-  if (configurazione.lunghezzeMultiple) {
+  // Check if lunghezzeMultiple exists AND has actual values
+  const hasLunghezzeMultiple = configurazione.lunghezzeMultiple &&
+    Object.values(configurazione.lunghezzeMultiple).some(val => val && val > 0);
+
+  if (hasLunghezzeMultiple) {
     // For complex shapes (L, C, Rectangle)
     let lunghezzaTotaleMm = Object.values(configurazione.lunghezzeMultiple)
       .filter(val => val && val > 0)
@@ -168,18 +172,28 @@ export function vaiAllAlimentazione() {
         </div>
       </div>
     `);
-    
+
     configurazione.alimentazioneSelezionata = "SENZA_ALIMENTATORE";
     $('#alimentatore-section').hide();
     $('#potenza-alimentatore-section').hide();
     $('#btn-continua-step4').prop('disabled', false);
+    return; // No need to prepare alimentazione listeners for 220V
   }
 
-  prepareAlimentazioneListeners();
+  // Calculate power BEFORE preparing alimentazione listeners
+  console.log('🟣 vaiAllAlimentazione - Controllo flusso:', {
+    modalitaConfigurazione: configurazione.modalitaConfigurazione,
+    stripLedSelezionata: configurazione.stripLedSelezionata,
+    potenzaSelezionata: configurazione.potenzaSelezionata,
+    lunghezzaRichiestaMetri: configurazione.lunghezzaRichiestaMetri,
+    lunghezzaRichiesta: configurazione.lunghezzaRichiesta
+  });
 
-  if (configurazione.modalitaConfigurazione === 'solo_strip' && 
-      configurazione.potenzaSelezionata && 
+  if (configurazione.modalitaConfigurazione === 'solo_strip' &&
+      configurazione.potenzaSelezionata &&
       configurazione.lunghezzaRichiestaMetri) {
+
+    console.log('🔵 Entrato in SOLO_STRIP branch');
 
     const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(?:\.\d+)?)/);
     if (potenzaMatch) {
@@ -189,17 +203,128 @@ export function vaiAllAlimentazione() {
       const potenzaTotale = potenzaPerMetro * lunghezzaMetri * moltiplicatore * 1.2;
       const potenzaConsigliata = Math.max(20, Math.ceil(potenzaTotale / 5) * 5);
 
+      console.log('🔵 SOLO STRIP - Calcolo potenza:', {
+        potenzaPerMetro,
+        lunghezzaMetri,
+        moltiplicatore,
+        potenzaTotale,
+        potenzaConsigliata
+      });
+
       configurazione.potenzaConsigliataAlimentatore = potenzaConsigliata;
 
       $('#potenza-consigliata').text(potenzaConsigliata);
       $('#potenza-consigliata-section').show();
     }
-  } else if (configurazione.stripLedSelezionata === 'senza_strip' || 
+
+    // Now prepare alimentazione listeners with the calculated power
+    prepareAlimentazioneListeners();
+
+  } else if (configurazione.stripLedSelezionata === 'senza_strip' ||
              configurazione.stripLedSelezionata === 'NO_STRIP' ||
              !configurazione.potenzaSelezionata) {
+    console.log('🟡 Entrato in SENZA_STRIP / NO_STRIP branch - Nessun calcolo potenza');
     $('#potenza-consigliata-section').hide();
+    prepareAlimentazioneListeners();
   } else {
-    calcolaPotenzaAlimentatoreConsigliata();
+    console.log('🟢 Entrato in INDOOR/OUTDOOR branch - Chiamata calcolaPotenzaAlimentatoreConsigliataThenPrepare');
+    // For indoor/outdoor, calculate power asynchronously first, then prepare listeners
+    calcolaPotenzaAlimentatoreConsigliataThenPrepare();
+  }
+}
+
+function calcolaPotenzaAlimentatoreConsigliataThenPrepare() {
+  console.log('🟢 calcolaPotenzaAlimentatoreConsigliataThenPrepare chiamata');
+
+  if (configurazione.stripLedSelezionata === 'senza_strip' ||
+      configurazione.stripLedSelezionata === 'NO_STRIP' ||
+      !configurazione.potenzaSelezionata) {
+    console.log('🟡 Uscita anticipata - senza strip o senza potenza');
+    $('#potenza-consigliata-section').hide();
+    prepareAlimentazioneListeners();
+    return;
+  }
+
+  let potenzaPerMetro = 0;
+  const potenzaMatch = configurazione.potenzaSelezionata.match(/(\d+(\.\d+)?)/);
+  if (potenzaMatch && potenzaMatch[1]) {
+    potenzaPerMetro = parseFloat(potenzaMatch[1]);
+  }
+
+  let lunghezzaTotaleMetri = 0;
+
+  // Calculate total length based on shape
+  // Check if lunghezzeMultiple exists AND has actual values
+  const hasLunghezzeMultiple = configurazione.lunghezzeMultiple &&
+    Object.values(configurazione.lunghezzeMultiple).some(val => val && val > 0);
+
+  if (hasLunghezzeMultiple) {
+    // For complex shapes (L, C, Rectangle)
+    let lunghezzaTotaleMm = Object.values(configurazione.lunghezzeMultiple)
+      .filter(val => val && val > 0)
+      .reduce((sum, val) => sum + val, 0);
+
+    // For RETTANGOLO_QUADRATO, multiply by 2 (2 lengths + 2 widths)
+    if (configurazione.formaDiTaglioSelezionata === 'RETTANGOLO_QUADRATO') {
+      lunghezzaTotaleMm = lunghezzaTotaleMm * 2;
+    }
+
+    lunghezzaTotaleMetri = lunghezzaTotaleMm / 1000;
+  } else if (configurazione.lunghezzaRichiesta) {
+    lunghezzaTotaleMetri = parseFloat(configurazione.lunghezzaRichiesta) / 1000;
+  } else if (configurazione.lunghezzaSelezionata) {
+    lunghezzaTotaleMetri = parseFloat(configurazione.lunghezzaSelezionata) / 1000;
+  }
+
+  // Apply double strip multiplier if selected
+  const moltiplicatoreStrip = configurazione.moltiplicatoreStrip || 1;
+  lunghezzaTotaleMetri = lunghezzaTotaleMetri * moltiplicatoreStrip;
+
+  console.log('🟢 Parametri calcolo potenza:', {
+    potenzaPerMetro,
+    lunghezzaTotaleMetri,
+    moltiplicatoreStrip,
+    'potenzaPerMetro > 0': potenzaPerMetro > 0,
+    'lunghezzaTotaleMetri > 0': lunghezzaTotaleMetri > 0
+  });
+
+  if (potenzaPerMetro > 0 && lunghezzaTotaleMetri > 0) {
+    console.log('🟢 Invio richiesta AJAX a /calcola_potenza_alimentatore');
+    $.ajax({
+      url: '/calcola_potenza_alimentatore',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        potenzaPerMetro: potenzaPerMetro,
+        lunghezzaMetri: lunghezzaTotaleMetri
+      }),
+      success: function(response) {
+        console.log('🟢 Risposta AJAX ricevuta:', response);
+        if (response.success) {
+          console.log('🟢 INDOOR/OUTDOOR - Risposta calcolo potenza:', response);
+
+          $('#potenza-consigliata').text(response.potenzaConsigliata);
+          $('#potenza-consigliata-section').show();
+
+          configurazione.potenzaConsigliataAlimentatore = response.potenzaConsigliata;
+
+          console.log('🟢 potenzaConsigliataAlimentatore impostata a:', configurazione.potenzaConsigliataAlimentatore);
+
+          // NOW prepare alimentazione listeners after power is calculated
+          prepareAlimentazioneListeners();
+        }
+      },
+      error: function(error) {
+        console.error("❌ Errore AJAX nel calcolo della potenza dell'alimentatore:", error);
+        $('#potenza-consigliata-section').hide();
+        // Still prepare listeners even if calculation failed
+        prepareAlimentazioneListeners();
+      }
+    });
+  } else {
+    console.log('🟡 potenzaPerMetro o lunghezzaTotaleMetri <= 0, skip AJAX');
+    $('#potenza-consigliata-section').hide();
+    prepareAlimentazioneListeners();
   }
 }
 
@@ -237,14 +362,23 @@ export function prepareAlimentazioneListeners() {
 
   const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
 
+  console.log('🔴 prepareAlimentazioneListeners chiamato con:', {
+    potenzaConsigliataAlimentatore: configurazione.potenzaConsigliataAlimentatore,
+    potenzaConsigliata,
+    tensioneStripLed
+  });
+
   // Check both ON-OFF and DIMMERABILE_TRIAC availability
   const checkPromises = [];
   const tipiDaControllare = isRGBStrip ? ['ON-OFF'] : ['ON-OFF', 'DIMMERABILE_TRIAC'];
 
   tipiDaControllare.forEach(tipo => {
+    const url = `/get_opzioni_alimentatore/${tipo}/${tensioneStripLed}/${potenzaConsigliata}`;
+    console.log(`🔴 Chiamata API per ${tipo}:`, url);
+
     checkPromises.push(
       $.ajax({
-        url: `/get_opzioni_alimentatore/${tipo}/${tensioneStripLed}/${potenzaConsigliata}`,
+        url: url,
         method: 'GET'
       }).then(data => ({
         tipo: tipo,
@@ -473,49 +607,51 @@ function bindAlimentazioneCardListeners() {
 export function caricaPotenzeAlimentatore(alimentatoreId) {
   $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-3">Caricamento potenze disponibili...</p></div>');
   $('#potenza-alimentatore-section').show();
-  
+
   configurazione.potenzaAlimentatoreSelezionata = null;
   $('#btn-continua-step4').prop('disabled', true);
-  
+
+  const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
+  const url = potenzaConsigliata > 0
+    ? `/get_potenze_alimentatore/${alimentatoreId}/${potenzaConsigliata}`
+    : `/get_potenze_alimentatore/${alimentatoreId}`;
+
   $.ajax({
-    url: `/get_potenze_alimentatore/${alimentatoreId}`,
+    url: url,
     method: 'GET',
     success: function(data) {
       $('#potenza-alimentatore-container').empty();
-      
+
       if (!data.success) {
         $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><p class="text-danger">Errore nel caricamento delle potenze disponibili.</p></div>');
         return;
       }
-      
+
       const potenze = data.potenze;
-      
+
       if (!potenze || potenze.length === 0) {
         $('#potenza-alimentatore-container').html('<div class="col-12 text-center"><p>Nessuna potenza disponibile per questo alimentatore.</p></div>');
         return;
       }
 
-      const potenzaConsigliata = configurazione.potenzaConsigliataAlimentatore ? parseInt(configurazione.potenzaConsigliataAlimentatore) : 0;
       const potenzeOrdinate = [...potenze].sort((a, b) => a - b);
 
+      // Find the smallest power that meets the requirement (this will be the "Consigliata")
       let potenzaConsigliataProssima = null;
       if (potenzaConsigliata > 0) {
         potenzaConsigliataProssima = potenzeOrdinate.find(p => p >= potenzaConsigliata);
       }
 
-      const potenzeAdeguate = potenzaConsigliata 
-        ? potenzeOrdinate.filter(p => p >= potenzaConsigliata) 
-        : potenzeOrdinate;
+      // Backend already filters, so all returned powers are adequate
+      const potenzeAdeguate = potenzeOrdinate;
       
       potenzeAdeguate.forEach(function(potenza) {
-        const isConsigliata = potenza === potenzaConsigliata;
-        const isProssimaConsigliata = potenza === potenzaConsigliataProssima && potenza !== potenzaConsigliata;
+        // Show "Consigliata" badge on the smallest power that's >= potenzaConsigliata
+        const isConsigliata = potenza === potenzaConsigliataProssima;
 
         let badgeText = '';
         if (isConsigliata) {
           badgeText = '<span class="badge bg-success ms-2">Consigliata</span>';
-        } else if (isProssimaConsigliata) {
-          badgeText = '<span class="badge bg-success ms-2">Potenza consigliata</span>';
         }
 
         $('#potenza-alimentatore-container').append(`

@@ -333,34 +333,61 @@ def get_strip_led_filtrate(profilo_id, tensione, ip, temperatura, potenza, tipol
 @app.route('/get_opzioni_alimentatore/<tipo_alimentazione>/<tensione_strip>/<int:potenza_consigliata>')
 def get_opzioni_alimentatore(tipo_alimentazione, tensione_strip, potenza_consigliata=None):
     try:
+        print(f"\n🔵 get_opzioni_alimentatore chiamato:")
+        print(f"   tipo_alimentazione: {tipo_alimentazione}")
+        print(f"   tensione_strip: {tensione_strip}")
+        print(f"   potenza_consigliata: {potenza_consigliata}")
+
         alimentatori = db.get_alimentatori_by_tipo(tipo_alimentazione, tensione_strip)
-        
+        print(f"   Alimentatori trovati: {len(alimentatori)}")
+
         if potenza_consigliata:
             alimentatori_filtrati = []
             for alim in alimentatori:
                 potenze_adatte = [p for p in alim.get('potenze', []) if p >= potenza_consigliata]
+                print(f"   {alim['id']}: potenze totali={alim.get('potenze', [])}, potenze >= {potenza_consigliata} = {potenze_adatte}")
                 if potenze_adatte:
                     alim['potenza_consigliata'] = min(potenze_adatte)
                     alimentatori_filtrati.append(alim)
         else:
             alimentatori_filtrati = alimentatori
-        
+
+        print(f"   Alimentatori filtrati: {len(alimentatori_filtrati)}")
+        print(f"   IDs: {[a['id'] for a in alimentatori_filtrati]}\n")
+
         dettagli_alimentatori = {alim['id']: alim for alim in alimentatori}
-        
+
         return jsonify({
             'success': True,
             'alimentatori': alimentatori_filtrati,
             'dettagliAlimentatori': dettagli_alimentatori
         })
     except Exception as e:
+        print(f"   ❌ Errore: {str(e)}\n")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_potenze_alimentatore/<alimentatore_id>')
-def get_potenze_alimentatore(alimentatore_id):
+@app.route('/get_potenze_alimentatore/<alimentatore_id>/<int:potenza_minima>')
+def get_potenze_alimentatore(alimentatore_id, potenza_minima=None):
     try:
+        print(f"\n🟢 get_potenze_alimentatore chiamato:")
+        print(f"   alimentatore_id: {alimentatore_id}")
+        print(f"   potenza_minima: {potenza_minima}")
+
         potenze = db.get_potenze_alimentatore(alimentatore_id)
+        print(f"   Potenze totali: {potenze}")
+
+        # Filter powers based on minimum required power (total power * 1.2)
+        if potenza_minima:
+            potenze_filtrate = [p for p in potenze if p >= potenza_minima]
+            print(f"   Potenze >= {potenza_minima}: {potenze_filtrate}")
+            potenze = potenze_filtrate
+
+        print(f"   Potenze restituite: {potenze}\n")
+
         return jsonify({'success': True, 'potenze': potenze})
     except Exception as e:
+        print(f"   ❌ Errore: {str(e)}\n")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/get_dettagli_alimentatore/<alimentatore_id>')
